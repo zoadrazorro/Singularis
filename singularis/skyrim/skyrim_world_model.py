@@ -64,9 +64,16 @@ class SkyrimWorldModel:
 
         # Learned rules
         self.learned_rules: List[Dict[str, Any]] = []
+        
+        # Layer affordance mappings (learned through experience)
+        self.layer_affordance_mappings: Dict[str, Dict[str, Any]] = {}
+        
+        # Action effectiveness by layer (learned)
+        self.action_effectiveness: Dict[str, Dict[str, float]] = {}
 
         # Initialize common Skyrim causal relationships
         self._initialize_skyrim_causality()
+        self._initialize_layer_knowledge()
 
     def _initialize_skyrim_causality(self):
         """Initialize known Skyrim causal relationships."""
@@ -119,6 +126,47 @@ class SkyrimWorldModel:
 
         print("[OK] Initialized Skyrim causal relationships")
 
+    def _initialize_layer_knowledge(self):
+        """Initialize known layer→affordance mappings."""
+        
+        # Combat layer knowledge
+        self.layer_affordance_mappings["Combat"] = {
+            'primary_purpose': 'offensive_and_defensive_actions',
+            'key_affordances': ['power_attack', 'block', 'dodge', 'shout'],
+            'effectiveness_context': 'high_threat_situations',
+            'transition_triggers': ['enemy_detected', 'health_low', 'multiple_enemies']
+        }
+        
+        # Exploration layer knowledge  
+        self.layer_affordance_mappings["Exploration"] = {
+            'primary_purpose': 'world_navigation_and_interaction',
+            'key_affordances': ['move_forward', 'jump', 'activate', 'sneak'],
+            'effectiveness_context': 'peaceful_exploration',
+            'transition_triggers': ['no_immediate_threats', 'quest_objectives']
+        }
+        
+        # Menu layer knowledge
+        self.layer_affordance_mappings["Menu"] = {
+            'primary_purpose': 'inventory_and_character_management',
+            'key_affordances': ['equip_item', 'consume_item', 'favorite_item'],
+            'effectiveness_context': 'safe_environments',
+            'transition_triggers': ['need_healing', 'equipment_change', 'inventory_full']
+        }
+        
+        # Stealth layer knowledge
+        self.layer_affordance_mappings["Stealth"] = {
+            'primary_purpose': 'covert_operations',
+            'key_affordances': ['sneak_move', 'backstab', 'pickpocket'],
+            'effectiveness_context': 'stealth_required_situations',
+            'transition_triggers': ['avoid_detection', 'assassination_opportunity']
+        }
+        
+        # Initialize action effectiveness tracking
+        for layer in self.layer_affordance_mappings:
+            self.action_effectiveness[layer] = {}
+        
+        print("[OK] Initialized layer knowledge base")
+
     def learn_from_experience(
         self,
         action: str,
@@ -162,6 +210,215 @@ class SkyrimWorldModel:
                     'change': change_val,
                     'surprise': surprise
                 })
+        
+        # Learn layer effectiveness if layer info is available
+        if 'current_action_layer' in before_state and 'current_action_layer' in after_state:
+            self._learn_layer_effectiveness(
+                action, 
+                before_state['current_action_layer'],
+                before_state,
+                after_state,
+                surprise
+            )
+
+    def _learn_layer_effectiveness(
+        self,
+        action: str,
+        layer: str,
+        before_state: Dict[str, Any],
+        after_state: Dict[str, Any],
+        surprise: float
+    ):
+        """
+        Learn how effective actions are in different layers.
+        
+        Args:
+            action: Action performed
+            layer: Layer where action was performed
+            before_state: State before action
+            after_state: State after action
+            surprise: How surprising the outcome was
+        """
+        if layer not in self.action_effectiveness:
+            self.action_effectiveness[layer] = {}
+        
+        if action not in self.action_effectiveness[layer]:
+            self.action_effectiveness[layer][action] = {
+                'success_count': 0,
+                'total_count': 0,
+                'avg_effectiveness': 0.0,
+                'contexts': []
+            }
+        
+        stats = self.action_effectiveness[layer][action]
+        stats['total_count'] += 1
+        
+        # Determine if action was successful (low surprise = expected outcome)
+        success = surprise < 0.3
+        if success:
+            stats['success_count'] += 1
+        
+        # Update effectiveness (success rate)
+        stats['avg_effectiveness'] = stats['success_count'] / stats['total_count']
+        
+        # Record context for pattern learning
+        context = {
+            'health': before_state.get('health', 100),
+            'in_combat': before_state.get('in_combat', False),
+            'enemies_nearby': before_state.get('enemies_nearby', 0),
+            'success': success
+        }
+        stats['contexts'].append(context)
+        
+        # Keep only recent contexts (last 20)
+        if len(stats['contexts']) > 20:
+            stats['contexts'] = stats['contexts'][-20:]
+
+    def suggest_optimal_layer(
+        self,
+        desired_action: str,
+        current_state: Dict[str, Any]
+    ) -> Optional[str]:
+        """
+        Suggest the optimal layer for performing a desired action.
+        
+        Args:
+            desired_action: Action the AGI wants to perform
+            current_state: Current game state
+            
+        Returns:
+            Recommended layer name, or None if no good option
+        """
+        layer_scores = {}
+        
+        for layer, actions in self.action_effectiveness.items():
+            if desired_action in actions:
+                stats = actions[desired_action]
+                base_score = stats['avg_effectiveness']
+                
+                # Adjust score based on current context
+                context_bonus = self._compute_context_bonus(
+                    stats['contexts'], 
+                    current_state
+                )
+                
+                layer_scores[layer] = base_score + context_bonus
+        
+        if layer_scores:
+            best_layer = max(layer_scores.items(), key=lambda x: x[1])
+            return best_layer[0] if best_layer[1] > 0.3 else None
+        
+        return None
+
+    def _compute_context_bonus(
+        self,
+        historical_contexts: List[Dict[str, Any]],
+        current_state: Dict[str, Any]
+    ) -> float:
+        """
+        Compute context similarity bonus for layer selection.
+        
+        Args:
+            historical_contexts: Past contexts where action was used
+            current_state: Current game state
+            
+        Returns:
+            Bonus score based on context similarity
+        """
+        if not historical_contexts:
+            return 0.0
+        
+        # Find similar contexts
+        similar_contexts = []
+        for context in historical_contexts:
+            similarity = 0.0
+            
+            # Health similarity
+            if 'health' in current_state and 'health' in context:
+                health_diff = abs(current_state['health'] - context['health']) / 100.0
+                similarity += max(0, 1.0 - health_diff)
+            
+            # Combat state similarity
+            if (current_state.get('in_combat', False) == 
+                context.get('in_combat', False)):
+                similarity += 1.0
+            
+            # Enemy count similarity
+            if 'enemies_nearby' in current_state and 'enemies_nearby' in context:
+                enemy_diff = abs(
+                    current_state['enemies_nearby'] - context['enemies_nearby']
+                )
+                similarity += max(0, 1.0 - enemy_diff / 5.0)  # Normalize by max 5 enemies
+            
+            if similarity > 1.5:  # Threshold for "similar context"
+                similar_contexts.append(context)
+        
+        if not similar_contexts:
+            return 0.0
+        
+        # Compute success rate in similar contexts
+        success_rate = sum(1 for ctx in similar_contexts if ctx.get('success', False))
+        success_rate /= len(similar_contexts)
+        
+        return (success_rate - 0.5) * 0.3  # Bonus/penalty up to ±0.3
+
+    def get_strategic_layer_analysis(
+        self,
+        current_state: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Provide strategic analysis for layer selection.
+        
+        Args:
+            current_state: Current game state
+            
+        Returns:
+            Analysis with layer recommendations
+        """
+        analysis = {
+            'current_layer': current_state.get('current_action_layer', 'Unknown'),
+            'recommendations': [],
+            'layer_effectiveness': {},
+            'context_analysis': {}
+        }
+        
+        # Analyze each layer's effectiveness in current context
+        for layer, layer_info in self.layer_affordance_mappings.items():
+            effectiveness_score = 0.0
+            action_count = 0
+            
+            if layer in self.action_effectiveness:
+                for action, stats in self.action_effectiveness[layer].items():
+                    context_bonus = self._compute_context_bonus(
+                        stats['contexts'],
+                        current_state
+                    )
+                    effectiveness_score += stats['avg_effectiveness'] + context_bonus
+                    action_count += 1
+            
+            if action_count > 0:
+                analysis['layer_effectiveness'][layer] = effectiveness_score / action_count
+            else:
+                analysis['layer_effectiveness'][layer] = 0.5  # Neutral
+        
+        # Generate recommendations based on context
+        if current_state.get('in_combat', False):
+            if analysis['layer_effectiveness'].get('Combat', 0) > 0.6:
+                analysis['recommendations'].append({
+                    'layer': 'Combat',
+                    'reason': 'High combat effectiveness in similar situations',
+                    'confidence': analysis['layer_effectiveness']['Combat']
+                })
+        
+        if current_state.get('health', 100) < 30:
+            if analysis['layer_effectiveness'].get('Menu', 0) > 0.5:
+                analysis['recommendations'].append({
+                    'layer': 'Menu',
+                    'reason': 'Low health - menu access for healing',
+                    'confidence': analysis['layer_effectiveness']['Menu']
+                })
+        
+        return analysis
 
     def _compute_surprise(
         self,

@@ -369,6 +369,78 @@ class SkyrimActions:
             if random.random() < 0.1:
                 await self.execute(Action(ActionType.JUMP))
 
+    async def explore_with_waypoints(self, duration: float = 10.0):
+        """
+        Explore with waypoint navigation - more purposeful than random movement.
+        Picks a direction and commits to it for several steps.
+        """
+        import random
+        
+        print(f"Exploring with waypoints for {duration}s...")
+        end_time = time.time() + duration
+        
+        current_direction = None
+        direction_steps = 0
+        max_steps_per_direction = 3
+        
+        while time.time() < end_time:
+            # Pick new direction if needed
+            if current_direction is None or direction_steps >= max_steps_per_direction:
+                current_direction = random.choice(['forward', 'left', 'right', 'backward'])
+                direction_steps = 0
+                print(f"[EXPLORE] New direction: {current_direction}")
+            
+            # Move in chosen direction
+            move_duration = random.uniform(1.5, 2.5)  # Longer moves for more purpose
+            
+            if current_direction == 'forward':
+                await self.move_forward(move_duration)
+            elif current_direction == 'left':
+                await self.move_left(move_duration)
+            elif current_direction == 'right':
+                await self.move_right(move_duration)
+            elif current_direction == 'backward':
+                await self.move_backward(move_duration)
+            
+            direction_steps += 1
+            
+            # Occasional look around to scan for interesting things
+            if random.random() < 0.4:
+                await self.look_around()
+            
+            # Small chance to jump over obstacles
+            if random.random() < 0.15:
+                await self.execute(Action(ActionType.JUMP))
+                
+            # Brief pause between movements
+            await asyncio.sleep(0.5)
+
+    async def move_backward(self, duration: float = 1.0):
+        """Move backward for specified duration."""
+        await self.execute(Action(ActionType.MOVE_BACKWARD, duration))
+
+    async def evasive_maneuver(self):
+        """
+        Perform evasive maneuver when stuck - big camera sweep + backward movement.
+        """
+        import random
+        
+        print("[EVASIVE] Performing evasive maneuver...")
+        
+        # Big camera sweep to look around
+        await self.look_around()
+        await asyncio.sleep(0.3)
+        
+        # Move backward to get unstuck
+        await self.move_backward(2.0)
+        
+        # Random horizontal look to change facing direction
+        random_angle = random.uniform(-90, 90)
+        await self.look_horizontal(random_angle)
+        
+        # Small forward movement to test if unstuck
+        await self.move_forward(1.0)
+
     async def look_horizontal(self, degrees: float):
         """
         Look left/right by specified degrees.

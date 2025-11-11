@@ -206,6 +206,13 @@ class SkyrimAGI:
                 if changes['changed']:
                     print(f"[WARN] Change detected: {changes}")
 
+                # Detect visual stuckness
+                if self.perception.detect_visual_stuckness():
+                    print("[WARN] Visually stuck! Taking evasive action...")
+                    await self.actions.evasive_maneuver()
+                    # Skip to next cycle to re-assess after evasive action
+                    continue
+
                 # 2. UPDATE WORLD MODEL
                 # Convert perception to world state
                 world_state = await self.agi.perceive({
@@ -319,86 +326,130 @@ class SkyrimAGI:
         self,
         perception: Dict[str, Any],
         motivation: Any,
-        goal: Optional[str]
+        goal: str
     ) -> str:
         """
-        Plan next action based on perception and motivation.
+        Plan next action based on perception, motivation, and goal.
+        Now includes layer-aware strategic reasoning.
 
         Args:
-            perception: Current perception
+            perception: Current perception data
             motivation: Motivation state
             goal: Current goal
 
         Returns:
-            Action description
+            Action to take
         """
-        scene_type = perception['scene_type']
         game_state = perception['game_state']
-        dominant = motivation.dominant_drive()
+        scene_type = perception['scene_type']
+        current_layer = game_state.current_action_layer
+        available_actions = game_state.available_actions
 
-        # Use LLM consciousness for complex decisions
-        if self.agi.consciousness_llm and not self.config.dry_run:
-            query = f"""
-            You are an autonomous agent in Skyrim.
-            Scene: {scene_type.value} at {game_state.location_name}
-            Health: {game_state.health}, Magicka: {game_state.magicka}, Stamina: {game_state.stamina}
-            Inventory: {getattr(game_state, 'inventory_summary', 'unknown')}
-            Nearby NPCs: {getattr(game_state, 'nearby_npcs', 'unknown')}
-            Recent actions: {getattr(game_state, 'recent_actions', 'unknown')}
-            Current goal: {goal}
-            Dominant motivation: {dominant.value}
+        print(f"[PLANNING] Current layer: {current_layer}")
+        print(f"[PLANNING] Available actions: {available_actions}")
 
-            Available actions include (but are not limited to):
-            - explore (move and look around)
-            - combat (if enemies present)
-            - interact (talk/loot/activate)
-            - navigate (move to specific location)
-            - rest (recover health/stamina)
-            - stealth (sneak, pickpocket, hide)
-            - dialogue (talk, persuade, intimidate)
-            - look around (large sweeping camera movements)
-            - focus camera on moving or new objects/NPCs
-            - use magic or items
-            - open inventory/map/skills
-            - creative or unconventional actions
+        # Get strategic layer analysis from world model
+        strategic_analysis = self.skyrim_world.get_strategic_layer_analysis(
+            game_state.to_dict()
+        )
+        
+        print(f"[STRATEGIC] Layer effectiveness: {strategic_analysis['layer_effectiveness']}")
+        if strategic_analysis['recommendations']:
+            print(f"[STRATEGIC] Recommendations: {strategic_analysis['recommendations']}")
 
-            You are encouraged to look at things that move or appear unexpectedly, or to perform large camera sweeps to scan the area when appropriate. Please select the single most contextually appropriate action for this situation. If possible, suggest creative, stealth, dialogue, or camera/look actions when relevant. Avoid repeating the same action as the previous turn unless it is clearly optimal. Respond with only the chosen action and a brief rationale.
-            """
-
-            try:
-                print("[LLM] Calling LM Studio for action planning...")
-                print(f"[LLM] Query: {query.strip()}")
-                result = await self.agi.process(query)
-                print(f"[LLM] Raw LLM response: {result}")
-                response = result.get('consciousness_response', {}).get('response', 'explore')
-                print(f"[LLM] Parsed LLM action string: {response}")
-
-                # Parse response to action
-                if 'explore' in response.lower():
-                    print("[LLM] AGI will: explore")
-                    return 'explore'
-                elif 'combat' in response.lower() or 'attack' in response.lower():
-                    print("[LLM] AGI will: combat")
-                    return 'combat'
-                elif 'interact' in response.lower() or 'talk' in response.lower():
-                    print("[LLM] AGI will: interact")
-                    return 'interact'
-                elif 'navigate' in response.lower() or 'move' in response.lower():
-                    print("[LLM] AGI will: navigate")
-                    return 'navigate'
-                elif 'rest' in response.lower():
-                    print("[LLM] AGI will: rest")
-                    return 'rest'
-            except Exception as e:
-                print(f"  LLM planning failed: {e}, using heuristic")
-
-        # Fallback heuristic planning
-        if dominant == MotivationType.CURIOSITY:
-            return 'explore'
-        elif dominant == MotivationType.COMPETENCE:
-            if game_state.in_combat:
-                return 'combat'
+        # Meta-strategic reasoning: Should we switch layers?
+        optimal_layer = None
+        
+        # Combat situations - prioritize Combat layer if effective
+        if game_state.in_combat or scene_type == SceneType.COMBAT:
+            if current_layer != "Combat":
+                combat_effectiveness = strategic_analysis['layer_effectiveness'].get('Combat', 0.5)
+                if combat_effectiveness > 0.6:
+                    optimal_layer = "Combat"
+                    print(f"[META-STRATEGY] Switching to Combat layer (effectiveness: {combat_effectiveness:.2f})")
+            
+            # Choose combat action based on context
+            if game_state.enemies_nearby > 2:
+                return 'power_attack' if 'power_attack' in available_actions else 'combat'
+            elif game_state.health < 50:
+                return 'block' if 'block' in available_actions else 'combat'
             else:
+                return 'combat'
+
+        # Low health - consider Menu layer for healing
+        if game_state.health < 30:
+            if current_layer != "Menu":
+                menu_effectiveness = strategic_analysis['layer_effectiveness'].get('Menu', 0.5)
+                if menu_effectiveness > 0.5:
+                    optimal_layer = "Menu"
+                    print(f"[META-STRATEGY] Switching to Menu layer for healing (effectiveness: {menu_effectiveness:.2f})")
+            
+            if 'consume_item' in available_actions:
+                return 'consume_item'
+            else:
+                return 'rest'
+
+        # Stealth opportunities
+        if (not game_state.in_combat and 
+            len(game_state.nearby_npcs) > 0 and 
+            motivation.dominant_drive().value == 'competence'):
+            stealth_effectiveness = strategic_analysis['layer_effectiveness'].get('Stealth', 0.5)
+            if stealth_effectiveness > 0.6 and current_layer != "Stealth":
+                optimal_layer = "Stealth"
+                print(f"[META-STRATEGY] Switching to Stealth layer (effectiveness: {stealth_effectiveness:.2f})")
+
+        # If we determined an optimal layer, suggest layer transition
+        if optimal_layer and optimal_layer != current_layer:
+            # Return a meta-action that will trigger layer switch
+            return f'switch_to_{optimal_layer.lower()}'
+
+        # Action selection within current layer based on motivation
+        if motivation.dominant_drive().value == 'curiosity':
+            if 'activate' in available_actions:
+                return 'activate'  # Interact with world
+            return 'explore'
+        elif motivation.dominant_drive().value == 'competence':
+            if 'power_attack' in available_actions and current_layer == "Combat":
+                return 'power_attack'  # Practice advanced combat
+            elif 'backstab' in available_actions and current_layer == "Stealth":
+                return 'backstab'  # Practice stealth skills
+            return 'practice'
+        elif motivation.dominant_drive().value == 'coherence':
+            if 'activate' in available_actions:
+                return 'activate'  # Progress quests
+            return 'quest_objective'
+        else:
+            # Default exploration
+            if 'move_forward' in available_actions:
+                return 'move_forward'
+            return 'explore'
+
+    def _print_final_stats(self):
+        """Print final gameplay statistics."""
+        print(f"\n{'=' * 60}")
+        print("FINAL STATISTICS")
+        print(f"{'=' * 60}")
+        
+        # Determine skill level
+        if self.stats['cycles_completed'] < 10:
+            skill_level = 'novice'
+        elif self.stats['cycles_completed'] < 50:
+            skill_level = 'apprentice'
+        elif self.stats['cycles_completed'] < 100:
+            skill_level = 'adept'
+        elif self.stats['cycles_completed'] < 200:
+            skill_level = 'expert'
+        else:
+            skill_level = 'master'
+        
+        print(f"\nGameplay:")
+        print(f"  Cycles: {self.stats['cycles_completed']}")
+        print(f"  Actions: {self.stats['actions_taken']}")
+        print(f"  Skill Level: {skill_level.title()}")
+        
+        # Check if this is practice mode
+        if self.stats['cycles_completed'] < 20:
+            if self.stats['actions_taken'] > 0:
                 return 'practice'
         print(f"  Playtime: {self.stats['total_playtime'] / 60:.1f} minutes")
 
@@ -439,7 +490,8 @@ class SkyrimAGI:
         print(f"[DEBUG] After layer switch: {self.controller.active_layer}")
 
         if action == 'explore':
-            await self.actions.explore_area(duration=3.0)
+            # Use waypoint-based exploration instead of random movement
+            await self.actions.explore_with_waypoints(duration=3.0)
         elif action == 'combat':
             await self.actions.combat_sequence("Enemy")
         elif action == 'interact':
@@ -452,8 +504,30 @@ class SkyrimAGI:
             await self.actions.execute(Action(ActionType.ATTACK))
         elif action == 'quest_objective':
             await self.actions.move_forward(duration=2.0)
+        elif action.startswith('switch_to_'):
+            # Handle layer transition actions
+            target_layer = action.replace('switch_to_', '').title()
+            print(f"[META-STRATEGY] Executing layer transition to {target_layer}")
+            
+            if target_layer == 'Combat':
+                self.bindings.switch_to_combat()
+                # Perform a combat-ready action
+                await self.actions.execute(Action(ActionType.ATTACK))
+            elif target_layer == 'Menu':
+                self.bindings.switch_to_menu()
+                # Open menu (would be handled by controller bindings)
+                print("[LAYER] Switched to Menu layer - ready for inventory management")
+            elif target_layer == 'Stealth':
+                self.bindings.switch_to_stealth()
+                # Enter sneak mode
+                await self.actions.execute(Action(ActionType.SNEAK))
+            elif target_layer == 'Exploration':
+                self.bindings.switch_to_exploration()
+                # Continue exploration
+                await self.actions.explore_with_waypoints(duration=2.0)
         else:
-            await self.actions.explore_area(duration=2.0)
+            # Fallback to waypoint exploration
+            await self.actions.explore_with_waypoints(duration=2.0)
 
     def _print_final_stats(self):
         """Print final statistics."""

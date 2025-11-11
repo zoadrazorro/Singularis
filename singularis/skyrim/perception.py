@@ -19,6 +19,7 @@ from dataclasses import dataclass
 from enum import Enum
 from PIL import Image
 import time
+from .action_affordances import ActionAffordanceSystem
 
 try:
     import mss
@@ -79,6 +80,11 @@ class GameState:
     # Combat state
     in_combat: bool = False
     enemies_nearby: int = 0
+    
+    # Action layer awareness
+    current_action_layer: str = "Exploration"
+    available_actions: List[str] = None
+    layer_transition_reason: str = ""
 
     def __post_init__(self):
         """Initialize mutable defaults."""
@@ -88,6 +94,8 @@ class GameState:
             self.inventory_items = []
         if self.active_quests is None:
             self.active_quests = []
+        if self.available_actions is None:
+            self.available_actions = []
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for world model."""
@@ -103,12 +111,67 @@ class GameState:
             'enemies_nearby': self.enemies_nearby,
             'gold': self.gold,
             'quest_count': len(self.active_quests),
+            'current_action_layer': self.current_action_layer,
+            'available_actions': self.available_actions,
+            'layer_transition_reason': self.layer_transition_reason,
         }
 
 
 class SkyrimPerception:
     """
     Perception layer for Skyrim.
+    """
+
+    def __init__(
+        self,
+        vision_module=None,
+        screen_region: Optional[Dict[str, int]] = None,
+        use_game_api: bool = False
+    ):
+        self._vision_module = vision_module
+        # Screen capture
+        try:
+            import mss
+            self.sct = mss.mss()
+        except ImportError:
+            self.sct = None
+        # Screen region
+        if screen_region is None:
+            if self.sct:
+                self.screen_region = self.sct.monitors[1]
+            else:
+                self.screen_region = {"top": 0, "left": 0, "width": 1920, "height": 1080}
+        else:
+            self.screen_region = screen_region
+        # Game API
+        self.use_game_api = use_game_api
+        self._game_api = None
+        # Scene classification candidates
+        self.scene_candidates = [
+            "outdoor wilderness with mountains and trees",
+            "city or town with buildings and NPCs",
+            "dark dungeon or cave interior",
+            "indoor building like tavern or house",
+            "combat scene with enemies fighting",
+            "dialogue conversation with NPC",
+            "inventory menu screen",
+            "map view showing locations",
+        ]
+        # Object detection candidates
+        self.object_candidates = [
+            "person", "warrior", "mage", "dragon", "guard",
+            "sword", "bow", "staff", "potion", "chest",
+            "door", "lever", "book", "gold", "armor",
+        ]
+        # Perception history
+        self.perception_history: List[Dict[str, Any]] = []
+        
+        # Action affordance system
+        self.affordance_system = ActionAffordanceSystem()
+        
+        # Current controller reference for layer awareness
+        self._controller = None
+
 
     def detect_collision(self, threshold: float = 0.01, window: int = 3) -> bool:
         """
@@ -129,74 +192,49 @@ class SkyrimPerception:
         ]
         return all(d < threshold for d in diffs)
 
-
-    Capabilities:
-    1. Capture screen and encode with CLIP
-    2. Classify scene type
-    3. Read game state (if API available)
-    4. Detect objects and NPCs (via CLIP zero-shot)
-    5. Track changes over time
-    """
-
-    def __init__(
-        self,
-        vision_module=None,
-        screen_region: Optional[Dict[str, int]] = None,
-        use_game_api: bool = False
-    ):
+    def detect_visual_stuckness(self, window: int = 3, similarity_threshold: float = 0.98) -> bool:
         """
-        Initialize perception layer.
-
+        Check if visual embedding hasn't changed (stuck/collision).
+        
         Args:
-            vision_module: VisionModule instance (from world_model)
-            screen_region: {"top": y, "left": x, "width": w, "height": h}
-            use_game_api: Whether to use game state API (requires mods)
+            window: Number of recent frames to check
+            similarity_threshold: Cosine similarity threshold for "stuck"
+            
+        Returns:
+            True if visually stuck, False otherwise
         """
-        # Vision module (lazy loaded)
-        self._vision_module = vision_module
-
-        # Screen capture
-        if MSS_AVAILABLE:
-            self.sct = mss.mss()
-        else:
-            self.sct = None
-
-        # Screen region (default: full primary monitor)
-        if screen_region is None:
-            if self.sct:
-                self.screen_region = self.sct.monitors[1]  # Primary monitor
+        if len(self.perception_history) < window:
+            return False
+        
+        recent = self.perception_history[-window:]
+        embeddings = [p['visual_embedding'] for p in recent]
+        
+        # Check cosine similarity between consecutive frames
+        similarities = []
+        for i in range(1, len(embeddings)):
+            # Compute cosine similarity (1 - cosine distance)
+            dot_product = np.dot(embeddings[i-1], embeddings[i])
+            norm_a = np.linalg.norm(embeddings[i-1])
+            norm_b = np.linalg.norm(embeddings[i])
+            
+            if norm_a == 0 or norm_b == 0:
+                similarity = 0.0
             else:
-                self.screen_region = {"top": 0, "left": 0, "width": 1920, "height": 1080}
-        else:
-            self.screen_region = screen_region
+                similarity = dot_product / (norm_a * norm_b)
+            
+            similarities.append(similarity)
+        
+        # If all very similar (>threshold), probably stuck
+        stuck = all(s > similarity_threshold for s in similarities)
+        
+        if stuck:
+            print(f"[VISUAL] Detected stuckness: similarities = {[f'{s:.3f}' for s in similarities]}")
+        
+        return stuck
 
-        # Game API
-        self.use_game_api = use_game_api
-        self._game_api = None
-        if use_game_api:
-            self._initialize_game_api()
-
-        # Scene classification candidates
-        self.scene_candidates = [
-            "outdoor wilderness with mountains and trees",
-            "city or town with buildings and NPCs",
-            "dark dungeon or cave interior",
-            "indoor building like tavern or house",
-            "combat scene with enemies fighting",
-            "dialogue conversation with NPC",
-            "inventory menu screen",
-            "map view showing locations",
-        ]
-
-        # Object detection candidates
-        self.object_candidates = [
-            "person", "warrior", "mage", "dragon", "guard",
-            "sword", "bow", "staff", "potion", "chest",
-            "door", "lever", "book", "gold", "armor",
-        ]
-
-        # History for temporal coherence
-        self.perception_history: List[Dict[str, Any]] = []
+    def set_controller(self, controller):
+        """Set controller reference for layer awareness."""
+        self._controller = controller
 
     def _initialize_game_api(self):
         """Initialize game state API (via mods)."""
@@ -321,8 +359,24 @@ class SkyrimPerception:
 
     def _read_from_screen(self) -> GameState:
         """Read game state from screen (heuristics)."""
-        # For now, return dummy state
-        # In practice, would use OCR or screen region analysis
+        # Get current layer from controller if available
+        current_layer = "Exploration"  # Default
+        if self._controller and hasattr(self._controller, 'active_layer'):
+            current_layer = self._controller.active_layer or "Exploration"
+        
+        # Get available actions for current layer
+        game_state_dict = {
+            'health': 100.0,
+            'magicka': 100.0,
+            'stamina': 100.0,
+            'in_combat': False,  # Would detect from screen
+        }
+        
+        available_actions = self.affordance_system.get_available_actions(
+            current_layer, 
+            game_state_dict
+        )
+        
         return GameState(
             health=100.0,
             magicka=100.0,
@@ -330,6 +384,9 @@ class SkyrimPerception:
             level=1,
             location_name="Skyrim",
             gold=100,
+            current_action_layer=current_layer,
+            available_actions=[a.name for a in available_actions],
+            layer_transition_reason=""
         )
 
     async def perceive(self) -> Dict[str, Any]:
@@ -412,12 +469,18 @@ class SkyrimPerception:
                              curr['game_state'].in_combat),
             'combat_ended': (prev['game_state'].in_combat and
                            not curr['game_state'].in_combat),
+            'layer_changed': (prev['game_state'].current_action_layer != 
+                            curr['game_state'].current_action_layer),
+            'actions_changed': (set(prev['game_state'].available_actions) != 
+                              set(curr['game_state'].available_actions)),
         }
 
         changes['changed'] = any([
             changes['scene_changed'],
             changes['combat_started'],
-            changes['combat_ended']
+            changes['combat_ended'],
+            changes['layer_changed'],
+            changes['actions_changed']
         ])
 
         return changes
