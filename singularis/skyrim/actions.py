@@ -489,6 +489,61 @@ class SkyrimActions:
             # Try a small recovery movement
             await asyncio.sleep(0.5)
 
+    async def scan_for_targets(self):
+        """
+        Use right stick to scan environment for targets/objects.
+        Performs a smooth camera sweep to detect moving objects or points of interest.
+        """
+        import random
+        
+        # Random scanning pattern
+        scan_type = random.choice(['horizontal_sweep', 'vertical_check', 'quick_glance'])
+        
+        if scan_type == 'horizontal_sweep':
+            # Sweep camera left to right to scan horizon
+            print("[SCAN] Horizontal sweep for targets...")
+            await self.look_horizontal(-30)  # Look left
+            await asyncio.sleep(0.2)
+            await self.look_horizontal(60)   # Sweep right
+            await asyncio.sleep(0.2)
+            await self.look_horizontal(-30)  # Return to center
+            
+        elif scan_type == 'vertical_check':
+            # Check up and down for elevated/ground targets
+            print("[SCAN] Vertical check for targets...")
+            await self.look_vertical(20)     # Look up
+            await asyncio.sleep(0.15)
+            await self.look_vertical(-40)    # Look down
+            await asyncio.sleep(0.15)
+            await self.look_vertical(20)     # Return to center
+            
+        else:  # quick_glance
+            # Quick glance to one side
+            direction = random.choice([-45, 45])
+            print(f"[SCAN] Quick glance {('left' if direction < 0 else 'right')}...")
+            await self.look_horizontal(direction)
+            await asyncio.sleep(0.1)
+            await self.look_horizontal(-direction)  # Return to center
+
+    async def track_moving_target(self, horizontal_offset: float = 0, vertical_offset: float = 0):
+        """
+        Track a moving target by adjusting camera with right stick.
+        
+        Args:
+            horizontal_offset: Degrees to adjust horizontally (+ = right, - = left)
+            vertical_offset: Degrees to adjust vertically (+ = up, - = down)
+        """
+        print(f"[TRACK] Tracking target: H={horizontal_offset:.1f}°, V={vertical_offset:.1f}°")
+        
+        # Smooth tracking movements
+        if abs(horizontal_offset) > 5:
+            await self.look_horizontal(horizontal_offset * 0.5)  # Smooth tracking
+            await asyncio.sleep(0.05)
+        
+        if abs(vertical_offset) > 5:
+            await self.look_vertical(vertical_offset * 0.5)
+            await asyncio.sleep(0.05)
+
     async def look_horizontal(self, degrees: float):
         """
         Look left/right by specified degrees.

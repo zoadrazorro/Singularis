@@ -461,25 +461,24 @@ class SkyrimAGI:
                 print(f"[PLANNING] consciousness_llm value: {self.agi.consciousness_llm}")
 
         # Fallback: Action selection within current layer based on motivation
+        # Default to exploration with forward bias for most motivations
         if motivation.dominant_drive().value == 'curiosity':
             if 'activate' in available_actions:
                 return 'activate'  # Interact with world
-            return 'explore'
+            return 'explore'  # Forward-biased exploration
         elif motivation.dominant_drive().value == 'competence':
             if 'power_attack' in available_actions and current_layer == "Combat":
                 return 'power_attack'  # Practice advanced combat
             elif 'backstab' in available_actions and current_layer == "Stealth":
-                return 'backstab'  # Practice stealth skills
-            return 'practice'
+                return 'backstab'  # Practice stealth
+            return 'explore'  # Practice by exploring (forward-biased)
         elif motivation.dominant_drive().value == 'coherence':
-            if 'activate' in available_actions:
-                return 'activate'  # Progress quests
-            return 'quest_objective'
-        else:
-            # Default exploration
-            if 'move_forward' in available_actions:
-                return 'move_forward'
-            return 'explore'
+            # Even for coherence, prefer gentle exploration over rest
+            if game_state.health < 30:
+                return 'rest'  # Only rest if low health
+            return 'explore'  # Gentle forward exploration
+        else:  # autonomy or default
+            return 'explore'  # Exercise autonomy through forward exploration
 
     async def _plan_action_with_llm(
         self,
