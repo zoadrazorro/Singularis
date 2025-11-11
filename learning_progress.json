@@ -1,0 +1,454 @@
+{
+  "chunks": [
+    {
+      "chunk": 1,
+      "time": 63.02399706840515,
+      "coherentia": 0.5915865928405061,
+      "consciousness": 0.3558065851839385,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 2,
+      "time": 69.78805017471313,
+      "coherentia": 0.5023188310882988,
+      "consciousness": 0.3494437491249632,
+      "ethical": null,
+      "experts": [
+        "creative",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 3,
+      "time": 80.1535210609436,
+      "coherentia": 0.5591833167356344,
+      "consciousness": 0.42510081332378774,
+      "ethical": null,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 4,
+      "time": 76.37044835090637,
+      "coherentia": 0.5390825472818515,
+      "consciousness": 0.3905666109764371,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 5,
+      "time": 66.73630571365356,
+      "coherentia": 0.485487471401392,
+      "consciousness": 0.46639352402695783,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 6,
+      "time": 74.91960072517395,
+      "coherentia": 0.435327634588944,
+      "consciousness": 0.3387862582474601,
+      "ethical": false,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 7,
+      "time": 84.73308730125427,
+      "coherentia": 0.5331340093658483,
+      "consciousness": 0.30357540208276124,
+      "ethical": false,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 8,
+      "time": 49.639774560928345,
+      "coherentia": 0.5485462082155405,
+      "consciousness": 0.39243236804968246,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "philosophical",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 9,
+      "time": 92.33443903923035,
+      "coherentia": 0.5630786552757756,
+      "consciousness": 0.3776232459684649,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis",
+        "technical"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 10,
+      "time": 80.28306174278259,
+      "coherentia": 0.4507877112556549,
+      "consciousness": 0.394244404871721,
+      "ethical": false,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 11,
+      "time": 77.19239521026611,
+      "coherentia": 0.6154277430075048,
+      "consciousness": 0.44768299899491537,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 12,
+      "time": 80.47820997238159,
+      "coherentia": 0.5280933830775577,
+      "consciousness": 0.38887780299159713,
+      "ethical": false,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 13,
+      "time": 67.41814064979553,
+      "coherentia": 0.5416408135939015,
+      "consciousness": 0.3266607228510829,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 14,
+      "time": 75.57184934616089,
+      "coherentia": 0.6186778372873475,
+      "consciousness": 0.36129652717968935,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 15,
+      "time": 84.3848967552185,
+      "coherentia": 0.579605866222526,
+      "consciousness": 0.4134016256010033,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 16,
+      "time": 78.20189166069031,
+      "coherentia": 0.542047796357918,
+      "consciousness": 0.39504958193476253,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 17,
+      "time": 79.18966221809387,
+      "coherentia": 0.5248294654748699,
+      "consciousness": 0.3655555488989639,
+      "ethical": null,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 18,
+      "time": 98.68339037895203,
+      "coherentia": 0.47432950245548694,
+      "consciousness": 0.3949304977489404,
+      "ethical": false,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 19,
+      "time": 93.77735328674316,
+      "coherentia": 0.4933896305910683,
+      "consciousness": 0.3787156926278958,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 20,
+      "time": 70.68714809417725,
+      "coherentia": 0.5328070481795345,
+      "consciousness": 0.4397295874656337,
+      "ethical": null,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 21,
+      "time": 74.9940755367279,
+      "coherentia": 0.46964805727234255,
+      "consciousness": 0.38746963379317145,
+      "ethical": null,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 22,
+      "time": 88.35485005378723,
+      "coherentia": 0.5337020764498261,
+      "consciousness": 0.37715586667160167,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 23,
+      "time": 88.95354723930359,
+      "coherentia": 0.46617557936524906,
+      "consciousness": 0.35974982912268444,
+      "ethical": false,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 24,
+      "time": 79.4696831703186,
+      "coherentia": 0.514494160055622,
+      "consciousness": 0.466295770421503,
+      "ethical": null,
+      "experts": [
+        "creative",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 25,
+      "time": 61.46687912940979,
+      "coherentia": 0.40490741937412944,
+      "consciousness": 0.33032483017657477,
+      "ethical": false,
+      "experts": [
+        "creative",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 26,
+      "time": 64.7932403087616,
+      "coherentia": 0.5093306224834278,
+      "consciousness": 0.3199109558977991,
+      "ethical": false,
+      "experts": [
+        "creative",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 27,
+      "time": 82.87312269210815,
+      "coherentia": 0.486305560225122,
+      "consciousness": 0.4087696564450543,
+      "ethical": null,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 28,
+      "time": 94.18106007575989,
+      "coherentia": 0.489352867239978,
+      "consciousness": 0.2977612900591635,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis",
+        "technical"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 29,
+      "time": 65.11460447311401,
+      "coherentia": 0.5467460118624803,
+      "consciousness": 0.2800445342577298,
+      "ethical": true,
+      "experts": [
+        "creative",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    },
+    {
+      "chunk": 30,
+      "time": 81.59939074516296,
+      "coherentia": 0.424748360859345,
+      "consciousness": 0.28341221650186715,
+      "ethical": false,
+      "experts": [
+        "creative",
+        "memory",
+        "philosophical",
+        "reasoning",
+        "synthesis"
+      ],
+      "neurons_active": 18
+    }
+  ],
+  "total_chunks": 240,
+  "start_time": "2025-11-11T00:11:52.461796",
+  "chunks_completed": 30,
+  "avg_time": 77.51225589116414,
+  "avg_coherentia": 0.5168264259828228,
+  "ethical_rate": 0.4666666666666667,
+  "last_update": "2025-11-11T00:49:34.841903"
+}
