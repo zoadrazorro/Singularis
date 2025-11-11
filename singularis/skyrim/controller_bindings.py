@@ -98,10 +98,10 @@ class SkyrimControllerBindings:
         
         # Basic actions
         async def jump(ctrl):
-            await ctrl.tap_button(XboxButton.A)
+            await ctrl.tap_button(XboxButton.X)
         
         async def activate(ctrl):
-            await ctrl.tap_button(XboxButton.X)
+            await ctrl.tap_button(XboxButton.A)
         
         async def sneak_toggle(ctrl):
             await ctrl.tap_button(XboxButton.B)
@@ -121,6 +121,20 @@ class SkyrimControllerBindings:
         
         async def wait(ctrl):
             await ctrl.tap_button(XboxButton.BACK)
+        
+        async def block(ctrl):
+            ctrl.set_left_trigger(1.0)
+            await asyncio.sleep(0.3)
+            ctrl.set_left_trigger(0.0)
+        
+        async def power_attack(ctrl):
+            # Hold RT for power attack
+            ctrl.set_right_trigger(1.0)
+            await asyncio.sleep(0.5)
+            ctrl.set_right_trigger(0.0)
+        
+        async def shout(ctrl):
+            await ctrl.tap_button(XboxButton.RB)
         
         # Favorites/quick access
         async def favorite_up(ctrl):
@@ -152,6 +166,9 @@ class SkyrimControllerBindings:
         self.controller.bind_action("Exploration", "sneak", sneak_toggle)
         self.controller.bind_action("Exploration", "sheath", sheath_weapon)
         self.controller.bind_action("Exploration", "attack", attack)
+        self.controller.bind_action("Exploration", "block", block)
+        self.controller.bind_action("Exploration", "power_attack", power_attack)
+        self.controller.bind_action("Exploration", "shout", shout)
         self.controller.bind_action("Exploration", "menu", open_menu)
         self.controller.bind_action("Exploration", "wait", wait)
         
