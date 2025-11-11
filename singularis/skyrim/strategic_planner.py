@@ -180,8 +180,9 @@ class StrategicPlannerNeuron:
         )
         
         if not relevant_patterns:
-            # No learned patterns, use default exploration plan
-            return self._default_exploration_plan(terrain_type)
+            # No learned patterns, return None to let LLM handle planning
+            print("[PLANNER] No learned patterns, deferring to LLM")
+            return None
         
         # Select best pattern based on success rate and relevance
         best_pattern = max(
