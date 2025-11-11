@@ -88,11 +88,11 @@ class CoherentiaCalculator:
         if len(words) > 0:
             vitality = len(set(words)) / len(words)
         else:
-            vitality = 0.0
+            vitality = 0.3  # Minimum vitality for empty/minimal content
 
         # Conatus: Self-consistency (proxy: presence of logical connectors)
         connectors = ["therefore", "thus", "because", "since", "hence", "given", "follows"]
-        conatus = min(1.0, sum(1 for c in connectors if c in text.lower()) / 3.0)
+        conatus = max(0.2, min(1.0, sum(1 for c in connectors if c in text.lower()) / 3.0))
 
         # Geometric mean
         ontical_score = (robustness * vitality * conatus) ** (1/3)
@@ -144,7 +144,7 @@ class CoherentiaCalculator:
 
         # Pattern coherence: Presence of structure markers
         structure_markers = ["first", "second", "third", "finally", "therefore", "thus"]
-        pattern = min(1.0, sum(1 for m in structure_markers if m in text.lower()) / 3.0)
+        pattern = max(0.2, min(1.0, sum(1 for m in structure_markers if m in text.lower()) / 3.0))
 
         # Geometric mean
         structural_score = (integration * consistency * pattern) ** (1/3)
@@ -189,21 +189,21 @@ class CoherentiaCalculator:
                 "one sees", "awareness", "consciousness", "understanding"
             ]
             count = sum(1 for m in meta_markers if m.lower() in text.lower())
-            self_reflexivity = min(1.0, count / 3.0)
+            self_reflexivity = max(0.2, min(1.0, count / 3.0))
 
         # Phenomenological clarity: Concrete, vivid language
         concrete_words = [
             "see", "feel", "sense", "experience", "observe", "witness",
             "clear", "vivid", "direct", "immediate"
         ]
-        clarity = min(1.0, sum(1 for w in concrete_words if w in text.lower()) / 4.0)
+        clarity = max(0.2, min(1.0, sum(1 for w in concrete_words if w in text.lower()) / 4.0))
 
         # Non-dual recognition: Transcends dualism
         nondual_markers = [
             "unified", "integrated", "whole", "inseparable", "non-dual",
             "participatory", "Being", "is", "unity"
         ]
-        recognition = min(1.0, sum(1 for m in nondual_markers if m in text.lower()) / 3.0)
+        recognition = max(0.2, min(1.0, sum(1 for m in nondual_markers if m in text.lower()) / 3.0))
 
         # Geometric mean
         participatory_score = (self_reflexivity * clarity * recognition) ** (1/3)

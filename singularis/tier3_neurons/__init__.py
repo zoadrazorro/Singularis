@@ -10,3 +10,13 @@ This tier implements a swarm of 18 micro-agents (neurons) that learn
 through Hebbian mechanisms, enabling distributed pattern recognition
 and emergent collective intelligence.
 """
+
+from .base import Neuron
+from .swarm import NeuronSwarm
+from singularis.core.types import Lumen
+
+__all__ = [
+    "Neuron",
+    "NeuronSwarm",
+    "Lumen",
+]
