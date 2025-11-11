@@ -253,7 +253,7 @@ class SkyrimAGI:
 
                 # Detect visual stuckness (less aggressive)
                 # Skip stuckness detection in menus/inventory since screen naturally doesn't change
-                in_menu_scene = scene_type in [SceneType.INVENTORY, SceneType.DIALOGUE, SceneType.MENU]
+                in_menu_scene = scene_type in [SceneType.INVENTORY, SceneType.DIALOGUE, SceneType.MAP]
                 
                 if (self.stats['cycles_completed'] > 5 and  # Wait more cycles before checking
                     not in_menu_scene and  # Don't check in menus
@@ -404,7 +404,7 @@ class SkyrimAGI:
                 )
                 
                 # Record menu action if in menu
-                if scene_type in [SceneType.INVENTORY, SceneType.MENU]:
+                if scene_type in [SceneType.INVENTORY, SceneType.MAP]:
                     after_scene = after_perception['scene_type']
                     self.menu_learner.record_action(
                         action=str(action),
@@ -847,7 +847,7 @@ Based on the terrain type and physical state, select the most appropriate action
         print(f"[DEBUG] Executing action: {action} | Scene: {scene_type} | Active layer: {self.controller.active_layer}")
         
         # Handle menu interactions with learning
-        if scene_type in [SceneType.INVENTORY, SceneType.MENU]:
+        if scene_type in [SceneType.INVENTORY, SceneType.MAP]:
             # We're in a menu - use menu learner
             if not self.menu_learner.current_menu:
                 # Entering menu
