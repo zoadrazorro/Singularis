@@ -556,29 +556,19 @@ class SkyrimWorldModel:
         quest_type: str,
         objectives: List[str]
     ):
-        """Add quest."""
-        self.quests[quest_name] = {
-            'type': quest_type,
-            'objectives': objectives,
-            'completed_objectives': [],
-            'status': 'active',
-        }
+        """Add quest (deprecated - using terrain-based system)."""
+        # Quests removed in favor of terrain-aware system
+        pass
 
     def complete_quest_objective(self, quest_name: str, objective: str):
-        """Complete quest objective."""
-        if quest_name in self.quests:
-            self.quests[quest_name]['completed_objectives'].append(objective)
-
-            # Check if quest complete
-            if len(self.quests[quest_name]['completed_objectives']) >= len(self.quests[quest_name]['objectives']):
-                self.quests[quest_name]['status'] = 'completed'
+        """Complete quest objective (deprecated - using terrain-based system)."""
+        # Quests removed in favor of terrain-aware system
+        pass
 
     def get_active_quests(self) -> List[str]:
-        """Get active quest names."""
-        return [
-            name for name, quest in self.quests.items()
-            if quest['status'] == 'active'
-        ]
+        """Get active quest names (deprecated - using terrain-based system)."""
+        # Quests removed in favor of terrain-aware system
+        return []
 
     def evaluate_moral_choice(
         self,
