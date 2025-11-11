@@ -30,6 +30,9 @@ from .actions import SkyrimActions, Action, ActionType
 from .controller import VirtualXboxController
 from .controller_bindings import SkyrimControllerBindings
 from .skyrim_world_model import SkyrimWorldModel
+from .strategic_planner import StrategicPlannerNeuron
+from .menu_learner import MenuLearner
+from .memory_rag import MemoryRAG
 
 # Base AGI components
 from ..agi_orchestrator import AGIOrchestrator, AGIConfig
@@ -123,9 +126,24 @@ class SkyrimAGI:
         )
 
         # 4. Skyrim world model
-        print("  [4/4] Skyrim world model...")
+        print("  [4/6] Skyrim world model...")
         self.skyrim_world = SkyrimWorldModel(
             base_world_model=self.agi.world_model
+        )
+        
+        # 5. Strategic Planner Neuron
+        print("  [5/6] Strategic planner neuron...")
+        self.strategic_planner = StrategicPlannerNeuron(memory_capacity=100)
+        
+        # 6. Menu Learner
+        print("  [6/7] Menu interaction learner...")
+        self.menu_learner = MenuLearner()
+        
+        # 7. Memory RAG System
+        print("  [7/7] Memory RAG system...")
+        self.memory_rag = MemoryRAG(
+            perceptual_capacity=1000,
+            cognitive_capacity=500
         )
 
         # State
@@ -211,6 +229,18 @@ class SkyrimAGI:
                 self.current_perception = perception
                 game_state = perception['game_state']
                 scene_type = perception['scene_type']
+                
+                # Store perceptual memory in RAG
+                self.memory_rag.store_perceptual_memory(
+                    visual_embedding=perception['visual_embedding'],
+                    scene_type=scene_type.value,
+                    location=game_state.location_name,
+                    context={
+                        'health': game_state.health,
+                        'in_combat': game_state.in_combat,
+                        'layer': game_state.current_action_layer
+                    }
+                )
 
                 print(f"Scene: {scene_type.value}")
                 print(f"Health: {game_state.health:.0f} | Magicka: {game_state.magicka:.0f} | Stamina: {game_state.stamina:.0f}")
@@ -267,12 +297,34 @@ class SkyrimAGI:
                     self.current_goal = goal.description
                     print(f"\n[GOAL] New goal: {self.current_goal}")
 
-                # 5. PLAN ACTION
-                action = await self._plan_action(
-                    perception=perception,
-                    motivation=mot_state,
-                    goal=self.current_goal
+                # 5. PLAN ACTION (with strategic planning)
+                # Check if we should use strategic planner
+                terrain_type = self.skyrim_world.classify_terrain_from_scene(
+                    scene_type.value,
+                    game_state.in_combat
                 )
+                
+                # Check if strategic planner has an active plan
+                if self.strategic_planner.should_replan(game_state.to_dict()):
+                    # Generate new plan
+                    plan = self.strategic_planner.generate_plan(
+                        game_state.to_dict(),
+                        dominant_drive.value,
+                        terrain_type
+                    )
+                    if plan:
+                        self.strategic_planner.activate_plan(plan)
+                
+                # Try to get action from strategic plan first
+                action = self.strategic_planner.execute_plan_step()
+                
+                # If no plan action, use regular planning
+                if not action:
+                    action = await self._plan_action(
+                        perception=perception,
+                        motivation=mot_state,
+                        goal=self.current_goal
+                    )
 
                 print(f"\n-> Action: {action}")
 
@@ -306,6 +358,62 @@ class SkyrimAGI:
                     after_state=after_state,
                     surprise_threshold=self.config.surprise_threshold
                 )
+                
+                # Learn terrain knowledge
+                terrain_type = self.skyrim_world.classify_terrain_from_scene(
+                    scene_type.value,
+                    after_state.get('in_combat', False)
+                )
+                self.skyrim_world.learn_terrain_feature(
+                    game_state.location_name,
+                    terrain_type,
+                    {
+                        'scene_type': scene_type.value,
+                        'action_taken': str(action),
+                        'layer_used': current_layer
+                    }
+                )
+                
+                # Update terrain safety based on combat
+                self.skyrim_world.update_terrain_safety(
+                    game_state.location_name,
+                    after_state.get('in_combat', False)
+                )
+                
+                # Record experience in strategic planner
+                success = self._evaluate_action_success(before_state, after_state, action)
+                self.strategic_planner.record_experience(
+                    context={
+                        'scene': scene_type.value,
+                        'health': before_state.get('health', 100),
+                        'in_combat': before_state.get('in_combat', False),
+                        'location': game_state.location_name
+                    },
+                    action=str(action),
+                    outcome=after_state,
+                    success=success
+                )
+                
+                # Store cognitive memory in RAG
+                self.memory_rag.store_cognitive_memory(
+                    situation=before_state,
+                    action_taken=str(action),
+                    outcome=after_state,
+                    success=success,
+                    reasoning=f"Motivation: {dominant_drive.value}, Layer: {current_layer}"
+                )
+                
+                # Record menu action if in menu
+                if scene_type in [SceneType.INVENTORY, SceneType.MENU]:
+                    after_scene = after_perception['scene_type']
+                    self.menu_learner.record_action(
+                        action=str(action),
+                        success=success,
+                        resulted_in_menu=after_scene.value if after_scene != scene_type else None
+                    )
+                elif self.menu_learner.current_menu:
+                    # Exited menu
+                    self.menu_learner.exit_menu()
 
                 # Record in episodic memory
                 self.agi.learner.experience(
@@ -378,10 +486,19 @@ class SkyrimAGI:
         print(f"[PLANNING] Current layer: {current_layer}")
         print(f"[PLANNING] Available actions: {available_actions}")
 
-        # Get strategic layer analysis from world model
-        strategic_analysis = self.skyrim_world.get_strategic_layer_analysis(
+        # Get strategic analysis from world model (layer effectiveness)
+        strategic_analysis = self.skyrim_world.get_layer_strategic_analysis(
+            current_layer,
             game_state.to_dict()
         )
+        
+        # Get terrain-aware recommendations
+        terrain_recommendations = self.skyrim_world.get_terrain_recommendations(
+            game_state.location_name,
+            scene_type.value,
+            game_state.in_combat
+        )
+        strategic_analysis['terrain_recommendations'] = terrain_recommendations
         
         print(f"[STRATEGIC] Layer effectiveness: {strategic_analysis['layer_effectiveness']}")
         if strategic_analysis['recommendations']:
@@ -490,43 +607,72 @@ class SkyrimAGI:
         motivation
     ) -> Optional[str]:
         """
-        Use LLM for action planning with layer-aware context.
+        Use LLM for terrain-aware, non-narrative action planning.
         
         Returns:
             Action string if LLM planning succeeds, None otherwise
         """
-        # Build context for LLM
+        # Build context for LLM focused on environment and terrain
         context = f"""
-SKYRIM AGI STATUS:
-- Scene: {scene_type.value}
+SKYRIM AGENT - TERRAIN-AWARE PLANNING
+
+PHYSICAL STATE:
 - Health: {game_state.health:.0f}/100 | Magicka: {game_state.magicka:.0f}/100 | Stamina: {game_state.stamina:.0f}/100
-- Location: {game_state.location_name}
+- Scene Type: {scene_type.value} (visual classification of environment)
 - In Combat: {game_state.in_combat}
-- Current Action Layer: {current_layer}
+
+SPATIAL CONTEXT:
+- Current Location: {game_state.location_name}
+- Action Layer: {current_layer} (determines available movement/interaction options)
 - Available Actions: {', '.join(available_actions)}
+
+TERRAIN KNOWLEDGE:
+You are an autonomous agent exploring a medieval fantasy world. Your goal is to navigate terrain intelligently:
+- INDOOR spaces (inventory/menu scenes): Confined areas, look for exits, interact with objects
+- OUTDOOR spaces (exploration scenes): Open terrain, prioritize forward movement, scan horizon
+- COMBAT spaces: Immediate threats, use terrain for advantage (cover, elevation, retreat paths)
+- VERTICAL terrain: Cliffs, stairs, elevated positions - consider climbing/jumping
+- OBSTACLES: Walls, rocks, water - navigate around or find alternate paths
 
 STRATEGIC ANALYSIS:
 - Layer Effectiveness: {strategic_analysis['layer_effectiveness']}
 - Recommendations: {strategic_analysis.get('recommendations', [])}
 
-MOTIVATION:
-- Dominant Drive: {motivation.dominant_drive().value}
+BEHAVIORAL DRIVE: {motivation.dominant_drive().value}
 
-LAYER-AWARE ACTIONS:
-- explore (waypoint-based exploration)
-- combat (if enemies present)
-- interact (talk/loot/activate)
-- navigate (move to specific location)
-- rest (recover health/stamina)
-- stealth (sneak, pickpocket, hide)
-- switch_to_combat (meta-action to change layers)
-- switch_to_menu (meta-action for inventory)
-- switch_to_stealth (meta-action for stealth)
-- move_forward, activate, power_attack, block, backstab (layer-specific actions)
+AVAILABLE ACTIONS (terrain-focused):
+- explore: Forward-biased waypoint navigation with camera scanning
+- navigate: Direct forward movement to cover distance
+- combat: Engage threats using terrain advantages
+- interact: Activate objects, open doors, loot containers
+- rest: Recover resources when safe
+- switch_to_combat/menu/stealth: Change action layer for different terrain interactions
 
-Consider the strategic analysis and current layer effectiveness. If a layer switch would be beneficial, suggest switch_to_X actions. Otherwise, pick the most contextually appropriate action for the current situation.
+PLANNING CONSTRAINTS:
+1. Prioritize FORWARD movement in open terrain
+2. Use CAMERA scanning to assess environment
+3. Consider VERTICAL space (look up for paths, down for items)
+4. Adapt to TERRAIN type (indoor vs outdoor vs combat)
+5. NO story/quest assumptions - pure environmental reasoning
+6. Focus on SPATIAL navigation, not narrative goals
 
-Select the single most appropriate action:"""
+Based on the terrain type and physical state, select the most appropriate action for navigating this environment:"""
+
+        # Augment context with RAG memories
+        memory_context = self.memory_rag.augment_context_with_memories(
+            current_visual=perception['visual_embedding'],
+            current_situation={
+                'scene': scene_type.value,
+                'health': game_state.health,
+                'in_combat': game_state.in_combat,
+                'location': game_state.location_name
+            },
+            max_memories=3
+        )
+        
+        if memory_context:
+            context += "\n" + memory_context
+            print("[RAG] Augmented context with relevant memories")
 
         try:
             print("[LLM] Calling LM Studio for layer-aware action planning...")
@@ -585,6 +731,41 @@ Select the single most appropriate action:"""
         except Exception as e:
             print(f"[LLM] Error during planning: {e}")
             return None
+
+    def _evaluate_action_success(
+        self,
+        before_state: Dict[str, Any],
+        after_state: Dict[str, Any],
+        action: str
+    ) -> bool:
+        """
+        Evaluate if an action was successful.
+        
+        Args:
+            before_state: State before action
+            after_state: State after action
+            action: Action taken
+            
+        Returns:
+            True if action was successful
+        """
+        # Simple heuristics for success
+        # Success if health didn't decrease significantly
+        health_before = before_state.get('health', 100)
+        health_after = after_state.get('health', 100)
+        
+        if health_after < health_before - 20:
+            return False  # Took significant damage
+        
+        # Success if we're not stuck (scene changed or position changed)
+        scene_before = before_state.get('scene', '')
+        scene_after = after_state.get('scene', '')
+        
+        if scene_before != scene_after:
+            return True  # Scene changed - progress made
+        
+        # Default to success if no obvious failure
+        return True
 
     async def _test_controller_connection(self):
         """Test controller connection and basic functionality."""
@@ -664,6 +845,26 @@ Select the single most appropriate action:"""
             scene_type: Current scene type
         """
         print(f"[DEBUG] Executing action: {action} | Scene: {scene_type} | Active layer: {self.controller.active_layer}")
+        
+        # Handle menu interactions with learning
+        if scene_type in [SceneType.INVENTORY, SceneType.MENU]:
+            # We're in a menu - use menu learner
+            if not self.menu_learner.current_menu:
+                # Entering menu
+                menu_type = scene_type.value
+                available_actions = ['activate', 'navigate', 'exit', 'select', 'back']
+                self.menu_learner.enter_menu(menu_type, available_actions)
+            
+            # Get recommended action from menu learner
+            suggested_action = self.menu_learner.suggest_menu_action(
+                self.menu_learner.current_menu or scene_type.value,
+                goal='explore' if action == 'explore' else 'exit'
+            )
+            
+            if suggested_action:
+                print(f"[MENU] Using learned action: {suggested_action}")
+                action = suggested_action
+        
         # Sync action layer to context
         if action in ('explore', 'navigate', 'quest_objective', 'practice'):
             self.bindings.switch_to_exploration()
@@ -734,6 +935,28 @@ Select the single most appropriate action:"""
         print(f"\nActions:")
         print(f"  Total executed: {action_stats['actions_executed']}")
         print(f"  Errors: {action_stats['errors']}")
+        
+        # Strategic planner stats
+        planner_stats = self.strategic_planner.get_stats()
+        print(f"\nStrategic Planner:")
+        print(f"  Patterns learned: {planner_stats['patterns_learned']}")
+        print(f"  Experiences: {planner_stats['experiences_recorded']}")
+        print(f"  Plans executed: {planner_stats['plans_executed']}")
+        print(f"  Success rate: {planner_stats['success_rate']:.1%}")
+        
+        # Menu learner stats
+        menu_stats = self.menu_learner.get_stats()
+        print(f"\nMenu Learning:")
+        print(f"  Menus explored: {menu_stats['menus_explored']}")
+        print(f"  Menu actions: {menu_stats['total_menu_actions']}")
+        print(f"  Transitions learned: {menu_stats['transitions_learned']}")
+        
+        # Memory RAG stats
+        rag_stats = self.memory_rag.get_stats()
+        print(f"\nMemory RAG:")
+        print(f"  Perceptual memories: {rag_stats['perceptual_memories']}")
+        print(f"  Cognitive memories: {rag_stats['cognitive_memories']}")
+        print(f"  Total memories: {rag_stats['total_memories']}")
 
     def stop(self):
         """Stop autonomous play."""
