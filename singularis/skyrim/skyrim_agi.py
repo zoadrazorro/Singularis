@@ -354,27 +354,13 @@ class SkyrimAGI:
                     game_state.in_combat
                 )
                 
-                # Check if strategic planner has an active plan
-                if self.strategic_planner.should_replan(game_state.to_dict()):
-                    # Generate new plan
-                    plan = self.strategic_planner.generate_plan(
-                        game_state.to_dict(),
-                        dominant_drive.value,
-                        terrain_type
-                    )
-                    if plan:
-                        self.strategic_planner.activate_plan(plan)
-                
-                # Try to get action from strategic plan first
-                action = self.strategic_planner.execute_plan_step()
-                
-                # If no plan action, use regular planning
-                if not action:
-                    action = await self._plan_action(
-                        perception=perception,
-                        motivation=mot_state,
-                        goal=self.current_goal
-                    )
+                # Always use RL reasoning neuron for action selection
+                # (Strategic planner is consulted within _plan_action if it has patterns)
+                action = await self._plan_action(
+                    perception=perception,
+                    motivation=mot_state,
+                    goal=self.current_goal
+                )
 
                 print(f"\n-> Action: {action}")
 
