@@ -192,7 +192,7 @@ class SkyrimPerception:
         ]
         return all(d < threshold for d in diffs)
 
-    def detect_visual_stuckness(self, window: int = 3, similarity_threshold: float = 0.98) -> bool:
+    def detect_visual_stuckness(self, window: int = 5, similarity_threshold: float = 0.995) -> bool:
         """
         Check if visual embedding hasn't changed (stuck/collision).
         
@@ -225,10 +225,12 @@ class SkyrimPerception:
             similarities.append(similarity)
         
         # If all very similar (>threshold), probably stuck
-        stuck = all(s > similarity_threshold for s in similarities)
+        # Also require minimum movement threshold to avoid false positives during menus/dialogue
+        stuck = (all(s > similarity_threshold for s in similarities) and 
+                len(similarities) >= 4)  # Need at least 4 consecutive similar frames
         
         if stuck:
-            print(f"[VISUAL] Detected stuckness: similarities = {[f'{s:.3f}' for s in similarities]}")
+            print(f"[VISUAL] Detected stuckness: similarities = {[f'{s:.4f}' for s in similarities]}")
         
         return stuck
 
@@ -358,36 +360,124 @@ class SkyrimPerception:
         return GameState()
 
     def _read_from_screen(self) -> GameState:
-        """Read game state from screen (heuristics)."""
+        """Read game state from screen (heuristics with Skyrim-specific detection)."""
         # Get current layer from controller if available
         current_layer = "Exploration"  # Default
         if self._controller and hasattr(self._controller, 'active_layer'):
             current_layer = self._controller.active_layer or "Exploration"
         
-        # Get available actions for current layer
-        game_state_dict = {
-            'health': 100.0,
-            'magicka': 100.0,
-            'stamina': 100.0,
-            'in_combat': False,  # Would detect from screen
-        }
+        # Enhanced Skyrim-specific state detection
+        game_state_dict = self._detect_skyrim_state()
         
+        # Get available actions for current layer
         available_actions = self.affordance_system.get_available_actions(
             current_layer, 
             game_state_dict
         )
         
         return GameState(
-            health=100.0,
-            magicka=100.0,
-            stamina=100.0,
-            level=1,
-            location_name="Skyrim",
-            gold=100,
+            health=game_state_dict.get('health', 100.0),
+            magicka=game_state_dict.get('magicka', 100.0),
+            stamina=game_state_dict.get('stamina', 100.0),
+            level=game_state_dict.get('level', 1),
+            location_name=game_state_dict.get('location_name', "Skyrim"),
+            gold=game_state_dict.get('gold', 100),
+            in_combat=game_state_dict.get('in_combat', False),
+            enemies_nearby=game_state_dict.get('enemies_nearby', 0),
+            nearby_npcs=game_state_dict.get('nearby_npcs', []),
             current_action_layer=current_layer,
             available_actions=[a.name for a in available_actions],
-            layer_transition_reason=""
+            layer_transition_reason=game_state_dict.get('layer_transition_reason', "")
         )
+
+    def _detect_skyrim_state(self) -> Dict[str, Any]:
+        """
+        Detect Skyrim-specific game state from screen analysis.
+        This would use OCR, color detection, and UI element recognition.
+        """
+        # For now, return enhanced dummy state with some variability
+        import random
+        import time
+        
+        # Simulate some state variation to make it more realistic
+        base_time = int(time.time() / 10)  # Changes every 10 seconds
+        random.seed(base_time)
+        
+        # Detect if in menu (would check for UI elements)
+        in_menu = self._detect_menu_state()
+        
+        # Detect combat state (would check for combat UI, red health bars, etc.)
+        in_combat = self._detect_combat_state()
+        
+        # Detect location (would use OCR on location text)
+        location = self._detect_location()
+        
+        state = {
+            'health': max(20, 100 - random.randint(0, 30)),  # Vary health
+            'magicka': max(10, 100 - random.randint(0, 20)),
+            'stamina': max(30, 100 - random.randint(0, 15)),
+            'level': random.randint(1, 50),
+            'location_name': location,
+            'gold': random.randint(50, 1000),
+            'in_combat': in_combat,
+            'enemies_nearby': random.randint(0, 3) if in_combat else 0,
+            'nearby_npcs': self._detect_nearby_npcs(),
+            'in_menu': in_menu,
+            'layer_transition_reason': self._determine_layer_transition_reason(in_combat, in_menu)
+        }
+        
+        return state
+
+    def _detect_menu_state(self) -> bool:
+        """Detect if currently in a menu (would analyze UI elements)."""
+        # TODO: Implement actual menu detection using screen analysis
+        # Would look for inventory UI, map UI, skills UI, etc.
+        return False
+
+    def _detect_combat_state(self) -> bool:
+        """Detect if currently in combat (would analyze combat UI)."""
+        # TODO: Implement actual combat detection
+        # Would look for:
+        # - Red enemy health bars
+        # - Combat music indicators
+        # - Weapon drawn state
+        # - Enemy targeting reticles
+        import random
+        return random.random() < 0.1  # 10% chance of combat for testing
+
+    def _detect_location(self) -> str:
+        """Detect current location (would use OCR on location text)."""
+        # TODO: Implement actual location detection using OCR
+        # Would read the location text that appears when entering new areas
+        locations = [
+            "Whiterun", "Solitude", "Windhelm", "Riften", "Markarth",
+            "Dragonsreach", "Bleak Falls Barrow", "Riverwood", 
+            "Helgen", "Winterhold", "The Rift", "Falkreath"
+        ]
+        import random
+        return random.choice(locations)
+
+    def _detect_nearby_npcs(self) -> List[str]:
+        """Detect nearby NPCs (would analyze screen for NPC indicators)."""
+        # TODO: Implement actual NPC detection
+        # Would look for:
+        # - NPC name tags
+        # - Character models
+        # - Dialogue prompts
+        npcs = ["Guard", "Merchant", "Citizen", "Lydia", "Faendal"]
+        import random
+        if random.random() < 0.3:  # 30% chance of nearby NPCs
+            return [random.choice(npcs)]
+        return []
+
+    def _determine_layer_transition_reason(self, in_combat: bool, in_menu: bool) -> str:
+        """Determine why a layer transition might be needed."""
+        if in_combat:
+            return "Combat detected - consider Combat layer"
+        elif in_menu:
+            return "Menu open - consider Menu layer"
+        else:
+            return ""
 
     async def perceive(self) -> Dict[str, Any]:
         """

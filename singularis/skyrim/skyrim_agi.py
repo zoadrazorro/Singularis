@@ -145,6 +145,9 @@ class SkyrimAGI:
             'coherence_history': [],
         }
 
+        # Set up controller reference in perception for layer awareness
+        self.perception.set_controller(self.controller)
+        
         print("Skyrim AGI initialization complete.")
         print("[OK] Skyrim AGI initialized\n")
 
@@ -175,8 +178,13 @@ class SkyrimAGI:
 
         print(f"\n{'=' * 60}")
         print(f"STARTING AUTONOMOUS GAMEPLAY")
-        print(f"Duration: {duration_seconds}s ({duration_seconds / 60:.1f} minutes)")
-        print(f"{'=' * 60}\n")
+        print(f"Starting autonomous gameplay for {duration_seconds}s...")
+        print(f"Cycle interval: {self.config.cycle_interval}s")
+        print("=" * 60)
+        print()
+
+        # Test controller connection before starting
+        await self._test_controller_connection()
 
         self.running = True
         start_time = time.time()
@@ -206,12 +214,13 @@ class SkyrimAGI:
                 if changes['changed']:
                     print(f"[WARN] Change detected: {changes}")
 
-                # Detect visual stuckness
-                if self.perception.detect_visual_stuckness():
-                    print("[WARN] Visually stuck! Taking evasive action...")
+                # Detect visual stuckness (less aggressive)
+                if (self.stats['cycles_completed'] > 3 and  # Wait a few cycles before checking
+                    self.perception.detect_visual_stuckness()):
+                    print("[WARN] Visually stuck! Taking gentle evasive action...")
                     await self.actions.evasive_maneuver()
-                    # Skip to next cycle to re-assess after evasive action
-                    continue
+                    # Brief pause then continue normally (don't skip cycle)
+                    await asyncio.sleep(1.0)
 
                 # 2. UPDATE WORLD MODEL
                 # Convert perception to world state
@@ -258,11 +267,21 @@ class SkyrimAGI:
 
                 # 6. EXECUTE ACTION
                 before_state = game_state.to_dict()
-                await self._execute_action(action, scene_type)
-                self.stats['actions_taken'] += 1
+                try:
+                    await self._execute_action(action, scene_type)
+                    self.stats['actions_taken'] += 1
+                    print(f"[ACTION] Successfully executed: {action}")
+                except Exception as e:
+                    print(f"[ERROR] Action execution failed: {e}")
+                    # Try a simple fallback action
+                    try:
+                        await self.actions.look_around()
+                        print("[RECOVERY] Performed fallback look_around")
+                    except:
+                        print("[ERROR] Even fallback action failed")
 
-                # Wait for game to respond
-                await asyncio.sleep(self.config.cycle_interval)
+                # Wait for game to respond (slightly longer for Skyrim)
+                await asyncio.sleep(max(1.5, self.config.cycle_interval))
 
                 # 7. LEARN FROM OUTCOME
                 # Perceive again to see outcome
@@ -403,7 +422,23 @@ class SkyrimAGI:
             # Return a meta-action that will trigger layer switch
             return f'switch_to_{optimal_layer.lower()}'
 
-        # Action selection within current layer based on motivation
+        # Try LLM-based planning if available, otherwise use heuristics
+        if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
+            print("[PLANNING] Using LLM-based strategic planning...")
+            try:
+                llm_action = await self._plan_action_with_llm(
+                    game_state, scene_type, current_layer, available_actions, 
+                    strategic_analysis, motivation
+                )
+                if llm_action:
+                    print(f"[LLM] Selected action: {llm_action}")
+                    return llm_action
+            except Exception as e:
+                print(f"[LLM] Planning failed: {e}, using heuristics")
+        else:
+            print("[PLANNING] LLM not available, using heuristic planning...")
+
+        # Fallback: Action selection within current layer based on motivation
         if motivation.dominant_drive().value == 'curiosity':
             if 'activate' in available_actions:
                 return 'activate'  # Interact with world
@@ -423,6 +458,131 @@ class SkyrimAGI:
             if 'move_forward' in available_actions:
                 return 'move_forward'
             return 'explore'
+
+    async def _plan_action_with_llm(
+        self,
+        game_state,
+        scene_type,
+        current_layer: str,
+        available_actions: list,
+        strategic_analysis: dict,
+        motivation
+    ) -> Optional[str]:
+        """
+        Use LLM for action planning with layer-aware context.
+        
+        Returns:
+            Action string if LLM planning succeeds, None otherwise
+        """
+        # Build context for LLM
+        context = f"""
+SKYRIM AGI STATUS:
+- Scene: {scene_type.value}
+- Health: {game_state.health:.0f}/100 | Magicka: {game_state.magicka:.0f}/100 | Stamina: {game_state.stamina:.0f}/100
+- Location: {game_state.location_name}
+- In Combat: {game_state.in_combat}
+- Current Action Layer: {current_layer}
+- Available Actions: {', '.join(available_actions)}
+
+STRATEGIC ANALYSIS:
+- Layer Effectiveness: {strategic_analysis['layer_effectiveness']}
+- Recommendations: {strategic_analysis.get('recommendations', [])}
+
+MOTIVATION:
+- Dominant Drive: {motivation.dominant_drive().value}
+
+LAYER-AWARE ACTIONS:
+- explore (waypoint-based exploration)
+- combat (if enemies present)
+- interact (talk/loot/activate)
+- navigate (move to specific location)
+- rest (recover health/stamina)
+- stealth (sneak, pickpocket, hide)
+- switch_to_combat (meta-action to change layers)
+- switch_to_menu (meta-action for inventory)
+- switch_to_stealth (meta-action for stealth)
+- move_forward, activate, power_attack, block, backstab (layer-specific actions)
+
+Consider the strategic analysis and current layer effectiveness. If a layer switch would be beneficial, suggest switch_to_X actions. Otherwise, pick the most contextually appropriate action for the current situation.
+
+Select the single most appropriate action:"""
+
+        try:
+            print("[LLM] Calling LM Studio for layer-aware action planning...")
+            result = await self.agi.process(context)
+            response = result.get('consciousness_response', {}).get('response', '')
+            print(f"[LLM] Raw response: {response}")
+
+            # Parse LLM response to extract action
+            response_lower = response.lower()
+            
+            # Check for layer transition actions first
+            if 'switch_to_combat' in response_lower:
+                return 'switch_to_combat'
+            elif 'switch_to_menu' in response_lower:
+                return 'switch_to_menu'
+            elif 'switch_to_stealth' in response_lower:
+                return 'switch_to_stealth'
+            elif 'switch_to_exploration' in response_lower:
+                return 'switch_to_exploration'
+            
+            # Check for specific actions
+            elif 'power_attack' in response_lower and 'power_attack' in available_actions:
+                return 'power_attack'
+            elif 'backstab' in response_lower and 'backstab' in available_actions:
+                return 'backstab'
+            elif 'block' in response_lower and 'block' in available_actions:
+                return 'block'
+            elif 'activate' in response_lower and 'activate' in available_actions:
+                return 'activate'
+            elif 'move_forward' in response_lower and 'move_forward' in available_actions:
+                return 'move_forward'
+            
+            # Check for general action categories
+            elif 'combat' in response_lower or 'attack' in response_lower:
+                return 'combat'
+            elif 'explore' in response_lower:
+                return 'explore'
+            elif 'interact' in response_lower:
+                return 'interact'
+            elif 'stealth' in response_lower or 'sneak' in response_lower:
+                return 'stealth'
+            elif 'rest' in response_lower or 'heal' in response_lower:
+                return 'rest'
+            elif 'navigate' in response_lower or 'move' in response_lower:
+                return 'navigate'
+            
+            print(f"[LLM] Could not parse action from response, using fallback")
+            return None
+            
+        except Exception as e:
+            print(f"[LLM] Error during planning: {e}")
+            return None
+
+    async def _test_controller_connection(self):
+        """Test controller connection and basic functionality."""
+        try:
+            print("[CONTROLLER] Testing controller connection...")
+            
+            if self.controller and hasattr(self.controller, 'active_layer'):
+                print(f"[CONTROLLER] Active layer: {self.controller.active_layer}")
+                print("[CONTROLLER] ✓ Controller connection OK")
+            else:
+                print("[CONTROLLER] ⚠️ Controller not properly initialized")
+                
+            # Test basic action
+            if not self.config.dry_run:
+                print("[CONTROLLER] Testing basic look action...")
+                await self.actions.look_horizontal(5.0)  # Small test movement
+                await asyncio.sleep(0.2)
+                await self.actions.look_horizontal(-5.0)  # Return to center
+                print("[CONTROLLER] ✓ Basic actions working")
+            else:
+                print("[CONTROLLER] Dry run mode - skipping action test")
+                
+        except Exception as e:
+            print(f"[CONTROLLER] ⚠️ Controller test failed: {e}")
+            print("[CONTROLLER] Continuing anyway...")
 
     def _print_final_stats(self):
         """Print final gameplay statistics."""

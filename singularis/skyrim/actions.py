@@ -390,17 +390,10 @@ class SkyrimActions:
                 direction_steps = 0
                 print(f"[EXPLORE] New direction: {current_direction}")
             
-            # Move in chosen direction
-            move_duration = random.uniform(1.5, 2.5)  # Longer moves for more purpose
+            # Move in chosen direction using smart movement
+            move_duration = random.uniform(1.2, 2.0)  # Slightly shorter for better responsiveness
             
-            if current_direction == 'forward':
-                await self.move_forward(move_duration)
-            elif current_direction == 'left':
-                await self.move_left(move_duration)
-            elif current_direction == 'right':
-                await self.move_right(move_duration)
-            elif current_direction == 'backward':
-                await self.move_backward(move_duration)
+            await self.smart_movement(current_direction, move_duration)
             
             direction_steps += 1
             
@@ -421,25 +414,64 @@ class SkyrimActions:
 
     async def evasive_maneuver(self):
         """
-        Perform evasive maneuver when stuck - big camera sweep + backward movement.
+        Perform evasive maneuver when stuck - gentler approach for Skyrim.
         """
         import random
         
-        print("[EVASIVE] Performing evasive maneuver...")
+        print("[EVASIVE] Performing gentle evasive maneuver...")
         
-        # Big camera sweep to look around
-        await self.look_around()
-        await asyncio.sleep(0.3)
+        try:
+            # Gentler camera movement - just look around a bit
+            await self.look_horizontal(random.uniform(-45, 45))
+            await asyncio.sleep(0.2)
+            
+            # Try a small step back
+            await self.move_backward(1.0)
+            await asyncio.sleep(0.3)
+            
+            # Small side step
+            if random.random() < 0.5:
+                await self.move_left(0.8)
+            else:
+                await self.move_right(0.8)
+            
+            await asyncio.sleep(0.2)
+            
+            # Small forward movement to continue
+            await self.move_forward(0.5)
+            
+            print("[EVASIVE] Evasive maneuver complete")
+            
+        except Exception as e:
+            print(f"[EVASIVE] Error during evasive maneuver: {e}")
+
+    async def smart_movement(self, direction: str, duration: float = 1.5):
+        """
+        Smart movement with obstacle detection and recovery.
         
-        # Move backward to get unstuck
-        await self.move_backward(2.0)
-        
-        # Random horizontal look to change facing direction
-        random_angle = random.uniform(-90, 90)
-        await self.look_horizontal(random_angle)
-        
-        # Small forward movement to test if unstuck
-        await self.move_forward(1.0)
+        Args:
+            direction: 'forward', 'backward', 'left', 'right'
+            duration: How long to move
+        """
+        try:
+            print(f"[MOVEMENT] Smart {direction} movement for {duration}s")
+            
+            if direction == 'forward':
+                await self.move_forward(duration)
+            elif direction == 'backward':
+                await self.move_backward(duration)
+            elif direction == 'left':
+                await self.move_left(duration)
+            elif direction == 'right':
+                await self.move_right(duration)
+            
+            # Brief pause to let game respond
+            await asyncio.sleep(0.1)
+            
+        except Exception as e:
+            print(f"[MOVEMENT] Error during {direction} movement: {e}")
+            # Try a small recovery movement
+            await asyncio.sleep(0.5)
 
     async def look_horizontal(self, degrees: float):
         """
