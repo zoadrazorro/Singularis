@@ -99,19 +99,21 @@ async def main():
     print(f"\nGameplay:")
     print(f"  Cycles completed: {stats['gameplay']['cycles_completed']}")
     print(f"  Actions taken: {stats['gameplay']['actions_taken']}")
-    print(f"  Duration: {stats['gameplay']['duration_seconds']:.1f}s")
+    print(f"  Playtime: {stats['gameplay']['total_playtime'] / 60:.1f} minutes")
     
     print(f"\nLearning:")
     print(f"  Causal rules learned: {stats['world_model']['causal_edges']}")
     print(f"  NPCs met: {len(stats['world_model']['npc_relationships'])}")
     print(f"  Locations discovered: {len(stats['world_model']['locations_discovered'])}")
     
-    print(f"\nCoherence:")
-    print(f"  Final coherence: {stats['gameplay']['final_coherence']:.3f}")
-    print(f"  Change from start: {stats['gameplay']['coherence_change']:+.3f}")
+    if 'coherence_history' in stats['gameplay'] and stats['gameplay']['coherence_history']:
+        avg_coherence = sum(stats['gameplay']['coherence_history']) / len(stats['gameplay']['coherence_history'])
+        print(f"\nCoherence:")
+        print(f"  Average coherence: {avg_coherence:.3f}")
     
-    print(f"\nDominant Motivation:")
-    print(f"  {stats['motivations']['dominant_drive']}")
+    if 'motivations' in stats and 'dominant_drive' in stats['motivations']:
+        print(f"\nDominant Motivation:")
+        print(f"  {stats['motivations']['dominant_drive']}")
     
     print()
     print("=" * 70)

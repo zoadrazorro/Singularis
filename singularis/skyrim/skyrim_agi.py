@@ -370,7 +370,7 @@ class SkyrimAGI:
                     {
                         'scene_type': scene_type.value,
                         'action_taken': str(action),
-                        'layer_used': current_layer
+                        'layer_used': game_state.current_action_layer
                     }
                 )
                 
