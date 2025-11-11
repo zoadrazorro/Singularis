@@ -52,6 +52,11 @@ class SkyrimConfig:
     # Actions
     dry_run: bool = False  # Don't actually control game (testing)
     custom_keys: Optional[Dict[ActionType, str]] = None
+    
+    # Controller
+    controller_deadzone_stick: float = 0.15
+    controller_deadzone_trigger: float = 0.05
+    controller_sensitivity: float = 1.0
 
     # Gameplay
     autonomous_duration: int = 3600  # 1 hour default
@@ -115,7 +120,12 @@ class SkyrimAGI:
         # 3. Skyrim actions
         print("  [3/4] Skyrim actions...")
         # Controller and bindings
-        self.controller = VirtualXboxController(dry_run=self.config.dry_run)
+        self.controller = VirtualXboxController(
+            deadzone_stick=self.config.controller_deadzone_stick,
+            deadzone_trigger=self.config.controller_deadzone_trigger,
+            sensitivity=self.config.controller_sensitivity,
+            dry_run=self.config.dry_run
+        )
         self.bindings = SkyrimControllerBindings(self.controller)
         self.bindings.switch_to_exploration()
         self.actions = SkyrimActions(
@@ -400,7 +410,7 @@ class SkyrimAGI:
                     action_taken=str(action),
                     outcome=after_state,
                     success=success,
-                    reasoning=f"Motivation: {dominant_drive.value}, Layer: {current_layer}"
+                    reasoning=f"Motivation: {dominant_drive.value}, Layer: {game_state.current_action_layer}"
                 )
                 
                 # Record menu action if in menu

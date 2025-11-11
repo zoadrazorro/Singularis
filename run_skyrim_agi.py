@@ -103,8 +103,8 @@ async def main():
     
     print(f"\nLearning:")
     print(f"  Causal rules learned: {stats['world_model']['causal_edges']}")
-    print(f"  NPCs met: {len(stats['world_model']['npc_relationships'])}")
-    print(f"  Locations discovered: {len(stats['world_model']['locations_discovered'])}")
+    print(f"  NPCs met: {stats['world_model']['npc_relationships']}")
+    print(f"  Locations discovered: {stats['world_model']['locations_discovered']}")
     
     if 'coherence_history' in stats['gameplay'] and stats['gameplay']['coherence_history']:
         avg_coherence = sum(stats['gameplay']['coherence_history']) / len(stats['gameplay']['coherence_history'])
