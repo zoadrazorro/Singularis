@@ -56,13 +56,20 @@ class SkyrimWorldModel:
         # NPC relationships
         self.npc_relationships: Dict[str, NPCRelationship] = {}
 
-        # Known locations
+        # Known locations (terrain-focused, not narrative)
         self.locations: Dict[str, Dict[str, Any]] = {}
+        
+        # Terrain knowledge (environmental understanding)
+        self.terrain_knowledge: Dict[str, Dict[str, Any]] = {
+            'indoor_spaces': {},  # Confined areas, exits, interactive objects
+            'outdoor_spaces': {},  # Open terrain, landmarks, paths
+            'vertical_features': {},  # Cliffs, stairs, elevated positions
+            'obstacles': {},  # Walls, water, impassable terrain
+            'safe_zones': {},  # Areas without threats
+            'danger_zones': {},  # Areas with frequent combat
+        }
 
-        # Quest state
-        self.quests: Dict[str, Dict[str, Any]] = {}
-
-        # Learned rules
+        # Learned rules (environment-focused, not story-focused)
         self.learned_rules: List[Dict[str, Any]] = []
         
         # Layer affordance mappings (learned through experience)
@@ -633,6 +640,135 @@ class SkyrimWorldModel:
             'active_quests': len(self.get_active_quests()),
             'learned_rules': len(self.learned_rules),
         }
+
+
+    def learn_terrain_feature(
+        self,
+        location: str,
+        terrain_type: str,
+        feature_data: Dict[str, Any]
+    ):
+        """
+        Learn about terrain features from exploration.
+        
+        Args:
+            location: Location name
+            terrain_type: Type of terrain (indoor_spaces, outdoor_spaces, etc.)
+            feature_data: Data about the terrain feature
+        """
+        if terrain_type not in self.terrain_knowledge:
+            return
+        
+        if location not in self.terrain_knowledge[terrain_type]:
+            self.terrain_knowledge[terrain_type][location] = {
+                'visits': 0,
+                'features': []
+            }
+        
+        self.terrain_knowledge[terrain_type][location]['visits'] += 1
+        self.terrain_knowledge[terrain_type][location]['features'].append(feature_data)
+        
+        print(f"[TERRAIN] Learned {terrain_type} feature at {location}")
+
+    def classify_terrain_from_scene(self, scene_type: str, in_combat: bool) -> str:
+        """
+        Classify terrain type from scene classification.
+        
+        Args:
+            scene_type: Visual scene classification
+            in_combat: Whether currently in combat
+            
+        Returns:
+            Terrain type string
+        """
+        if in_combat:
+            return 'danger_zones'
+        elif scene_type in ['inventory', 'menu', 'dialogue']:
+            return 'indoor_spaces'
+        elif scene_type in ['exploration', 'outdoor']:
+            return 'outdoor_spaces'
+        elif scene_type == 'combat':
+            return 'danger_zones'
+        else:
+            return 'outdoor_spaces'  # Default
+
+    def get_terrain_recommendations(
+        self,
+        current_location: str,
+        scene_type: str,
+        in_combat: bool
+    ) -> List[str]:
+        """
+        Get terrain-aware action recommendations.
+        
+        Args:
+            current_location: Current location
+            scene_type: Visual scene type
+            in_combat: Whether in combat
+            
+        Returns:
+            List of recommended actions based on terrain
+        """
+        terrain_type = self.classify_terrain_from_scene(scene_type, in_combat)
+        recommendations = []
+        
+        if terrain_type == 'indoor_spaces':
+            recommendations.extend([
+                "Look for exits and doorways",
+                "Interact with objects (activate)",
+                "Use vertical space (look up/down for paths)",
+                "Navigate carefully in confined space"
+            ])
+        elif terrain_type == 'outdoor_spaces':
+            recommendations.extend([
+                "Prioritize forward movement",
+                "Scan horizon with camera",
+                "Look for elevated positions",
+                "Cover distance efficiently"
+            ])
+        elif terrain_type == 'danger_zones':
+            recommendations.extend([
+                "Use terrain for cover",
+                "Identify retreat paths",
+                "Consider elevation advantage",
+                "Assess threat positions"
+            ])
+        elif terrain_type == 'vertical_features':
+            recommendations.extend([
+                "Look up for climbing paths",
+                "Consider jumping mechanics",
+                "Check for fall hazards",
+                "Use elevation strategically"
+            ])
+        
+        return recommendations
+
+    def update_terrain_safety(
+        self,
+        location: str,
+        had_combat: bool
+    ):
+        """
+        Update terrain safety knowledge based on combat encounters.
+        
+        Args:
+            location: Location name
+            had_combat: Whether combat occurred
+        """
+        if had_combat:
+            if location not in self.terrain_knowledge['danger_zones']:
+                self.terrain_knowledge['danger_zones'][location] = {
+                    'combat_encounters': 0,
+                    'last_encounter': None
+                }
+            self.terrain_knowledge['danger_zones'][location]['combat_encounters'] += 1
+            print(f"[TERRAIN] Marked {location} as danger zone")
+        else:
+            if location not in self.terrain_knowledge['safe_zones']:
+                self.terrain_knowledge['safe_zones'][location] = {
+                    'safe_visits': 0
+                }
+            self.terrain_knowledge['safe_zones'][location]['safe_visits'] += 1
 
 
 # Example usage
