@@ -218,10 +218,7 @@ class SkyrimAGI:
         self.rl_reasoning_neuron = RLReasoningNeuron()
         # Will connect LLM interface when initialized
         
-        # 11. Meta-Strategist (LLM generates strategic instructions)
-        print("  [11/11] Meta-strategist (autonomous instruction generation)...")
-        self.meta_strategist = MetaStrategist(instruction_frequency=10)
-        # Will connect LLM interface when initialized
+        # Initialize phi-4-mini pool tracking
         
         # 11. Skyrim-specific Motivation System
         print("  [11/11] Skyrim-specific motivation system...")
@@ -317,71 +314,55 @@ class SkyrimAGI:
         else:
             print("[PHI4-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")
         
-        # 2. RL Reasoning LLM (phi-4-mini-reasoning)
-        # Dedicated instance for tactical action selection
-        try:
-            print("\n[PHI4-RL] Initializing phi-4-mini for RL tactical reasoning...")
-            rl_config = LMStudioConfig(
-                base_url=self.config.base_config.lm_studio_url,
-                model_name=self.config.phi4_rl_model,
-                temperature=0.6,  # Lower temp for tactical decisions
-                max_tokens=1024   # Shorter responses for fast tactical reasoning
-            )
-            rl_client = LMStudioClient(rl_config)
-            rl_interface = ExpertLLMInterface(rl_client)
-            
-            self.rl_reasoning_neuron.llm_interface = rl_interface
-            print("[PHI4-RL] ✓ RL reasoning neuron connected to phi-4-mini")
-            print(f"[PHI4-RL] Model: {rl_config.model_name}")
-            print(f"[PHI4-RL] Role: Fast tactical Q-value analysis")
-        except Exception as e:
-            print(f"[PHI4-RL] ⚠️ phi-4-mini initialization failed: {e}")
-            print("[PHI4-RL] RL reasoning will use heuristics")
+        # 2. Initialize ALL 4 phi-4-mini instances for load balancing
+        # Store all instances in a pool for round-robin usage
+        self.phi4_mini_pool = []
+        self.phi4_mini_index = 0  # For round-robin selection
+        
+        for i, model_name in enumerate([
+            self.config.phi4_main_model,
+            self.config.phi4_rl_model,
+            self.config.phi4_meta_model,
+            self.config.phi4_action_model
+        ], 1):
+            try:
+                print(f"\n[PHI4-{i}] Initializing {model_name}...")
+                config = LMStudioConfig(
+                    base_url=self.config.base_config.lm_studio_url,
+                    model_name=model_name,
+                    temperature=0.65,
+                    max_tokens=1024
+                )
+                client = LMStudioClient(config)
+                interface = ExpertLLMInterface(client)
+                self.phi4_mini_pool.append(interface)
+                print(f"[PHI4-{i}] ✓ Connected: {model_name}")
+            except Exception as e:
+                print(f"[PHI4-{i}] ⚠️ Failed to initialize {model_name}: {e}")
+        
+        print(f"\n[PHI4-POOL] ✓ {len(self.phi4_mini_pool)}/4 phi-4-mini instances ready")
+        print(f"[PHI4-POOL] Load balancing: Round-robin across all instances")
+        
+        # Connect first available to RL reasoning neuron (will use pool for actual calls)
+        if self.phi4_mini_pool:
+            self.rl_reasoning_neuron.llm_interface = self.phi4_mini_pool[0]
+            print("[PHI4-RL] ✓ RL reasoning neuron connected to phi-4-mini pool")
+        else:
+            print("[PHI4-RL] ⚠️ No phi-4-mini instances available")
             # Fallback: use main LLM if available
             if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
                 if hasattr(self.agi.consciousness_llm, 'llm_interface'):
                     self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
                     print("[PHI4-RL] ✓ Using main consciousness LLM as fallback")
         
-        # 3. Meta-Strategist Coordinator (phi-4-mini-reasoning)
-        # Coordinates between fast tactical and slow strategic thinking
-        try:
-            print("\n[PHI4-META] Initializing phi-4-mini for meta-strategy coordination...")
-            meta_config = LMStudioConfig(
-                base_url=self.config.base_config.lm_studio_url,
-                model_name=self.config.phi4_meta_model,
-                temperature=0.7,  # Balanced for coordination
-                max_tokens=1536   # Medium length for coordination
-            )
-            meta_client = LMStudioClient(meta_config)
-            meta_interface = ExpertLLMInterface(meta_client)
-            
-            self.meta_strategist.llm_interface = meta_interface
-            print("[PHI4-META] ✓ Meta-strategist connected to phi-4-mini")
-            print(f"[PHI4-META] Model: {meta_config.model_name}")
-            print(f"[PHI4-META] Role: Coordinate tactical & strategic systems")
-        except Exception as e:
-            print(f"[PHI4-META] ⚠️ phi-4-mini initialization failed: {e}")
-            print("[PHI4-META] Meta-strategist will use heuristic strategies")
+        # Connect meta-strategist and action planner to pool
+        if len(self.phi4_mini_pool) >= 3:
+            self.meta_strategist.llm_interface = self.phi4_mini_pool[2]
+            print("[PHI4-META] ✓ Meta-strategist connected to pool")
         
-        # 4. Action Planning LLM (phi-4-mini-reasoning) 
-        # Dedicated instance for immediate terrain-aware action planning
-        try:
-            print("\n[PHI4-ACTION] Initializing phi-4-mini for immediate action planning...")
-            action_config = LMStudioConfig(
-                base_url=self.config.base_config.lm_studio_url,
-                model_name=self.config.phi4_action_model,
-                temperature=0.65,  # Balanced for exploration vs exploitation
-                max_tokens=512    # Very short for immediate decisions
-            )
-            action_client = LMStudioClient(action_config)
-            self.action_planning_llm = ExpertLLMInterface(action_client)
-            print("[PHI4-ACTION] ✓ Action planning LLM initialized")
-            print(f"[PHI4-ACTION] Model: {action_config.model_name}")
-            print(f"[PHI4-ACTION] Role: Immediate terrain-aware decisions (<1s)")
-        except Exception as e:
-            print(f"[PHI4-ACTION] ⚠️ phi-4-mini initialization failed: {e}")
-            print("[PHI4-ACTION] Will use main consciousness LLM for action planning")
+        if len(self.phi4_mini_pool) >= 4:
+            self.action_planning_llm = self.phi4_mini_pool[3]
+            print("[PHI4-ACTION] ✓ Action planner connected to pool")
             self.action_planning_llm = None
         
         print("\n" + "=" * 70)
@@ -1271,6 +1252,13 @@ class SkyrimAGI:
                 # Get meta-strategic context
                 meta_context = self.meta_strategist.get_active_instruction_context()
                 
+                # Get next phi-4-mini from pool for load balancing
+                phi4_llm = self.get_next_phi4_mini()
+                if phi4_llm:
+                    # Temporarily assign to RL reasoning neuron for this call
+                    original_llm = self.rl_reasoning_neuron.llm_interface
+                    self.rl_reasoning_neuron.llm_interface = phi4_llm
+                
                 # Use RL reasoning neuron to think about Q-values (with meta-strategic guidance)
                 rl_reasoning = await self.rl_reasoning_neuron.reason_about_q_values(
                     state=state_dict,
@@ -1285,6 +1273,10 @@ class SkyrimAGI:
                         'meta_strategy': meta_context  # Add strategic guidance
                     }
                 )
+                
+                # Restore original LLM
+                if phi4_llm:
+                    self.rl_reasoning_neuron.llm_interface = original_llm
                 
                 action = rl_reasoning.recommended_action
                 print(f"[RL-NEURON] Action: {action} (tactical score: {rl_reasoning.tactical_score:.2f})")
@@ -1786,20 +1778,6 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"  Game Quality: {avg_game_quality:.3f}")
             print(f"  Combined Value: {0.6 * avg_consciousness_coherence + 0.4 * avg_game_quality:.3f}")
             print(f"  (60% consciousness + 40% game = unified evaluation)")
-
-    def stop(self):
-        """Stop autonomous play."""
-        print("\nStopping autonomous play...")
-        self.running = False
-
-    def get_stats(self) -> Dict[str, Any]:
-        """Get comprehensive statistics."""
-        return {
-            'gameplay': self.stats,
-            'world_model': self.skyrim_world.get_stats(),
-            'actions': self.actions.get_stats(),
-            'agi': self.agi.get_stats(),
-        }
 
 
 # Example usage
