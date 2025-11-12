@@ -270,6 +270,14 @@ class SkyrimAGI:
             'quests_completed': 0,
             'total_playtime': 0.0,
             'game_state_quality_history': [],  # Replaces coherence_history
+            # Performance metrics
+            'action_success_count': 0,
+            'action_failure_count': 0,
+            'llm_action_count': 0,
+            'heuristic_action_count': 0,
+            'rl_action_count': 0,
+            'planning_times': [],  # Track planning duration
+            'execution_times': [],  # Track execution duration
         }
 
         # Set up controller reference in perception for layer awareness
@@ -700,19 +708,23 @@ class SkyrimAGI:
                     print(f"[REASONING] New goal: {self.current_goal}")
                 
                 # Plan action (with LLM throttling)
+                planning_start = time.time()
                 async with self.llm_semaphore:
                     action = await self._plan_action(
                         perception=perception,
                         motivation=mot_state,
                         goal=self.current_goal
                     )
+                planning_duration = time.time() - planning_start
+                self.stats['planning_times'].append(planning_duration)
                 
                 # Handle None action with fallback
                 if action is None:
                     print("[REASONING] WARNING: No action returned by _plan_action, using fallback")
                     action = 'explore'  # Safe default fallback
+                    self.stats['heuristic_action_count'] += 1
                 
-                print(f"[REASONING] Planned action: {action}")
+                print(f"[REASONING] Planned action: {action} ({planning_duration:.3f}s)")
                 
                 # Queue action for execution (non-blocking)
                 try:
@@ -758,12 +770,19 @@ class SkyrimAGI:
                 
                 print(f"\n[ACTION] Executing: {action}")
                 
-                # Execute action
+                # Execute action with timing
+                execution_start = time.time()
                 try:
                     await self._execute_action(action, scene_type)
+                    execution_duration = time.time() - execution_start
+                    self.stats['execution_times'].append(execution_duration)
                     self.stats['actions_taken'] += 1
-                    print(f"[ACTION] Successfully executed: {action}")
+                    self.stats['action_success_count'] += 1
+                    print(f"[ACTION] Successfully executed: {action} ({execution_duration:.3f}s)")
                 except Exception as e:
+                    execution_duration = time.time() - execution_start
+                    self.stats['execution_times'].append(execution_duration)
+                    self.stats['action_failure_count'] += 1
                     print(f"[ACTION] Execution failed: {e}")
                     try:
                         await self.actions.look_around()
@@ -1285,6 +1304,9 @@ class SkyrimAGI:
                 print("[PLANNING] Using RL-based action selection with LLM reasoning...")
                 print(f"[PLANNING] RL reasoning neuron LLM status: {'Connected' if self.rl_reasoning_neuron.llm_interface else 'Using heuristics'}")
                 
+                # Track RL usage
+                self.stats['rl_action_count'] += 1
+                
                 # Check if meta-strategist should generate new instruction
                 if await self.meta_strategist.should_generate_instruction():
                     q_values = self.rl_learner.get_q_values(state_dict)
@@ -1410,6 +1432,7 @@ class SkyrimAGI:
                     )
                     if llm_action:
                         print(f"[LLM] Selected action: {llm_action}")
+                        self.stats['llm_action_count'] += 1
                         return llm_action
                     else:
                         print("[LLM] LLM returned None, falling back to heuristics")
@@ -1419,6 +1442,9 @@ class SkyrimAGI:
                     traceback.print_exc()
             else:
                 print("[PLANNING] LLM not available, using heuristic planning...")
+            
+            # Track heuristic usage
+            self.stats['heuristic_action_count'] += 1
 
             # Fallback: Action selection within current layer based on motivation
             # More intelligent heuristics with scene awareness
@@ -1531,38 +1557,64 @@ QUICK DECISION - Choose ONE action from available list:"""
             traceback.print_exc()
             return None
 
-        # Parse LLM response for action
-        response_lower = response.lower()
+        # Parse LLM response for action with improved extraction
+        response_lower = response.lower().strip()
         
-        # Check for layer transition actions first
-        if 'switch_to_combat' in response_lower:
-            return 'switch_to_combat'
-        elif 'switch_to_menu' in response_lower:
-            return 'switch_to_menu'
-        elif 'switch_to_stealth' in response_lower:
-            return 'switch_to_stealth'
-        elif 'switch_to_exploration' in response_lower:
-            return 'switch_to_exploration'
+        # Try to extract action using multiple strategies
         
-        # Check for specific actions in available actions
+        # Strategy 1: Check for layer transition actions first (highest priority)
+        layer_transitions = {
+            'switch_to_combat': ['switch_to_combat', 'switch to combat', 'combat layer'],
+            'switch_to_menu': ['switch_to_menu', 'switch to menu', 'menu layer', 'open inventory'],
+            'switch_to_stealth': ['switch_to_stealth', 'switch to stealth', 'stealth layer', 'sneak mode'],
+            'switch_to_exploration': ['switch_to_exploration', 'switch to exploration', 'exploration layer']
+        }
+        
+        for action, patterns in layer_transitions.items():
+            if any(pattern in response_lower for pattern in patterns):
+                return action
+        
+        # Strategy 2: Look for exact matches with available actions
+        for action in available_actions:
+            # Check for exact word match (word boundaries)
+            action_lower = action.lower()
+            if f' {action_lower} ' in f' {response_lower} ' or response_lower.startswith(action_lower) or response_lower.endswith(action_lower):
+                return action
+        
+        # Strategy 3: Check for partial matches with available actions
         for action in available_actions:
             if action.lower() in response_lower:
                 return action
         
-        # Check for general action categories
-        if 'combat' in response_lower or 'attack' in response_lower:
-            return 'combat'
-        elif 'explore' in response_lower:
-            return 'explore'
-        elif 'interact' in response_lower:
-            return 'interact'
-        elif 'stealth' in response_lower or 'sneak' in response_lower:
-            return 'stealth'
-        elif 'rest' in response_lower or 'heal' in response_lower:
-            return 'rest'
-        elif 'navigate' in response_lower or 'move' in response_lower:
-            return 'move'
+        # Strategy 4: Map common LLM responses to standard actions
+        action_mappings = {
+            'combat': ['fight', 'attack', 'battle', 'engage enemy', 'power attack', 'strike'],
+            'explore': ['wander', 'search', 'look around', 'investigate', 'move forward', 'go ahead'],
+            'interact': ['use', 'activate', 'open', 'talk', 'speak', 'examine'],
+            'stealth': ['sneak', 'hide', 'crouch', 'stay quiet'],
+            'rest': ['wait', 'sleep', 'heal', 'recover', 'take a break'],
+            'navigate': ['walk', 'move', 'go', 'travel', 'head to']
+        }
         
+        for standard_action, synonyms in action_mappings.items():
+            if any(synonym in response_lower for synonym in synonyms):
+                # Only return if it makes sense in context
+                if standard_action in available_actions or standard_action in ['combat', 'explore', 'interact', 'rest', 'navigate']:
+                    return standard_action
+        
+        # Strategy 5: Extract quoted action if present
+        import re
+        quoted_match = re.search(r'["\']([^"\']+)["\']', response)
+        if quoted_match:
+            quoted_action = quoted_match.group(1).lower()
+            if quoted_action in available_actions:
+                return quoted_action
+            # Check if quoted action is a standard action
+            for standard_action in ['combat', 'explore', 'interact', 'stealth', 'rest', 'navigate']:
+                if standard_action in quoted_action:
+                    return standard_action
+        
+        # No match found
         return None
 
 
@@ -1730,6 +1782,33 @@ QUICK DECISION - Choose ONE action from available list:"""
         print(f"\nActions:")
         print(f"  Total executed: {action_stats['actions_executed']}")
         print(f"  Errors: {action_stats['errors']}")
+        
+        # Performance metrics
+        success_rate = 0.0
+        if self.stats['actions_taken'] > 0:
+            success_rate = self.stats['action_success_count'] / self.stats['actions_taken']
+        
+        print(f"\n📊 Performance Metrics:")
+        print(f"  Action success rate: {success_rate:.1%}")
+        print(f"  Successful actions: {self.stats['action_success_count']}")
+        print(f"  Failed actions: {self.stats['action_failure_count']}")
+        
+        # Planning method breakdown
+        total_planning = self.stats['rl_action_count'] + self.stats['llm_action_count'] + self.stats['heuristic_action_count']
+        if total_planning > 0:
+            print(f"\n🧠 Planning Methods:")
+            print(f"  RL-based: {self.stats['rl_action_count']} ({100*self.stats['rl_action_count']/total_planning:.1f}%)")
+            print(f"  LLM-based: {self.stats['llm_action_count']} ({100*self.stats['llm_action_count']/total_planning:.1f}%)")
+            print(f"  Heuristic: {self.stats['heuristic_action_count']} ({100*self.stats['heuristic_action_count']/total_planning:.1f}%)")
+        
+        # Timing metrics
+        if self.stats['planning_times']:
+            avg_planning = sum(self.stats['planning_times']) / len(self.stats['planning_times'])
+            print(f"\n⏱️  Timing:")
+            print(f"  Avg planning time: {avg_planning:.3f}s")
+        if self.stats['execution_times']:
+            avg_execution = sum(self.stats['execution_times']) / len(self.stats['execution_times'])
+            print(f"  Avg execution time: {avg_execution:.3f}s")
         
         # Strategic planner stats
         planner_stats = self.strategic_planner.get_stats()
