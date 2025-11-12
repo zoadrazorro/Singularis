@@ -125,14 +125,11 @@ async def main():
             use_claude_reasoning=True,
             use_local_fallback=True,  # Enable local fallback for resilience
             
-            # Local fallback models (LM Studio) - ENABLED
-            enable_qwen3_vl=True,  # Vision perception
-            enable_huihui=True,    # Main cognition
-            enable_phi4=True,      # Action planning
+            # Local fallback models (LM Studio) - models are always loaded
+            # These are used when cloud LLMs fail or hit rate limits
             qwen3_vl_perception_model="qwen/qwen3-vl-8b",
             huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
             phi4_action_model="mistralai/mistral-nemo-instruct-2407",
-            lmstudio_base_url="http://localhost:1234/v1",
             
             # Consensus weights
             parallel_consensus_weight_moe=0.6,

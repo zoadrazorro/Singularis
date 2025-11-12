@@ -793,10 +793,10 @@ class SkyrimAGI:
                     use_claude_reasoning=self.config.use_claude_reasoning,
                     claude_model=self.config.claude_model,
                     use_local_fallback=self.config.use_local_fallback,
-                    local_base_url=self.config.base_config.lm_studio_url if self.config.use_local_fallback else "http://localhost:1234/v1",
-                    local_vision_model=self.config.qwen3_vl_perception_model if self.config.use_local_fallback else "qwen/qwen3-vl-8b",
-                    local_reasoning_model=self.config.huihui_cognition_model if self.config.use_local_fallback else "huihui-moe-60b-a3b-abliterated-i1",
-                    local_action_model=self.config.phi4_action_model if self.config.use_local_fallback else "mistralai/mistral-nemo-instruct-2407",
+                    local_base_url="http://localhost:1234/v1",  # LM Studio default
+                    local_vision_model=self.config.qwen3_vl_perception_model,
+                    local_reasoning_model=self.config.huihui_cognition_model,
+                    local_action_model=self.config.phi4_action_model,
                     timeout=30,
                     max_concurrent_requests=self.config.max_concurrent_llm_calls,
                 )
@@ -853,10 +853,10 @@ class SkyrimAGI:
                     use_claude_reasoning=self.config.use_claude_reasoning,
                     claude_model=self.config.claude_model,
                     use_local_fallback=self.config.use_local_fallback,
-                    local_base_url=self.config.base_config.lm_studio_url if self.config.use_local_fallback else "http://localhost:1234/v1",
-                    local_vision_model=self.config.qwen3_vl_perception_model if self.config.use_local_fallback else "qwen/qwen3-vl-8b",
-                    local_reasoning_model=self.config.huihui_cognition_model if self.config.use_local_fallback else "huihui-moe-60b-a3b-abliterated-i1",
-                    local_action_model=self.config.phi4_action_model if self.config.use_local_fallback else "mistralai/mistral-nemo-instruct-2407",
+                    local_base_url="http://localhost:1234/v1",  # LM Studio default
+                    local_vision_model=self.config.qwen3_vl_perception_model,
+                    local_reasoning_model=self.config.huihui_cognition_model,
+                    local_action_model=self.config.phi4_action_model,
                     timeout=30,
                     max_concurrent_requests=self.config.max_concurrent_llm_calls,
                 )
