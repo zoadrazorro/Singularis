@@ -1660,7 +1660,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             if self.action_planning_llm:
                 response = await self.action_planning_llm.generate(
                     prompt=context,
-                    max_tokens=100  # Very short response needed
+                    max_tokens=300  # Enough for reasoning + action selection
                 )
             else:
                 # Fallback to main LLM through agi.process
