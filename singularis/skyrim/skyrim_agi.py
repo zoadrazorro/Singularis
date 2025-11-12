@@ -1317,8 +1317,15 @@ class SkyrimAGI:
 
             # Increment meta-strategist cycle before planning
             self.meta_strategist.tick_cycle()
-            # Use RL-based action selection if enabled
-            if self.rl_learner is not None:
+            
+            # Check if we should force variety (prevent RL dominance)
+            force_variety = self.consecutive_same_action >= 6  # Force variety after 6 same actions
+            
+            if force_variety:
+                print(f"[VARIETY] Forcing variety after {self.consecutive_same_action}x '{self.last_executed_action}' - skipping RL")
+            
+            # Use RL-based action selection if enabled (but not if forcing variety)
+            if self.rl_learner is not None and not force_variety:
                 print("[PLANNING] Using RL-based action selection with LLM reasoning...")
                 print(f"[PLANNING] RL reasoning neuron LLM status: {'Connected' if self.rl_reasoning_neuron.llm_interface else 'Using heuristics'}")
                 
