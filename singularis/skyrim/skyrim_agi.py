@@ -2893,6 +2893,8 @@ REASONING: <explanation>"""
                     game_state.in_combat  # In combat
                 )
                 
+                # Start cloud LLM query in background (non-blocking)
+                cloud_task = None
                 if use_cloud_llm:
                     # Use full MoE+Hybrid only in critical situations
                     is_critical = (
@@ -2901,20 +2903,17 @@ REASONING: <explanation>"""
                         (game_state.in_combat and game_state.health < 60)
                     )
                     
-                    cloud_recommendation = await self._get_cloud_llm_action_recommendation(
-                        perception=perception,
-                        state_dict=state_dict,
-                        q_values=q_values,
-                        available_actions=available_actions,
-                        motivation=motivation,
-                        use_full_moe=is_critical  # Full parallel only when critical
+                    print(f"[CLOUD-LLM] Starting cloud query in background...")
+                    cloud_task = asyncio.create_task(
+                        self._get_cloud_llm_action_recommendation(
+                            perception=perception,
+                            state_dict=state_dict,
+                            q_values=q_values,
+                            available_actions=available_actions,
+                            motivation=motivation,
+                            use_full_moe=is_critical
+                        )
                     )
-                    
-                    if cloud_recommendation:
-                        action, reasoning = cloud_recommendation
-                        print(f"[CLOUD-LLM] Using cloud recommendation: {action}")
-                        print(f"[CLOUD-LLM] Reasoning: {reasoning[:200]}...")
-                        return action
                 else:
                     print(f"[RATE-LIMIT] Skipping cloud LLM (cycle {self.cycle_count % 5}/5)")
                 
@@ -3074,6 +3073,18 @@ REASONING: <explanation>"""
             elif optimal_layer:
                 print(f"[META-STRATEGY] Already in optimal layer: {current_layer}")
 
+            # Check if cloud LLM finished while we were planning
+            if cloud_task and cloud_task.done():
+                try:
+                    cloud_recommendation = cloud_task.result()
+                    if cloud_recommendation:
+                        action, reasoning = cloud_recommendation
+                        print(f"[CLOUD-LLM] ✓ Cloud finished first! Using: {action}")
+                        print(f"[CLOUD-LLM] Reasoning: {reasoning[:200]}...")
+                        return action
+                except Exception as e:
+                    print(f"[CLOUD-LLM] Cloud task failed: {e}")
+            
             # Always use Phi-4 for final action selection (fast, decisive)
             if self.action_planning_llm:
                 print("[PLANNING] Using Phi-4 for final action selection...")
@@ -3087,16 +3098,45 @@ REASONING: <explanation>"""
                             'huihui_status': 'background' if 'huihui_background_task' in locals() else 'not_started'
                         }
                     
-                    llm_action = await self._plan_action_with_llm(
-                        perception, game_state, scene_type, current_layer, available_actions, 
-                        strategic_analysis, motivation, huihui_context
+                    # Start Phi-4 task
+                    phi4_task = asyncio.create_task(
+                        self._plan_action_with_llm(
+                            perception, game_state, scene_type, current_layer, available_actions, 
+                            strategic_analysis, motivation, huihui_context
+                        )
                     )
-                    if llm_action:
-                        print(f"[PHI4] Final action: {llm_action}")
-                        self.stats['llm_action_count'] += 1
-                        return llm_action
+                    
+                    # Wait for either Phi-4 or cloud LLM (whichever finishes first)
+                    if cloud_task:
+                        print("[PARALLEL] Waiting for Phi-4 or Cloud LLM (whichever finishes first)...")
+                        done, pending = await asyncio.wait(
+                            [phi4_task, cloud_task],
+                            return_when=asyncio.FIRST_COMPLETED
+                        )
+                        
+                        # Check which one finished
+                        for task in done:
+                            if task == cloud_task:
+                                cloud_recommendation = task.result()
+                                if cloud_recommendation:
+                                    action, reasoning = cloud_recommendation
+                                    print(f"[CLOUD-LLM] ✓ Won the race! Using: {action}")
+                                    return action
+                            elif task == phi4_task:
+                                llm_action = task.result()
+                                if llm_action:
+                                    print(f"[PHI4] ✓ Won the race! Using: {llm_action}")
+                                    self.stats['llm_action_count'] += 1
+                                    return llm_action
                     else:
-                        print("[PHI4] Phi-4 returned None, falling back to heuristics")
+                        # No cloud task, just wait for Phi-4
+                        llm_action = await phi4_task
+                        if llm_action:
+                            print(f"[PHI4] Final action: {llm_action}")
+                            self.stats['llm_action_count'] += 1
+                            return llm_action
+                        else:
+                            print("[PHI4] Phi-4 returned None, falling back to heuristics")
                 except Exception as e:
                     print(f"[PHI4] Planning failed: {e}, using heuristics")
                     import traceback
