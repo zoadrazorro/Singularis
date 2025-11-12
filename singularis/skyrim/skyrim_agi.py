@@ -1491,6 +1491,7 @@ class SkyrimAGI:
         await self._test_controller_connection()
 
         self.running = True
+        self.action_executing = False  # Flag to prevent auxiliary exploration during main actions
         start_time = time.time()
         
         # Initialize LLM semaphore for resource management
@@ -1610,8 +1611,8 @@ class SkyrimAGI:
                         continue
                 
                 # MOVE FORWARD - Keep exploring
-                # Only if action queue is empty (don't interfere with main actions)
-                if current_time - last_move_time >= move_interval and self.action_queue.empty():
+                # Only if no main action is executing (don't interfere)
+                if current_time - last_move_time >= move_interval and not self.action_executing:
                     try:
                         if cycle_count % 10 == 0:
                             print(f"[AUX-EXPLORE] Moving forward (cycle {cycle_count})")
@@ -1634,8 +1635,8 @@ class SkyrimAGI:
                             print(f"[AUX-EXPLORE] Move error: {e}")
                 
                 # LOOK AROUND - Explore environment
-                # Only if action queue is empty (don't interfere with main actions)
-                if current_time - last_look_time >= look_interval and self.action_queue.empty():
+                # Only if no main action is executing (don't interfere)
+                if current_time - last_look_time >= look_interval and not self.action_executing:
                     try:
                         from singularis.skyrim.actions import Action, ActionType
                         # Random camera movement
@@ -1660,8 +1661,8 @@ class SkyrimAGI:
                             print(f"[AUX-EXPLORE] Look error: {e}")
                 
                 # CHANGE DIRECTION - Avoid getting stuck
-                # Only if action queue is empty (don't interfere with main actions)
-                if current_time - last_direction_change >= direction_change_interval and self.action_queue.empty():
+                # Only if no main action is executing (don't interfere)
+                if current_time - last_direction_change >= direction_change_interval and not self.action_executing:
                     try:
                         from singularis.skyrim.actions import Action, ActionType
                         # Turn to a new direction
@@ -2141,6 +2142,9 @@ Be concise but insightful. Focus on what Singularis might have missed."""
                 
                 print(f"\n[ACTION] Executing: {action}")
                 
+                # Set flag to prevent auxiliary exploration interference
+                self.action_executing = True
+                
                 # Execute action with timing
                 execution_start = time.time()
                 try:
@@ -2166,6 +2170,9 @@ Be concise but insightful. Focus on what Singularis might have missed."""
                         print("[ACTION] Performed fallback look_around")
                     except:
                         print("[ACTION] Even fallback action failed")
+                finally:
+                    # Clear flag when done (always runs)
+                    self.action_executing = False
                 
                 # Queue for learning
                 try:
