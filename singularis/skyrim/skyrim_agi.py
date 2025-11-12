@@ -2520,10 +2520,10 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                                 motivation=mot_state,
                                 goal=self.current_goal
                             ),
-                            timeout=30.0  # Max 30s for planning to prevent hangs
+                            timeout=11.0  # Max 11s for planning to prevent hangs
                         )
                 except asyncio.TimeoutError:
-                    print("[REASONING] ⚠️ Planning timed out after 30s, using fallback")
+                    print("[REASONING] ⚠️ Planning timed out after 11s, using fallback")
                     action = None
                 except Exception as e:
                     print(f"[REASONING] ⚠️ Planning error: {e}, using fallback")
