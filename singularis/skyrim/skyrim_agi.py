@@ -2834,6 +2834,10 @@ REASONING: <explanation>"""
             if self.rl_learner is not None:
                 q_values = self.rl_learner.get_q_values(state_dict)
             
+            # Initialize task variables
+            cloud_task = None
+            local_moe_task = None
+            
             # Use RL-based action selection if enabled (but not if forcing variety)
             if self.rl_learner is not None and use_rl:
                 print("[PLANNING] Using RL-based action selection with LLM reasoning...")
