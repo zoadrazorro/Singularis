@@ -77,13 +77,13 @@ class SkyrimConfig:
     # Async execution
     enable_async_reasoning: bool = True  # Run reasoning in parallel with actions
     action_queue_size: int = 3  # Max queued actions
-    perception_interval: float = 0.5  # How often to perceive (seconds)
+    perception_interval: float = 0.25  # How often to perceive (seconds) - faster for responsiveness
     max_concurrent_llm_calls: int = 4  # With 4 models (2 mistral + 2 big), can handle 4 concurrent
-    reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles
+    reasoning_throttle: float = 0.1  # Min seconds between reasoning cycles - minimal throttle
     
     # Fast reactive loop
     enable_fast_loop: bool = True  # Enable fast reactive loop for immediate responses
-    fast_loop_interval: float = 1.0  # Fast loop runs every second
+    fast_loop_interval: float = 0.5  # Fast loop runs every half second - twice as fast
     fast_health_threshold: float = 30.0  # Health % to trigger emergency healing
     fast_danger_threshold: int = 3  # Number of enemies to trigger defensive actions
 
@@ -609,23 +609,23 @@ class SkyrimAGI:
                     skip_count += 1
                     if skip_count % 20 == 0:  # Only log every 20 skips
                         print(f"[PERCEPTION] Queue full, skipped {skip_count} cycles")
-                    await asyncio.sleep(3.0)  # Long wait when queue is full
+                    await asyncio.sleep(1.5)  # Shorter wait when queue is full
                     continue
                 
-                # Adaptive throttling based on queue fullness
+                # Adaptive throttling based on queue fullness - optimized for speed
                 if queue_size >= max_queue_size * 0.8:
-                    # Queue is almost full - slow down significantly
-                    throttle_delay = 4.0
+                    # Queue is almost full - slow down
+                    throttle_delay = 2.0
                     if cycle_count % 5 == 0:
-                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - heavy throttling (4s delay)")
+                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - heavy throttling (2s delay)")
                 elif queue_size >= max_queue_size * 0.6:
                     # Queue is getting full - moderate slowdown
-                    throttle_delay = 2.5
+                    throttle_delay = 1.0
                     if cycle_count % 10 == 0:
-                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - moderate throttling (2.5s delay)")
+                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - moderate throttling (1s delay)")
                 elif queue_size >= max_queue_size * 0.4:
                     # Queue is filling - light slowdown
-                    throttle_delay = 1.5
+                    throttle_delay = 0.5
                 else:
                     # Queue has space - normal speed
                     throttle_delay = self.config.perception_interval
@@ -633,112 +633,52 @@ class SkyrimAGI:
                 # Only perceive if queue has space
                 perception = await self.perception.perceive()
                 
-                # Enhance perception with Qwen3-VL if available
-                if self.perception_llm and cycle_count % 3 == 0:  # Every 3rd cycle for performance
+                # Enhance perception with Qwen3-VL using CLIP data (not raw images)
+                if self.perception_llm and cycle_count % 5 == 0:  # Every 5th cycle for efficiency
                     try:
-                        # Get the actual screenshot image
-                        screenshot = perception.get('screenshot')
-                        if cycle_count % 3 == 0:  # Debug logging
-                            print(f"[QWEN3-VL] Cycle {cycle_count}: perception_llm={self.perception_llm is not None}, screenshot={screenshot is not None}")
-                        if screenshot:
-                            print(f"[QWEN3-VL] Starting visual analysis for cycle {cycle_count}...")
-                            
-                            # Import PIL Image for resizing
-                            from PIL import Image as PILImage
-                            
-                            # Resize screenshot to reduce size (vision models don't need full resolution)
-                            # Resize to max 1024px on longest side while maintaining aspect ratio
-                            max_size = 1024
-                            width, height = screenshot.size
-                            if width > max_size or height > max_size:
-                                if width > height:
-                                    new_width = max_size
-                                    new_height = int(height * (max_size / width))
-                                else:
-                                    new_height = max_size
-                                    new_width = int(width * (max_size / height))
-                                screenshot = screenshot.resize((new_width, new_height), PILImage.Resampling.LANCZOS)
-                                print(f"[QWEN3-VL] Resized screenshot from {width}x{height} to {new_width}x{new_height}")
-                            
-                            # Save screenshot temporarily for VL model with compression
-                            import tempfile
-                            import os
-                            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as tmp:
-                                # Use JPEG with quality 85 for much smaller file size
-                                screenshot.save(tmp.name, 'JPEG', quality=85, optimize=True)
-                                screenshot_path = tmp.name
-                            
-                            # Check file size
-                            file_size = os.path.getsize(screenshot_path)
-                            print(f"[QWEN3-VL] Screenshot saved to {screenshot_path} ({file_size / 1024:.1f} KB)")
-                            
-                            try:
-                                # Get visual analysis from Qwen3-VL with image
-                                game_state = perception.get('game_state')
-                                scene_type = perception.get('scene_type', 'unknown')
-                                
-                                visual_prompt = f"""You are analyzing a Skyrim gameplay screenshot.
+                        game_state = perception.get('game_state')
+                        scene_type = perception.get('scene_type', 'unknown')
+                        objects = perception.get('objects', [])
+                        scene_probs = perception.get('scene_probs', {})
+                        
+                        # Build rich context from CLIP analysis
+                        objects_list = ', '.join([f"{obj['label']} ({obj['confidence']:.2f})" for obj in objects[:5]])
+                        scene_confidence = max(scene_probs.values()) if scene_probs else 0.0
+                        
+                        clip_context = f"""Analyze Skyrim gameplay based on CLIP visual perception:
 
-Context:
-- Scene type: {scene_type}
+CLIP Scene Classification:
+- Scene type: {scene_type} (confidence: {scene_confidence:.2f})
+- Detected objects: {objects_list if objects_list else 'none detected'}
+
+Game State:
 - Location: {game_state.location_name if game_state else 'unknown'}
 - Health: {game_state.health if game_state else 100:.0f}/100
 - In combat: {game_state.in_combat if game_state else False}
+- Enemies nearby: {game_state.enemies_nearby if game_state else 0}
+- NPCs nearby: {len(game_state.nearby_npcs) if game_state and game_state.nearby_npcs else 0}
 
-Analyze the image and provide:
-1. What objects/NPCs/enemies you see
-2. Spatial layout (indoor/outdoor, terrain, obstacles)
-3. Threats or opportunities visible
-4. Recommended focus area or action"""
-                                
-                                # Pass image to Qwen3-VL for actual vision analysis
-                                print(f"[QWEN3-VL] Calling LLM with image...")
-                                try:
-                                    visual_analysis = await self.perception_llm.generate(
-                                        prompt=visual_prompt,
-                                        max_tokens=384,
-                                        image_path=screenshot_path  # Pass screenshot to vision model
-                                    )
-                                    print(f"[QWEN3-VL] LLM response received")
-                                    perception['visual_analysis'] = visual_analysis.get('content', '')
-                                    print(f"[QWEN3-VL] Visual analysis: {visual_analysis.get('content', '')[:150]}...")
-                                except Exception as vision_error:
-                                    # Vision model might not be supported by LM Studio
-                                    print(f"[QWEN3-VL] Vision API failed (model may not support images): {vision_error}")
-                                    print(f"[QWEN3-VL] Falling back to text-only analysis")
-                                    # Try text-only analysis without image
-                                    text_only_prompt = f"""Analyze Skyrim gameplay based on context (no image available):
-
-Context:
-- Scene type: {scene_type}
-- Location: {game_state.location_name if game_state else 'unknown'}
-- Health: {game_state.health if game_state else 100:.0f}/100
-- In combat: {game_state.in_combat if game_state else False}
-
-Based on this context, provide:
-1. Likely environment description
+Based on this visual and contextual data, provide:
+1. Environment description and spatial awareness
 2. Potential threats or opportunities
-3. Recommended actions"""
-                                    
-                                    visual_analysis = await self.perception_llm.generate(
-                                        prompt=text_only_prompt,
-                                        max_tokens=256
-                                    )
-                                    perception['visual_analysis'] = f"[TEXT-ONLY] {visual_analysis.get('content', '')}"
-                                    print(f"[QWEN3-VL] Text-only analysis: {visual_analysis.get('content', '')[:100]}...")
-                            finally:
-                                # Clean up temp file
-                                try:
-                                    os.unlink(screenshot_path)
-                                except:
-                                    pass
-                        else:
-                            print(f"[QWEN3-VL] No screenshot available in perception")
+3. Recommended actions or focus areas
+4. Strategic considerations"""
+                        
+                        print(f"[QWEN3-VL] Analyzing CLIP perception (cycle {cycle_count})...")
+                        visual_analysis = await self.perception_llm.generate(
+                            prompt=clip_context,
+                            max_tokens=256
+                        )
+                        perception['visual_analysis'] = visual_analysis.get('content', '')
+                        if cycle_count % 15 == 0:  # Log occasionally
+                            print(f"[QWEN3-VL] Analysis: {visual_analysis.get('content', '')[:100]}...")
+                        
                     except Exception as e:
-                        # Always log errors for debugging
-                        print(f"[QWEN3-VL] Visual analysis failed: {e}")
-                        import traceback
-                        traceback.print_exc()
+                        # Log errors but don't break the loop
+                        if cycle_count % 30 == 0:
+                            print(f"[QWEN3-VL] Analysis failed: {e}")
+                            import traceback
+                            traceback.print_exc()
                 
                 self.current_perception = perception
                 
@@ -945,8 +885,8 @@ Based on this context, provide:
                 except asyncio.QueueFull:
                     print(f"[ACTION] Learning queue full")
                 
-                # Brief pause to let action complete
-                await asyncio.sleep(0.5)
+                # Minimal pause to let action complete
+                await asyncio.sleep(0.1)
                 
             except asyncio.TimeoutError:
                 # No action available, continue monitoring
