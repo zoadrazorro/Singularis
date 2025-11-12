@@ -81,9 +81,17 @@ class SkyrimConfig:
     max_concurrent_llm_calls: int = 4  # With 4 models (2 mistral + 2 big), can handle 4 concurrent
     reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles
 
-    # Model names for mistral-7b instances (using base and :2 endpoints)
-    phi4_main_model: str = "mistralai/Mistral-7B-Instruct-v0.3"
-    phi4_action_model: str = "mistralai/Mistral-7B-Instruct-v0.3:2"
+    # Model names for qwen3-4b-thinking instances (4 instances for tactical reasoning)
+    qwen3_model_1: str = "qwen/qwen3-4b-thinking-2507"
+    qwen3_model_2: str = "qwen/qwen3-4b-thinking-2507:2"
+    qwen3_model_3: str = "qwen/qwen3-4b-thinking-2507:3"
+    qwen3_model_4: str = "qwen/qwen3-4b-thinking-2507:4"
+    
+    # Visual model for scene interpretation
+    qwen3_vl_model: str = "qwen/qwen3-vl-8b"
+    
+    # Quick state analysis model
+    phi4_mini_state_model: str = "microsoft/phi-4-mini-reasoning"
 
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise
@@ -217,9 +225,11 @@ class SkyrimAGI:
         self.rl_reasoning_neuron = RLReasoningNeuron()
         # Will connect LLM interface when initialized
         
-        # Initialize mistral-7b pool tracking
-        self.mistral_pool = []
-        self.mistral_index = 0
+        # Initialize qwen3-4b-thinking pool tracking
+        self.qwen3_pool = []
+        self.qwen3_index = 0
+        self.visual_llm = None  # Will be initialized with LLM
+        self.state_analysis_llm = None  # Will be initialized with LLM
         
         # 11. Meta-Strategist (coordinates tactical & strategic thinking)
         print("  [11/12] Meta-strategist coordinator...")
@@ -297,99 +307,168 @@ class SkyrimAGI:
         print("Skyrim AGI initialization complete.")
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
 
-    def get_next_mistral(self):
-        """Get next mistral-7b LLM from pool (round-robin)."""
-        if not self.mistral_pool:
+    def get_next_qwen3(self):
+        """Get next qwen3-4b-thinking LLM from pool (round-robin)."""
+        if not self.qwen3_pool:
             return None
-        llm = self.mistral_pool[self.mistral_index]
-        self.mistral_index = (self.mistral_index + 1) % len(self.mistral_pool)
+        llm = self.qwen3_pool[self.qwen3_index]
+        self.qwen3_index = (self.qwen3_index + 1) % len(self.qwen3_pool)
         return llm
 
     async def initialize_llm(self):
         """
-        Initialize hybrid LLM architecture: 2 mistral-7b + 2 big models.
+        Initialize hybrid LLM architecture: 4 qwen3-4b-thinking + 1 qwen3-vl + 1 phi-4-mini + 2 big models.
         
         Architecture:
-        - 2x mistral-7b-instruct (7B params): Fast tactical decisions
-          * Main consciousness engine + action planning (mistral-7b)
-          * RL reasoning + meta-strategist (mistral-7b:2)
+        - 4x qwen3-4b-thinking (4B params): Fast tactical reasoning with chain-of-thought
+          * Instance 1: Main consciousness engine
+          * Instance 2: Action planning
+          * Instance 3: RL reasoning neuron
+          * Instance 4: Meta-strategist
+        
+        - 1x qwen3-vl-8b (8B params): Visual scene interpretation
+          * Analyzes screenshots for detailed environment understanding
+        
+        - 1x phi-4-mini-reasoning (4B params): Quick state analysis
+          * Fast, concise analysis of current game state and immediate threats
         
         - 2x Big models (14B params): Deep strategic thinking
           * phi-4 (14B): Long-term strategic planning, reasoning chains
           * eva-qwen2.5-14b (14B): World understanding, narrative, NPCs
         
-        This hybrid approach balances speed (mistral-7b) with depth (big models).
-        Total: 4 LLM instances running in parallel with async execution.
+        This hybrid approach uses fast thinking models for tactics + vision + quick analysis.
+        Total: 8 LLM instances running in parallel with async execution.
         """
         print("=" * 70)
         print("INITIALIZING HYBRID LLM ARCHITECTURE")
         print("=" * 70)
-        print("2x mistral-7b (tactical) + 2x big models (strategic)")
+        print("4x qwen3-4b-thinking (tactical) + 1x qwen3-vl (vision) + 1x phi-4-mini (state) + 2x big models (strategic)")
         print("=" * 70)
         print()
         
-        # ===== MISTRAL-7B INSTANCES (2x) - TACTICAL REASONING =====
+        # ===== QWEN3-4B-THINKING INSTANCES (4x) - TACTICAL REASONING =====
         
-        # 1. Main consciousness LLM (mistral-7b)
-        print("[MISTRAL-MAIN] Initializing primary consciousness engine...")
+        # 1. Main consciousness LLM (qwen3-4b-thinking)
+        print("[QWEN3-MAIN] Initializing primary consciousness engine...")
         await self.agi.initialize_llm()
         
         # Connect consciousness_llm to bridge
         if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
             self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
-            print("[MISTRAL-MAIN] ✓ Consciousness LLM connected to bridge")
-            print(f"[MISTRAL-MAIN] Model: {self.config.phi4_main_model} (consciousness + action planning)")
+            print("[QWEN3-MAIN] ✓ Consciousness LLM connected to bridge")
+            print(f"[QWEN3-MAIN] Model: {self.config.qwen3_model_1} (consciousness)")
         else:
-            print("[MISTRAL-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")
+            print("[QWEN3-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")
         
-        # 2. Initialize both mistral-7b instances
-        # Store both instances in a pool for load balancing
-        self.mistral_pool = []
-        self.mistral_index = 0  # For round-robin selection
+        # 2. Initialize all 4 qwen3-4b-thinking instances
+        # Store all instances in a pool for load balancing
+        self.qwen3_pool = []
+        self.qwen3_index = 0  # For round-robin selection
         
         for i, model_name in enumerate([
-            self.config.phi4_main_model,
-            self.config.phi4_action_model
+            self.config.qwen3_model_1,
+            self.config.qwen3_model_2,
+            self.config.qwen3_model_3,
+            self.config.qwen3_model_4
         ], 1):
             try:
-                print(f"\n[MISTRAL-{i}] Initializing {model_name}...")
+                print(f"\n[QWEN3-{i}] Initializing {model_name}...")
                 config = LMStudioConfig(
                     base_url=self.config.base_config.lm_studio_url,
                     model_name=model_name,
                     temperature=0.7,
-                    max_tokens=1024
+                    max_tokens=512
                 )
                 client = LMStudioClient(config)
                 interface = ExpertLLMInterface(client)
-                self.mistral_pool.append(interface)
-                print(f"[MISTRAL-{i}] ✓ Connected: {model_name}")
+                self.qwen3_pool.append(interface)
+                print(f"[QWEN3-{i}] ✓ Connected: {model_name}")
             except Exception as e:
-                print(f"[MISTRAL-{i}] ⚠️ Failed to initialize {model_name}: {e}")
+                print(f"[QWEN3-{i}] ⚠️ Failed to initialize {model_name}: {e}")
         
-        print(f"\n[MISTRAL-POOL] ✓ {len(self.mistral_pool)}/2 mistral-7b instances ready")
-        print(f"[MISTRAL-POOL] Load balancing: Round-robin across both instances")
+        print(f"\n[QWEN3-POOL] ✓ {len(self.qwen3_pool)}/4 qwen3-4b-thinking instances ready")
+        print(f"[QWEN3-POOL] Load balancing: Round-robin across all instances")
         
-        # Connect first instance (mistral-7b) to RL reasoning neuron and action planner
-        if len(self.mistral_pool) >= 1:
-            self.rl_reasoning_neuron.llm_interface = self.mistral_pool[0]
-            self.action_planning_llm = self.mistral_pool[0]
-            print("[MISTRAL-RL] ✓ RL reasoning neuron connected to mistral-7b")
-            print("[MISTRAL-ACTION] ✓ Action planner connected to mistral-7b")
+        # Connect instances to different roles
+        if len(self.qwen3_pool) >= 2:
+            self.action_planning_llm = self.qwen3_pool[1]
+            print("[QWEN3-ACTION] ✓ Action planner connected to qwen3-4b-thinking:2")
+        
+        if len(self.qwen3_pool) >= 3:
+            self.rl_reasoning_neuron.llm_interface = self.qwen3_pool[2]
+            print("[QWEN3-RL] ✓ RL reasoning neuron connected to qwen3-4b-thinking:3")
         else:
-            print("[MISTRAL-RL] ⚠️ No mistral-7b instances available")
+            print("[QWEN3-RL] ⚠️ Not enough qwen3 instances for RL neuron")
             # Fallback: use main LLM if available
             if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
                 if hasattr(self.agi.consciousness_llm, 'llm_interface'):
                     self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
-                    print("[MISTRAL-RL] ✓ Using main consciousness LLM as fallback")
+                    print("[QWEN3-RL] ✓ Using main consciousness LLM as fallback")
         
-        # Connect second instance (mistral-7b:2) to meta-strategist
-        if len(self.mistral_pool) >= 2:
-            self.meta_strategist.llm_interface = self.mistral_pool[1]
-            print("[MISTRAL-META] ✓ Meta-strategist connected to mistral-7b:2")
+        # Connect fourth instance to meta-strategist
+        if len(self.qwen3_pool) >= 4:
+            self.meta_strategist.llm_interface = self.qwen3_pool[3]
+            print("[QWEN3-META] ✓ Meta-strategist connected to qwen3-4b-thinking:4")
         
         print("\n" + "=" * 70)
-        print("MISTRAL-7B LAYER COMPLETE (2 instances)")
+        print("QWEN3-4B-THINKING LAYER COMPLETE (4 instances)")
+        print("=" * 70)
+        
+        # ===== QWEN3-VL INSTANCE - VISUAL INTERPRETATION =====
+        
+        print("\n" + "=" * 70)
+        print("INITIALIZING VISUAL MODEL")
+        print("=" * 70)
+        print()
+        
+        try:
+            print(f"[QWEN3-VL] Initializing {self.config.qwen3_vl_model} for visual interpretation...")
+            vl_config = LMStudioConfig(
+                base_url=self.config.base_config.lm_studio_url,
+                model_name=self.config.qwen3_vl_model,
+                temperature=0.5,
+                max_tokens=1024
+            )
+            vl_client = LMStudioClient(vl_config)
+            self.visual_llm = ExpertLLMInterface(vl_client)
+            print("[QWEN3-VL] ✓ Visual interpretation LLM initialized")
+            print("[QWEN3-VL] Model: qwen/qwen3-vl-8b (8B params)")
+            print("[QWEN3-VL] Role: Scene analysis, object detection, spatial understanding")
+        except Exception as e:
+            print(f"[QWEN3-VL] ⚠️ Failed to initialize visual model: {e}")
+            self.visual_llm = None
+        
+        print("\n" + "=" * 70)
+        print("VISUAL MODEL LAYER COMPLETE")
+        print("=" * 70)
+        
+        # ===== PHI-4-MINI INSTANCE - QUICK STATE ANALYSIS =====
+        
+        print("\n" + "=" * 70)
+        print("INITIALIZING STATE ANALYSIS MODEL")
+        print("=" * 70)
+        print()
+        
+        try:
+            print(f"[PHI4-MINI] Initializing {self.config.phi4_mini_state_model} for quick state analysis...")
+            state_config = LMStudioConfig(
+                base_url=self.config.base_config.lm_studio_url,
+                model_name=self.config.phi4_mini_state_model,
+                temperature=0.3,
+                max_tokens=256
+            )
+            state_client = LMStudioClient(state_config)
+            self.state_analysis_llm = ExpertLLMInterface(state_client)
+            print("[PHI4-MINI] ✓ State analysis LLM initialized")
+            print("[PHI4-MINI] Model: microsoft/phi-4-mini-reasoning (4B params)")
+            print("[PHI4-MINI] Role: Quick state analysis, threat detection, immediate context")
+            print("[PHI4-MINI] Max tokens: 256 (short but sweet)")
+        except Exception as e:
+            print(f"[PHI4-MINI] ⚠️ Failed to initialize state analysis model: {e}")
+            self.state_analysis_llm = None
+        
+        print("\n" + "=" * 70)
+        print("STATE ANALYSIS MODEL LAYER COMPLETE")
         print("=" * 70)
         
         # ===== BIG MODEL INSTANCES (2x) - DEEP STRATEGY =====
@@ -1344,12 +1423,12 @@ class SkyrimAGI:
                 # Get meta-strategic context
                 meta_context = self.meta_strategist.get_active_instruction_context()
                 
-                # Get next mistral-7b from pool for load balancing
-                mistral_llm = self.get_next_mistral()
-                if mistral_llm:
+                # Get next qwen3-4b-thinking from pool for load balancing
+                qwen3_llm = self.get_next_qwen3()
+                if qwen3_llm:
                     # Temporarily assign to RL reasoning neuron for this call
                     original_llm = self.rl_reasoning_neuron.llm_interface
-                    self.rl_reasoning_neuron.llm_interface = mistral_llm
+                    self.rl_reasoning_neuron.llm_interface = qwen3_llm
                 
                 # Use RL reasoning neuron to think about Q-values (with meta-strategic guidance)
                 rl_reasoning = await self.rl_reasoning_neuron.reason_about_q_values(
@@ -1367,7 +1446,7 @@ class SkyrimAGI:
                 )
                 
                 # Restore original LLM
-                if mistral_llm:
+                if qwen3_llm:
                     self.rl_reasoning_neuron.llm_interface = original_llm
                 
                 action = rl_reasoning.recommended_action
@@ -1645,7 +1724,7 @@ TERRAIN STRATEGY:
 QUICK DECISION - Choose ONE action from available list:"""
 
         try:
-            print("[MISTRAL-ACTION] Fast action planning with mistral-7b...")
+            print("[QWEN3-ACTION] Fast action planning with qwen3-4b-thinking...")
             
             # Use dedicated LLM interface directly for faster response
             if self.action_planning_llm:
@@ -1654,8 +1733,8 @@ QUICK DECISION - Choose ONE action from available list:"""
                     max_tokens=300  # Enough for reasoning + action selection
                 )
                 # Debug: Check what we got back
-                print(f"[MISTRAL-ACTION] DEBUG - Result type: {type(result)}")
-                print(f"[MISTRAL-ACTION] DEBUG - Result keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
+                print(f"[QWEN3-ACTION] DEBUG - Result type: {type(result)}")
+                print(f"[QWEN3-ACTION] DEBUG - Result keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
                 
                 # LMStudioClient.generate() returns a dict with 'content' key (not 'response')
                 response = result.get('content', result.get('response', '')) if isinstance(result, dict) else str(result)
@@ -1664,9 +1743,9 @@ QUICK DECISION - Choose ONE action from available list:"""
                 result = await self.agi.process(context)
                 response = result.get('consciousness_response', {}).get('response', '')
             
-            print(f"[MISTRAL-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
+            print(f"[QWEN3-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
         except Exception as e:
-            print(f"[MISTRAL-ACTION] ERROR during LLM action planning: {e}")
+            print(f"[QWEN3-ACTION] ERROR during LLM action planning: {e}")
             import traceback
             traceback.print_exc()
             return None
