@@ -88,7 +88,7 @@ class SkyrimConfig:
     fast_danger_threshold: int = 3  # Number of enemies to trigger defensive actions
 
     # Core models
-    phi4_action_model: str = "microsoft/phi-4"  # Action planning
+    phi4_action_model: str = "mistralai/mistral-nemo-instruct-2407"  # Action planning
     huihui_cognition_model: str = "huihui-moe-60b-a3b-abliterated-i1"  # Main cognition, reasoning, strategy
     qwen3_vl_perception_model: str = "qwen/qwen3-vl-30b"  # Perception and spatial awareness
 
@@ -263,8 +263,8 @@ class SkyrimAGI:
         self.last_reasoning_time: float = 0.0  # Track last reasoning to throttle
         
         # Multi-LLM architecture (initialized in initialize_llm)
-        # 4x phi-4-mini for fast consciousness/tactical reasoning
-        self.action_planning_llm: Optional[Any] = None  # phi-4-mini: Fast action planning
+        # Mistral Nemo for fast consciousness/tactical reasoning
+        self.action_planning_llm: Optional[Any] = None  # mistral-nemo: Fast action planning
         # 2x big models for high-level strategic planning
         self.strategic_planning_llm: Optional[Any] = None  # Big model: Long-term strategy
         self.world_understanding_llm: Optional[Any] = None  # Big model: Deep world understanding
@@ -311,10 +311,10 @@ class SkyrimAGI:
 
     async def initialize_llm(self):
         """
-        Initialize streamlined LLM architecture: phi-4 + huihui + qwen3-vl.
+        Initialize streamlined LLM architecture: mistral-nemo + huihui + qwen3-vl.
         
         Architecture:
-        - 1x phi-4 (14B params): Action planning
+        - 1x mistral-nemo (12B params): Action planning
           * Fast, decisive action selection
           * Tactical decision-making
         
@@ -336,7 +336,7 @@ class SkyrimAGI:
         print("=" * 70)
         print("INITIALIZING HYBRID LLM ARCHITECTURE")
         print("=" * 70)
-        print("phi-4 (action) + huihui-60b (cognition) + qwen3-vl-30b (perception)")
+        print("mistral-nemo (action) + huihui-60b (cognition) + qwen3-vl-30b (perception)")
         print("=" * 70)
         print()
         
@@ -452,9 +452,9 @@ class SkyrimAGI:
         print()
         
         try:
-            print(f"[PHI4-ACTION] Initializing {self.config.phi4_action_model}...")
-            print("[PHI4-ACTION] Model: microsoft/phi-4 (14B params)")
-            print("[PHI4-ACTION] Role: Fast, decisive action selection")
+            print(f"[MISTRAL-ACTION] Initializing {self.config.phi4_action_model}...")
+            print("[MISTRAL-ACTION] Model: mistralai/mistral-nemo-instruct-2407 (12B params)")
+            print("[MISTRAL-ACTION] Role: Fast, decisive action selection")
             action_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
                 model_name=self.config.phi4_action_model,
@@ -463,15 +463,15 @@ class SkyrimAGI:
             )
             action_client = LMStudioClient(action_config)
             self.action_planning_llm = ExpertLLMInterface(action_client)
-            print("[PHI4-ACTION] ✓ Action planning LLM initialized")
+            print("[MISTRAL-ACTION] ✓ Action planning LLM initialized")
             
             # Connect to action affordance system
             if hasattr(self, 'action_affordances') and hasattr(self.action_affordances, 'set_planning_llm'):
                 self.action_affordances.set_planning_llm(self.action_planning_llm)
-                print("[PHI4-ACTION] ✓ Connected to action affordance system")
+                print("[MISTRAL-ACTION] ✓ Connected to action affordance system")
             
         except Exception as e:
-            print(f"[PHI4-ACTION] ⚠️ Failed to initialize: {e}")
+            print(f"[MISTRAL-ACTION] ⚠️ Failed to initialize: {e}")
             import traceback
             traceback.print_exc()
             self.action_planning_llm = None
@@ -479,7 +479,7 @@ class SkyrimAGI:
         print("\n" + "=" * 70)
         print("STREAMLINED LLM ARCHITECTURE READY")
         print("=" * 70)
-        print("phi-4 (14B): Fast action planning")
+        print("mistral-nemo (12B): Fast action planning")
         print("huihui-moe-60b (60B MoE): Main cognition, reasoning, strategy")
         print("qwen3-vl-30b (30B): Perception and spatial awareness")
         print("3 specialized models with clear roles")
@@ -1899,7 +1899,7 @@ Analyze the image and provide:
         if not llm_interface:
             return None
         
-        # Build compact context for fast phi-4 reasoning
+        # Build compact context for fast mistral-nemo reasoning
         recommendations_section = ""
         if huihui_context:
             huihui_status = huihui_context.get('huihui_status', 'unknown')
@@ -1928,7 +1928,7 @@ TERRAIN STRATEGY:
 QUICK DECISION - Choose ONE action from available list:"""
 
         try:
-            print("[PHI4-ACTION] Fast action planning with phi-4...")
+            print("[MISTRAL-ACTION] Fast action planning with mistral-nemo...")
             
             # Use dedicated LLM interface directly for faster response
             if self.action_planning_llm:
@@ -1937,19 +1937,19 @@ QUICK DECISION - Choose ONE action from available list:"""
                     max_tokens=300  # Enough for reasoning + action selection
                 )
                 # Debug: Check what we got back
-                print(f"[PHI4-ACTION] DEBUG - Result type: {type(result)}")
-                print(f"[PHI4-ACTION] DEBUG - Result keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
+                print(f"[MISTRAL-ACTION] DEBUG - Result type: {type(result)}")
+                print(f"[MISTRAL-ACTION] DEBUG - Result keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
                 
                 # LMStudioClient.generate() returns a dict with 'content' key (not 'response')
                 response = result.get('content', result.get('response', '')) if isinstance(result, dict) else str(result)
             else:
-                # Fallback to main LLM through agi.process
+                # Fallback to base AGI consciousness LLM
                 result = await self.agi.process(context)
                 response = result.get('consciousness_response', {}).get('response', '')
             
-            print(f"[PHI4-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
+            print(f"[MISTRAL-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
         except Exception as e:
-            print(f"[PHI4-ACTION] ERROR during LLM action planning: {e}")
+            print(f"[MISTRAL-ACTION] ERROR during LLM action planning: {e}")
             import traceback
             traceback.print_exc()
             return None
