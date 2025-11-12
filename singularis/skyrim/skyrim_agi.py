@@ -574,16 +574,19 @@ class SkyrimAGI:
                     continue
                 
                 # Adaptive throttling based on queue fullness
-                if queue_size >= max_queue_size * 0.6:
-                    # Queue is getting full - slow down significantly
-                    throttle_delay = 5.0  # Increased from 3.0
-                    if cycle_count % 5 == 0:  # Log every 5 cycles instead of using skip_count
-                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - heavy throttling (5s delay)")
-                elif queue_size >= max_queue_size * 0.4:
-                    # Queue is moderately full - moderate slowdown
-                    throttle_delay = 3.0  # Increased from 2.0
+                if queue_size >= max_queue_size * 0.8:
+                    # Queue is almost full - slow down significantly
+                    throttle_delay = 4.0
+                    if cycle_count % 5 == 0:
+                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - heavy throttling (4s delay)")
+                elif queue_size >= max_queue_size * 0.6:
+                    # Queue is getting full - moderate slowdown
+                    throttle_delay = 2.5
                     if cycle_count % 10 == 0:
-                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - moderate throttling (3s delay)")
+                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - moderate throttling (2.5s delay)")
+                elif queue_size >= max_queue_size * 0.4:
+                    # Queue is filling - light slowdown
+                    throttle_delay = 1.5
                 else:
                     # Queue has space - normal speed
                     throttle_delay = self.config.perception_interval
