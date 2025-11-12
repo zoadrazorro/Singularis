@@ -78,7 +78,7 @@ class SkyrimConfig:
     enable_async_reasoning: bool = True  # Run reasoning in parallel with actions
     action_queue_size: int = 3  # Max queued actions
     perception_interval: float = 0.5  # How often to perceive (seconds)
-    max_concurrent_llm_calls: int = 2  # With 4 models (2 phi-4 + 2 big), can handle 2 concurrent
+    max_concurrent_llm_calls: int = 4  # With 4 models (2 mistral + 2 big), can handle 4 concurrent
     reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles
 
     # Model names for mistral-7b instances (using base and :2 endpoints)
