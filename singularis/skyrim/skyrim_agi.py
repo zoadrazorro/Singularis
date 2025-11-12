@@ -1486,11 +1486,33 @@ class SkyrimAGI:
                 print(f"[HEURISTIC] → navigate (careful indoor movement)")
                 return 'navigate'  # Careful indoor movement
             
+            # Add variety to avoid repetitive behavior - humans don't just explore
+            import random
+            
+            # Occasionally try to interact with objects (human-like curiosity)
+            if random.random() < 0.15 and 'activate' in available_actions:
+                print(f"[HEURISTIC] → activate (random curiosity)")
+                return 'activate'
+            
+            # Occasionally look around (human-like awareness)
+            if random.random() < 0.10:
+                print(f"[HEURISTIC] → look_around (situational awareness)")
+                return 'look_around'
+            
+            # Occasionally jump (human-like playfulness/testing)
+            if random.random() < 0.08 and 'jump' in available_actions:
+                print(f"[HEURISTIC] → jump (playful exploration)")
+                return 'jump'
+            
             # Motivation-based selection (for outdoor/general scenes)
             if dominant_drive == 'curiosity':
-                if 'activate' in available_actions:
+                # Curiosity: prioritize interaction and exploration
+                if 'activate' in available_actions and random.random() < 0.4:
                     print(f"[HEURISTIC] → activate (curiosity-driven interaction)")
                     return 'activate'  # Interact with world
+                elif random.random() < 0.3:
+                    print(f"[HEURISTIC] → move_forward (direct movement)")
+                    return 'move_forward'  # Sometimes just move
                 print(f"[HEURISTIC] → explore (curiosity-driven exploration)")
                 return 'explore'  # Forward-biased exploration
             elif dominant_drive == 'competence':
@@ -1500,6 +1522,9 @@ class SkyrimAGI:
                 elif 'backstab' in available_actions and current_layer == "Stealth":
                     print(f"[HEURISTIC] → backstab (stealth practice)")
                     return 'backstab'  # Practice stealth
+                elif random.random() < 0.2:
+                    print(f"[HEURISTIC] → sneak (competence practice)")
+                    return 'sneak'  # Practice stealth
                 print(f"[HEURISTIC] → explore (competence through exploration)")
                 return 'explore'  # Practice by exploring (forward-biased)
             elif dominant_drive == 'coherence':
@@ -1507,9 +1532,19 @@ class SkyrimAGI:
                 if game_state.health < 30:
                     print(f"[HEURISTIC] → rest (coherence restoration, critical health)")
                     return 'rest'  # Only rest if low health
+                elif random.random() < 0.25:
+                    print(f"[HEURISTIC] → move_forward (coherent movement)")
+                    return 'move_forward'
                 print(f"[HEURISTIC] → explore (coherence through gentle exploration)")
                 return 'explore'  # Gentle forward exploration
             else:  # autonomy or default
+                # Add variety even for autonomy
+                if random.random() < 0.2 and 'activate' in available_actions:
+                    print(f"[HEURISTIC] → activate (autonomous interaction)")
+                    return 'activate'
+                elif random.random() < 0.3:
+                    print(f"[HEURISTIC] → move_forward (autonomous movement)")
+                    return 'move_forward'
                 print(f"[HEURISTIC] → explore (autonomy/default)")
                 return 'explore'  # Exercise autonomy through forward exploration
 
@@ -1720,8 +1755,8 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"[ACTION] Invalid action: {action}, using fallback")
             action = 'explore'
         
-        # Handle menu interactions with learning
-        if scene_type in [SceneType.INVENTORY, SceneType.MAP]:
+        # Handle menu interactions with learning ONLY when actually in a menu
+        if scene_type in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE]:
             # We're in a menu - use menu learner
             if not self.menu_learner.current_menu:
                 # Entering menu
@@ -1735,9 +1770,13 @@ QUICK DECISION - Choose ONE action from available list:"""
                 goal='explore' if action == 'explore' else 'exit'
             )
             
-            if suggested_action:
+            if suggested_action and suggested_action in ['activate', 'navigate', 'exit', 'select', 'back']:
                 print(f"[MENU] Using learned action: {suggested_action}")
                 action = suggested_action
+        else:
+            # Not in menu - ensure menu learner is exited
+            if self.menu_learner.current_menu:
+                self.menu_learner.exit_menu()
         
         # Sync action layer to context
         if action in ('explore', 'navigate', 'quest_objective', 'practice'):
@@ -1750,13 +1789,17 @@ QUICK DECISION - Choose ONE action from available list:"""
             self.bindings.switch_to_exploration()
         # Extend with menu/dialogue/stealth as needed
 
+        # Execute actions with better variety and human-like behavior
         if action == 'explore':
-            # Use waypoint-based exploration instead of random movement
+            # Use waypoint-based exploration
             await self.actions.explore_with_waypoints(duration=3.0)
         elif action == 'combat':
             await self.actions.combat_sequence("Enemy")
-        elif action == 'interact':
+        elif action in ('interact', 'activate'):
+            # Look at target briefly before activating
+            print(f"[ACTION] Interacting with object/NPC")
             await self.actions.execute(Action(ActionType.ACTIVATE))
+            await asyncio.sleep(0.5)  # Brief pause after activation
         elif action == 'navigate':
             await self.actions.move_forward(duration=2.0)
         elif action == 'rest':
@@ -1765,6 +1808,17 @@ QUICK DECISION - Choose ONE action from available list:"""
             await self.actions.execute(Action(ActionType.ATTACK))
         elif action == 'quest_objective':
             await self.actions.move_forward(duration=2.0)
+        elif action == 'move_forward':
+            await self.actions.move_forward(duration=1.5)
+        elif action == 'jump':
+            await self.actions.execute(Action(ActionType.JUMP))
+        elif action == 'sneak':
+            await self.actions.execute(Action(ActionType.SNEAK))
+        elif action == 'attack':
+            await self.actions.execute(Action(ActionType.ATTACK))
+        elif action == 'look_around':
+            # Human-like looking behavior
+            await self.actions.look_around()
         elif action.startswith('switch_to_'):
             # Handle layer transition actions
             target_layer = action.replace('switch_to_', '').title()
