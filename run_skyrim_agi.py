@@ -60,6 +60,11 @@ async def main():
         phi4_action_model="mistralai/mistral-nemo-instruct-2407",
         huihui_cognition_model="huihui-moe-60b-a3b-abliterated-i1",
         qwen3_vl_perception_model="qwen/qwen3-vl-8b",
+        
+        # 🆕 Lower API trigger frequencies for faster testing
+        enable_claude_meta=True,
+        enable_gemini_vision=True,
+        gemini_model="gemini-2.0-flash-exp",  # FREE tier (was gemini-2.5-pro)
     )
     
     # Create AGI

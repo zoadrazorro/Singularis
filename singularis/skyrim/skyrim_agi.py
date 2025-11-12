@@ -256,7 +256,8 @@ class SkyrimAGI:
         
         # 11. Meta-Strategist (coordinates tactical & strategic thinking)
         print("  [11/12] Meta-strategist coordinator...")
-        self.meta_strategist = MetaStrategist()
+        # Lower instruction frequency for faster API testing (default: 10)
+        self.meta_strategist = MetaStrategist(instruction_frequency=3)
         # Will connect LLM interface when initialized
         
         # 12. Skyrim-specific Motivation System
@@ -610,7 +611,8 @@ class SkyrimAGI:
             return None
 
         # Throttle Gemini usage so it complements rather than overloads the loop.
-        if cycle_count % 3 != 0:
+        # Changed from every 3rd to every 2nd cycle for faster testing
+        if cycle_count % 2 != 0:
             return None
 
         screenshot = perception.get('screenshot')
@@ -891,7 +893,7 @@ Based on this visual and contextual data, provide:
                                     prompt=clip_context,
                                     max_tokens=256
                                 ),
-                                timeout=10.0  # 10 second timeout
+                                timeout=20.0  # 20 second timeout (Qwen3-VL can be slow)
                             )
                             perception['visual_analysis'] = visual_analysis.get('content', '')
                             # Log every Qwen3-VL analysis (since it only runs every 2nd cycle anyway)
