@@ -341,7 +341,9 @@ Provide phenomenological assessment:
         
         try:
             # Query consciousness engine
-            result = await self.consciousness_llm.process(query, context)
+            # Note: process() expects (query, selected_experts), not context
+            # We let it use default expert selection based on the query
+            result = await self.consciousness_llm.process(query)
             
             # Parse response for adjustment factor
             response = result.get('response', '')
