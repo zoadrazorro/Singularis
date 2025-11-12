@@ -1573,11 +1573,7 @@ class SkyrimAGI:
             print("GENERATING SESSION REPORT")
             print(f"{'=' * 60}")
             try:
-                import asyncio
-                loop = asyncio.get_event_loop()
-                report_path = loop.run_until_complete(
-                    self.main_brain.generate_session_markdown()
-                )
+                report_path = await self.main_brain.generate_session_markdown()
                 print(f"\n[MAIN BRAIN] 🧠✨ Session report generated!")
                 print(f"[MAIN BRAIN] 📄 Location: {report_path}")
                 print(f"[MAIN BRAIN] 🎯 Session ID: {self.main_brain.session_id}")
@@ -1587,16 +1583,15 @@ class SkyrimAGI:
             # Cleanup aiohttp sessions
             print("\n[CLEANUP] Closing HTTP sessions...")
             try:
-                loop = asyncio.get_event_loop()
                 if self.openai_client:
-                    loop.run_until_complete(self.openai_client.close())
+                    await self.openai_client.close()
                 if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
                     if hasattr(self.hybrid_llm, 'gemini_client'):
-                        loop.run_until_complete(self.hybrid_llm.gemini_client.close())
+                        await self.hybrid_llm.gemini_client.close()
                     if hasattr(self.hybrid_llm, 'claude_client'):
-                        loop.run_until_complete(self.hybrid_llm.claude_client.close())
+                        await self.hybrid_llm.claude_client.close()
                 if hasattr(self, 'sensorimotor_llm') and self.sensorimotor_llm:
-                    loop.run_until_complete(self.sensorimotor_llm.close())
+                    await self.sensorimotor_llm.close()
                 print("[CLEANUP] ✓ All sessions closed")
             except Exception as e:
                 print(f"[CLEANUP] Warning: {e}")
@@ -2108,7 +2103,7 @@ Based on this visual and contextual data, provide:
                         try:
                             print("[SENSORIMOTOR] Getting Gemini visual analysis...")
                             gemini_visual = await asyncio.wait_for(
-                                self.hybrid_llm.generate_vision(
+                                self.hybrid_llm.generate_vision_text(
                                     image_data=perception.get('screenshot'),
                                     prompt="Describe the visual scene focusing on: spatial layout, obstacles, pathways, terrain features, landmarks, and any navigational cues. Be specific about what's visible in each direction.",
                                     max_tokens=512
@@ -2356,7 +2351,7 @@ What is the most strategic approach to this situation? Consider:
                         
                         # Store in memory for future reference
                         self.memory_rag.store_cognitive_memory(
-                            thought=strategic_insight,
+                            content=strategic_insight,
                             context={
                                 'type': 'strategic_analysis',
                                 'coherence_delta': coherence_delta,
@@ -2550,7 +2545,6 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                         print(f"[STUCK-DETECTION] ⚠️ Repeated action '{action}' {self.repeated_action_count} times with no visual progress!")
                         print(f"[STUCK-DETECTION] Forcing variety - choosing random different action")
                         # Force a different action
-                        import random
                         game_state = perception.get('game_state')
                         available = game_state.available_actions if game_state else ['move_forward', 'jump', 'activate']
                         different_actions = [a for a in available if a != action]
@@ -4164,7 +4158,6 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                 print(f"[STUCK-DETECTION] Cloud: {self.cloud_llm_failures}, Local MoE: {self.local_moe_failures}")
                 print(f"[STUCK-DETECTION] Forcing random exploration action")
                 # Force a random action to break the loop
-                import random
                 recovery_actions = ['move_forward', 'jump', 'look_around', 'activate']
                 recovery_action = random.choice([a for a in recovery_actions if a in available_actions] or available_actions)
                 # Reset counters
