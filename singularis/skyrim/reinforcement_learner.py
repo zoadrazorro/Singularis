@@ -373,11 +373,20 @@ class ReinforcementLearner:
             'equip_item',
             'consume_item',
             'favorite_item',
-            'exit_menu'
+            'exit_menu',
+            # High-level composite actions (used by planning layer)
+            'explore',  # Composite: waypoint-based exploration
+            'combat',   # Composite: combat sequence
+            'rest',     # Composite: wait/heal
+            'practice', # Composite: skill practice
+            'interact', # Composite: activate objects
+            'navigate'  # Composite: directed movement
         ]
 
         self.action_to_idx = {a: i for i, a in enumerate(self.actions)}
         self.n_actions = len(self.actions)
+        
+        print(f"[RL] Initialized with {self.n_actions} actions: {list(self.actions[:5])}... + {self.n_actions - 5} more")
 
         # State encoder
         self.state_encoder = StateEncoder(feature_dim=state_dim)
