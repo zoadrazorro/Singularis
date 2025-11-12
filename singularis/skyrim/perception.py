@@ -21,6 +21,7 @@ from enum import Enum
 from PIL import Image
 import time
 from .action_affordances import ActionAffordanceSystem
+from .enhanced_vision import EnhancedVision
 
 try:
     import mss
@@ -184,6 +185,20 @@ class SkyrimPerception:
         # Current controller reference for layer awareness
         self._controller = None
 
+        # Optional OCR-assisted HUD reader
+        self.enhanced_vision: Optional[EnhancedVision] = None
+        self.gemini_analyzer: Optional[Any] = None
+
+
+    def set_enhanced_vision(self, enhanced_vision: EnhancedVision) -> None:
+        """Attach enhanced vision helper."""
+
+        self.enhanced_vision = enhanced_vision
+
+    def set_gemini_analyzer(self, analyzer: Any) -> None:
+        """Attach optional Gemini-based vision analyzer."""
+
+        self.gemini_analyzer = analyzer
 
     def detect_collision(self, threshold: float = 0.01, window: int = 3) -> bool:
         """
@@ -352,7 +367,7 @@ class SkyrimPerception:
 
         return sorted_objects[:top_k]
 
-    def read_game_state(self) -> GameState:
+    def read_game_state(self, screenshot: Optional[Image.Image] = None) -> GameState:
         """
         Read current game state.
 
@@ -360,26 +375,27 @@ class SkyrimPerception:
             GameState with current status
         """
         if self.use_game_api and self._game_api:
-            # Read from game API
             return self._read_from_api()
-        else:
-            # Read from screen (OCR or heuristics)
-            return self._read_from_screen()
+        return self._read_from_screen(screenshot)
 
     def _read_from_api(self) -> GameState:
         """Read game state from API."""
         # Stub - would call SKSE Python bridge
         return GameState()
 
-    def _read_from_screen(self) -> GameState:
-        """Read game state from screen (heuristics with Skyrim-specific detection)."""
+    def _read_from_screen(self, screenshot: Optional[Image.Image]) -> GameState:
+        """Read game state from screen (heuristics with optional OCR)."""
         # Get current layer from controller if available
         current_layer = "Exploration"  # Default
         if self._controller and hasattr(self._controller, 'active_layer'):
             current_layer = self._controller.active_layer or "Exploration"
         
+        hud_info: Dict[str, Any] = {}
+        if self.enhanced_vision and screenshot is not None:
+            hud_info = self.enhanced_vision.extract_hud_info(screenshot)
+
         # Enhanced Skyrim-specific state detection
-        game_state_dict = self._detect_skyrim_state()
+        game_state_dict = self._detect_skyrim_state(hud_info)
         
         # Get available actions for current layer
         available_actions = self.affordance_system.get_available_actions(
@@ -405,7 +421,7 @@ class SkyrimPerception:
             layer_transition_reason=game_state_dict.get('layer_transition_reason', "")
         )
 
-    def _detect_skyrim_state(self) -> Dict[str, Any]:
+    def _detect_skyrim_state(self, hud_info: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Detect Skyrim-specific game state from screen analysis.
         This would use OCR, color detection, and UI element recognition.
@@ -424,11 +440,11 @@ class SkyrimPerception:
         
         # Use more stable state values (would come from actual game state reading)
         state = {
-            'health': 100.0,  # Would read from health bar
-            'magicka': 100.0,  # Would read from magicka bar
-            'stamina': 100.0,  # Would read from stamina bar
+            'health': hud_info.get('health_percent', 100.0) if hud_info else 100.0,
+            'magicka': hud_info.get('magicka_percent', 100.0) if hud_info else 100.0,
+            'stamina': hud_info.get('stamina_percent', 100.0) if hud_info else 100.0,
             'level': 1,  # Would read from character stats
-            'location_name': location,
+            'location_name': hud_info.get('location', location) if hud_info else location,
             'gold': 100,  # Would read from inventory
             'in_combat': in_combat,
             'enemies_nearby': 0,  # Would detect from enemy health bars
@@ -544,7 +560,7 @@ class SkyrimPerception:
         objects = self.detect_objects(screen, top_k=5)
 
         # 5. Read game state
-        game_state = self.read_game_state()
+        game_state = self.read_game_state(screen)
 
         # 6. Package perception
         perception = {

@@ -13,7 +13,7 @@ while considering individual moves (tactics).
 """
 
 import asyncio
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -37,7 +37,12 @@ class MetaStrategist:
     that influences the RL reasoning neuron's tactical decisions.
     """
     
-    def __init__(self, llm_interface=None, instruction_frequency: int = 10):
+    def __init__(
+        self,
+        llm_interface=None,
+        instruction_frequency: int = 10,
+        auxiliary_interfaces: Optional[List[Tuple[Any, str]]] = None,
+    ):
         """
         Initialize meta-strategist.
         
@@ -47,6 +52,10 @@ class MetaStrategist:
         """
         self.llm_interface = llm_interface
         self.instruction_frequency = instruction_frequency
+        self.auxiliary_interfaces: List[Tuple[Any, str]] = []
+        if auxiliary_interfaces:
+            for interface, label in auxiliary_interfaces:
+                self.add_auxiliary_interface(interface, label)
         
         # Current strategic instructions
         self.active_instructions: List[StrategicInstruction] = []
@@ -65,6 +74,20 @@ class MetaStrategist:
         self.current_cycle = 0
         self.last_instruction_cycle = 0
         
+    def add_auxiliary_interface(self, interface: Any, label: str = "auxiliary"):
+        """Register an additional LLM-like interface used alongside the primary one."""
+
+        if interface is None:
+            return
+        self.auxiliary_interfaces.append((interface, label))
+
+    def set_auxiliary_interfaces(self, interfaces: List[Tuple[Any, str]]):
+        """Replace auxiliary interface list."""
+
+        self.auxiliary_interfaces = []
+        for interface, label in interfaces:
+            self.add_auxiliary_interface(interface, label)
+
     def tick_cycle(self):
         """Increment the current cycle counter by 1."""
         self.current_cycle += 1
@@ -134,42 +157,70 @@ class MetaStrategist:
         Returns:
             Strategic instruction or None if generation fails
         """
-        if self.llm_interface is None:
-            return self._heuristic_instruction(current_state, q_values, motivation)
-        
-        # Build meta-strategic prompt
+        system_prompt = self._get_system_prompt()
         prompt = self._build_meta_prompt(current_state, q_values, motivation)
-        
-        try:
-            # Query LLM for strategic instruction
-            response = await self.llm_interface.client.generate(
-                prompt=prompt,
-                system_prompt=self._get_system_prompt(),
-                temperature=0.8,  # Higher temp for creative strategies
-                max_tokens=256
-            )
-            
-            # Parse response
-            instruction = self._parse_instruction_response(
-                response['content'],
-                current_state
-            )
-            
-            if instruction:
-                self.active_instructions.append(instruction)
-                self.last_instruction_cycle = self.current_cycle
-                
-                print(f"\n[META] 🧠 New Strategy Generated:")
-                print(f"[META]   Priority: {instruction.priority}")
-                print(f"[META]   Instruction: {instruction.instruction}")
-                print(f"[META]   Reasoning: {instruction.reasoning}")
-                print(f"[META]   Duration: {instruction.duration_cycles} cycles\n")
-                
-                return instruction
-            
-        except Exception as e:
-            print(f"[META] Instruction generation failed: {e}")
+
+        instructions: List[StrategicInstruction] = []
+        tasks = []
+        sources: List[str] = []
+
+        if self.llm_interface is not None:
+            tasks.append(asyncio.create_task(
+                self._invoke_primary_interface(prompt, system_prompt)
+            ))
+            sources.append("primary")
+
+        for interface, label in self.auxiliary_interfaces:
+            tasks.append(asyncio.create_task(
+                self._invoke_auxiliary_interface(interface, prompt, system_prompt)
+            ))
+            sources.append(label)
+
+        if not tasks:
             return self._heuristic_instruction(current_state, q_values, motivation)
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for source, result in zip(sources, results):
+            if isinstance(result, Exception):
+                print(f"[META] Auxiliary interface '{source}' failed: {result}")
+                continue
+
+            content = self._normalize_response(result)
+            if not content:
+                continue
+
+            instruction = self._parse_instruction_response(content, current_state)
+            if instruction:
+                instruction.reasoning = f"{instruction.reasoning} (source: {source})".strip()
+                instructions.append(instruction)
+
+        if not instructions:
+            print("[META] No valid instructions from LLMs, using heuristic.")
+            return self._heuristic_instruction(current_state, q_values, motivation)
+
+        # Prioritize critical > important > suggested, fall back to first
+        priority_order = {"critical": 0, "important": 1, "suggested": 2}
+        instructions.sort(key=lambda instr: priority_order.get(instr.priority, 3))
+
+        best_instruction = instructions[0]
+        self.active_instructions.append(best_instruction)
+        self.instruction_history.append(best_instruction)
+        self.last_instruction_cycle = self.current_cycle
+
+        print(f"\n[META] 🧠 New Strategy Generated (source merged):")
+        print(f"[META]   Priority: {best_instruction.priority}")
+        print(f"[META]   Instruction: {best_instruction.instruction}")
+        print(f"[META]   Reasoning: {best_instruction.reasoning}")
+        print(f"[META]   Duration: {best_instruction.duration_cycles} cycles\n")
+
+        # Store additional instructions as secondary guidance
+        for extra in instructions[1:]:
+            self.active_instructions.append(extra)
+            self.instruction_history.append(extra)
+
+        self.last_instruction_cycle = self.current_cycle
+        return best_instruction
     
     def _get_system_prompt(self) -> str:
         """Get system prompt for meta-strategist."""
@@ -345,6 +396,53 @@ Generate your strategic instruction now:"""
             generated_at=self.current_cycle,
             context=current_state
         )
+
+    async def _invoke_primary_interface(self, prompt: str, system_prompt: str) -> Any:
+        return await self.llm_interface.client.generate(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=0.8,
+            max_tokens=256,
+        )
+
+    async def _invoke_auxiliary_interface(self, interface: Any, prompt: str, system_prompt: str) -> Any:
+        if hasattr(interface, "generate_text"):
+            return await interface.generate_text(
+                prompt=prompt,
+                system_prompt=system_prompt,
+                temperature=0.75,
+                max_tokens=256,
+            )
+        if hasattr(interface, "generate"):
+            return await interface.generate(
+                prompt=prompt,
+                system_prompt=system_prompt,
+                temperature=0.75,
+                max_tokens=256,
+            )
+        if hasattr(interface, "client") and hasattr(interface.client, "generate"):
+            return await interface.client.generate(
+                prompt=prompt,
+                system_prompt=system_prompt,
+                temperature=0.75,
+                max_tokens=256,
+            )
+        raise TypeError("Unsupported auxiliary interface type for MetaStrategist")
+
+    def _normalize_response(self, response: Any) -> str:
+        if response is None:
+            return ""
+        if isinstance(response, str):
+            return response
+        if isinstance(response, dict):
+            if "content" in response:
+                return response["content"]
+            if "raw" in response:
+                # Some clients store text within raw structure
+                raw = response["raw"]
+                if isinstance(raw, dict):
+                    return str(raw)
+        return str(response)
     
     def get_active_instruction_context(self) -> str:
         """Get formatted context of active instructions for RL reasoning."""

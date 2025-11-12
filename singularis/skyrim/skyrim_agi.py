@@ -43,11 +43,29 @@ from .reinforcement_learner import ReinforcementLearner
 from .rl_reasoning_neuron import RLReasoningNeuron
 from .meta_strategist import MetaStrategist
 from .consciousness_bridge import ConsciousnessBridge, ConsciousnessState
+from .combat_tactics import SkyrimCombatTactics
+from .quest_tracker import QuestTracker
+from .smart_navigation import SmartNavigator
+from .inventory_manager import InventoryManager
+from .dialogue_intelligence import DialogueIntelligence
+from .character_progression import CharacterProgression
+from .enhanced_vision import EnhancedVision
+from .crafting_system import CraftingSystem
+from .hierarchical_goal_planner import HierarchicalGoalPlanner
+from .adaptive_loop_manager import AdaptiveLoopManager, LoopSettings
+from .gameplay_analytics import GameplayAnalytics
+from .meta_learning import MetaLearner
 
 # Base AGI components
 from ..agi_orchestrator import AGIOrchestrator, AGIConfig
 from ..agency import MotivationType
-from ..llm.lmstudio_client import LMStudioClient, LMStudioConfig, ExpertLLMInterface
+from ..llm import (
+    LMStudioClient,
+    LMStudioConfig,
+    ExpertLLMInterface,
+    ClaudeClient,
+    GeminiClient,
+)
 
 
 @dataclass
@@ -101,6 +119,13 @@ class SkyrimConfig:
     rl_learning_rate: float = 0.01  # Q-network learning rate
     rl_epsilon_start: float = 0.3  # Initial exploration rate
     rl_train_freq: int = 5  # Train every N cycles
+
+    # External augmentation
+    enable_claude_meta: bool = True
+    claude_model: str = "claude-4.5-haiku"
+    enable_gemini_vision: bool = True
+    gemini_model: str = "gemini-2.5-pro"
+    gemini_max_output_tokens: int = 768
 
     def __post_init__(self):
         """Initialize base config if not provided."""
@@ -242,6 +267,35 @@ class SkyrimAGI:
             exploration_weight=0.20,  # Discover new areas
             wealth_weight=0.10,  # Gather resources
             mastery_weight=0.10  # Improve combat/stealth skills
+        )
+
+        # Skyrim-specific enhancement modules
+        self.combat_tactics = SkyrimCombatTactics()
+        self.quest_tracker = QuestTracker()
+        self.smart_navigator = SmartNavigator()
+        self.inventory_manager = InventoryManager()
+        self.dialogue_intelligence = DialogueIntelligence()
+        self.character_progression = CharacterProgression()
+        self.crafting_system = CraftingSystem()
+        self.goal_planner = HierarchicalGoalPlanner()
+        self.analytics = GameplayAnalytics()
+        self.meta_learner = MetaLearner()
+
+        # External augmentation clients (initialized later)
+        self.claude_meta_client = None
+        self.gemini_vision_client = None
+
+        # Enhanced perception utilities
+        self.enhanced_vision = EnhancedVision()
+        self.perception.set_enhanced_vision(self.enhanced_vision)
+
+        # Adaptive loop scheduling
+        self.loop_manager = AdaptiveLoopManager(
+            LoopSettings(
+                perception_interval=self.config.perception_interval,
+                reasoning_throttle=self.config.reasoning_throttle,
+                fast_loop_interval=self.config.fast_loop_interval
+            )
         )
 
         # State
@@ -392,6 +446,11 @@ class SkyrimAGI:
             if hasattr(self.skyrim_world, 'set_llm_interface'):
                 self.skyrim_world.set_llm_interface(self.huihui_llm)
                 print("[HUIHUI] ✓ Connected to Skyrim world model")
+
+            # Connect cognition-aware helpers
+            self.quest_tracker.set_llm_interface(self.huihui_llm)
+            self.dialogue_intelligence.set_llm_interface(self.huihui_llm)
+            print("[HUIHUI] ✓ Connected to quest tracker and dialogue intelligence")
             
         except Exception as e:
             print(f"[HUIHUI] ⚠️ Failed to initialize: {e}")
@@ -475,6 +534,12 @@ class SkyrimAGI:
             import traceback
             traceback.print_exc()
             self.action_planning_llm = None
+
+        # ===== CLAUDE META-ORCHESTRATOR (AUXILIARY) =====
+        await self._initialize_claude_meta()
+
+        # ===== GEMINI VISION AUGMENTATION =====
+        await self._initialize_gemini_vision()
         
         print("\n" + "=" * 70)
         print("STREAMLINED LLM ARCHITECTURE READY")
@@ -486,6 +551,127 @@ class SkyrimAGI:
         print("Async execution for parallel processing")
         print("=" * 70)
         print()
+
+    async def _initialize_claude_meta(self) -> None:
+        """Bring up optional Claude client for auxiliary strategic reasoning."""
+
+        if not self.config.enable_claude_meta:
+            print("[CLAUDE] Auxiliary meta reasoning disabled via config")
+            self.claude_meta_client = None
+            return
+
+        try:
+            self.claude_meta_client = ClaudeClient(model=self.config.claude_model)
+            if not self.claude_meta_client.is_available():
+                print("[CLAUDE] API key missing (ANTHROPIC_API_KEY); skipping auxiliary meta reasoning")
+                self.claude_meta_client = None
+                return
+
+            self.meta_strategist.add_auxiliary_interface(self.claude_meta_client, self.config.claude_model)
+            print("[CLAUDE] ✓ Auxiliary meta reasoning client ready (runs alongside Huihui)")
+
+        except Exception as exc:
+            print(f"[CLAUDE] ⚠️ Failed to initialize auxiliary meta reasoning: {exc}")
+            import traceback
+            traceback.print_exc()
+            self.claude_meta_client = None
+
+    async def _initialize_gemini_vision(self) -> None:
+        """Attach Gemini client as an optional vision augment."""
+
+        if not self.config.enable_gemini_vision:
+            print("[GEMINI] Vision augmentation disabled via config")
+            self.gemini_vision_client = None
+            self.perception.set_gemini_analyzer(None)
+            return
+
+        try:
+            self.gemini_vision_client = GeminiClient(model=self.config.gemini_model)
+            if not self.gemini_vision_client.is_available():
+                print("[GEMINI] API key missing (GEMINI_API_KEY); keeping local vision only")
+                self.gemini_vision_client = None
+                self.perception.set_gemini_analyzer(None)
+                return
+
+            self.perception.set_gemini_analyzer(self.gemini_vision_client)
+            print("[GEMINI] ✓ Vision augmentation ready (complements Qwen/CLIP)")
+
+        except Exception as exc:
+            print(f"[GEMINI] ⚠️ Failed to initialize vision augmentation: {exc}")
+            import traceback
+            traceback.print_exc()
+            self.gemini_vision_client = None
+            self.perception.set_gemini_analyzer(None)
+
+    async def _augment_with_gemini(self, perception: Dict[str, Any], cycle_count: int) -> Optional[str]:
+        """Run optional Gemini analysis and attach its summary to the perception payload."""
+
+        if not self.config.enable_gemini_vision or self.gemini_vision_client is None:
+            return None
+
+        # Throttle Gemini usage so it complements rather than overloads the loop.
+        if cycle_count % 3 != 0:
+            return None
+
+        screenshot = perception.get('screenshot')
+        if screenshot is None:
+            return None
+
+        scene = perception.get('scene_type', SceneType.UNKNOWN)
+        scene_label = scene.value if hasattr(scene, 'value') else str(scene)
+        game_state: Optional[GameState] = perception.get('game_state')
+
+        location = getattr(game_state, 'location_name', 'Unknown') if game_state else 'Unknown'
+        health_value = getattr(game_state, 'health', None) if game_state else None
+        health_str = f"{health_value:.0f}" if isinstance(health_value, (int, float)) else "unknown"
+        in_combat = getattr(game_state, 'in_combat', False) if game_state else False
+        enemies_value = getattr(game_state, 'enemies_nearby', None) if game_state else None
+        enemies_str = str(enemies_value) if enemies_value is not None else "unknown"
+
+        prompt = (
+            "You supplement a local Skyrim perception module."
+            f"\nScene type: {scene_label}"
+            f"\nLocation: {location}"
+            f"\nIn combat: {in_combat}"
+            f"\nPlayer health: {health_str}/100"
+            f"\nEnemies nearby: {enemies_str}"
+            "\n\nProvide a concise tactical snapshot with bullets covering:"
+            "\n1. Immediate threats or hazards"
+            "\n2. Valuable interactables or loot"
+            "\n3. Recommended tactical focus"
+            "\nKeep the response under 90 words."
+        )
+
+        image_for_gemini = screenshot if screenshot.mode == "RGB" else screenshot.convert("RGB")
+
+        try:
+            analysis = await asyncio.wait_for(
+                self.gemini_vision_client.analyze_image(
+                    prompt=prompt,
+                    image=image_for_gemini,
+                    max_output_tokens=self.config.gemini_max_output_tokens,
+                    temperature=0.4,
+                ),
+                timeout=12.0,
+            )
+        except asyncio.TimeoutError:
+            if cycle_count % 20 == 0:
+                print("[GEMINI] Analysis timed out (12s) - continuing with local perception")
+            return None
+        except Exception as exc:
+            if cycle_count % 20 == 0:
+                print(f"[GEMINI] Analysis error: {exc}")
+            return None
+
+        if not analysis:
+            return None
+
+        analysis = analysis.strip()
+        if not analysis:
+            return None
+
+        perception['gemini_analysis'] = analysis
+        return analysis
 
     async def autonomous_play(self, duration_seconds: Optional[int] = None):
         """
@@ -613,35 +799,49 @@ class SkyrimAGI:
                     await asyncio.sleep(1.5)  # Shorter wait when queue is full
                     continue
                 
-                # Adaptive throttling based on queue fullness - aggressive for speed
-                if queue_size >= max_queue_size * 0.8:
-                    # Queue is almost full - slow down
-                    throttle_delay = 1.0
-                    if cycle_count % 5 == 0:
-                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - heavy throttling (1s delay)")
-                elif queue_size >= max_queue_size * 0.6:
-                    # Queue is getting full - moderate slowdown
-                    throttle_delay = 0.5
-                    if cycle_count % 10 == 0:
-                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - moderate throttling (0.5s delay)")
-                elif queue_size >= max_queue_size * 0.4:
-                    # Queue is filling - light slowdown
-                    throttle_delay = 0.3
-                else:
-                    # Queue has space - full speed
-                    throttle_delay = self.config.perception_interval
-                
-                # Only perceive if queue has space
                 perception = await self.perception.perceive()
+                game_state = perception.get('game_state')
+                scene_type = perception.get('scene_type', SceneType.UNKNOWN)
+
+                state_dict = game_state.to_dict() if game_state else {}
+                scene_name = scene_type.value if hasattr(scene_type, 'value') else str(scene_type)
+
+                # Update support subsystems with latest state
+                if game_state:
+                    self.smart_navigator.learn_location(
+                        game_state.location_name,
+                        {
+                            'in_combat': game_state.in_combat,
+                            'scene': scene_name,
+                        }
+                    )
+                    self.character_progression.update_from_state(state_dict)
+                    self.inventory_manager.update_from_state(state_dict)
+                    self.analytics.update_state(state_dict)
+
+                loop_settings = self.loop_manager.update_for_state(scene_name, state_dict)
+
+                # Adaptive throttling based on queue fullness
+                base_interval = loop_settings.perception_interval
+                if queue_size >= max_queue_size * 0.8:
+                    throttle_delay = max(1.0, base_interval * 3)
+                    if cycle_count % 5 == 0:
+                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - heavy throttling ({throttle_delay:.2f}s)")
+                elif queue_size >= max_queue_size * 0.6:
+                    throttle_delay = max(0.5, base_interval * 2)
+                    if cycle_count % 10 == 0:
+                        print(f"[PERCEPTION] Queue {queue_size}/{max_queue_size} - moderate throttling ({throttle_delay:.2f}s)")
+                elif queue_size >= max_queue_size * 0.4:
+                    throttle_delay = max(0.3, base_interval * 1.5)
+                else:
+                    throttle_delay = base_interval
                 
                 # Enhance perception with Qwen3-VL using CLIP data (not raw images)
                 if self.perception_llm and cycle_count % 2 == 0:  # Every 2nd cycle for faster analysis
                     print(f"[QWEN3-VL] Cycle {cycle_count}: Starting CLIP-based analysis...")
                     try:
                         print(f"[QWEN3-VL] DEBUG: Extracting perception data...")
-                        game_state = perception.get('game_state')
                         print(f"[QWEN3-VL] DEBUG: game_state type: {type(game_state)}")
-                        scene_type = perception.get('scene_type', 'unknown')
                         print(f"[QWEN3-VL] DEBUG: scene_type: {scene_type}")
                         objects = perception.get('objects', [])
                         print(f"[QWEN3-VL] DEBUG: objects count: {len(objects)}")
@@ -706,6 +906,11 @@ Based on this visual and contextual data, provide:
                             print(f"[QWEN3-VL] Analysis failed: {e}")
                             import traceback
                             traceback.print_exc()
+
+                # Optional Gemini augmentation after CLIP/Qwen analysis
+                gemini_summary = await self._augment_with_gemini(perception, cycle_count)
+                if gemini_summary:
+                    print(f"[GEMINI] Vision augment: {gemini_summary[:140]}...")
                 
                 self.current_perception = perception
                 
@@ -748,8 +953,9 @@ Based on this visual and contextual data, provide:
                 
                 # Throttle reasoning to prevent overload
                 time_since_last = time.time() - self.last_reasoning_time
-                if time_since_last < self.config.reasoning_throttle:
-                    await asyncio.sleep(self.config.reasoning_throttle - time_since_last)
+                reasoning_throttle = self.loop_manager.get_interval('reasoning')
+                if time_since_last < reasoning_throttle:
+                    await asyncio.sleep(reasoning_throttle - time_since_last)
                 
                 self.last_reasoning_time = time.time()
                 
@@ -760,6 +966,11 @@ Based on this visual and contextual data, provide:
                 
                 game_state = perception['game_state']
                 scene_type = perception['scene_type']
+
+                if game_state:
+                    state_dict = game_state.to_dict()
+                    scene_name = scene_type.value if hasattr(scene_type, 'value') else str(scene_type)
+                    self.goal_planner.update_state(state_dict, scene_name)
                 
                 # Store perceptual memory
                 self.memory_rag.store_perceptual_memory(

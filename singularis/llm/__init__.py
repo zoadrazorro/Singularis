@@ -5,9 +5,13 @@ from .lmstudio_client import (
     LMStudioConfig,
     ExpertLLMInterface,
 )
+from .claude_client import ClaudeClient
+from .gemini_client import GeminiClient
 
 __all__ = [
     "LMStudioClient",
     "LMStudioConfig",
     "ExpertLLMInterface",
+    "ClaudeClient",
+    "GeminiClient",
 ]
