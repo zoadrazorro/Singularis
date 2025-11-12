@@ -2792,6 +2792,11 @@ REASONING: <explanation>"""
             if force_variety and self.consecutive_same_action >= 6:
                 print(f"[VARIETY] Forcing variety after {self.consecutive_same_action}x '{self.last_executed_action}' - skipping RL")
             
+            # Always get Q-values (needed for heuristics even if skipping RL)
+            q_values = {}
+            if self.rl_learner is not None:
+                q_values = self.rl_learner.get_q_values(state_dict)
+            
             # Use RL-based action selection if enabled (but not if forcing variety)
             if self.rl_learner is not None and use_rl:
                 print("[PLANNING] Using RL-based action selection with LLM reasoning...")
@@ -2802,15 +2807,13 @@ REASONING: <explanation>"""
                 
                 # Check if meta-strategist should generate new instruction
                 if await self.meta_strategist.should_generate_instruction():
-                    q_values = self.rl_learner.get_q_values(state_dict)
                     instruction = await self.meta_strategist.generate_instruction(
                         current_state=state_dict,
                         q_values=q_values,
                         motivation=motivation.dominant_drive().value
                     )
                 
-                # Get Q-values from RL
-                q_values = self.rl_learner.get_q_values(state_dict)
+                # Q-values already computed above
                 print(f"[RL] Q-values: {', '.join([f'{k}={v:.2f}' for k, v in sorted(q_values.items(), key=lambda x: x[1], reverse=True)[:3]])}")
                 
                 # Get meta-strategic context
