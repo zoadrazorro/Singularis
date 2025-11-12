@@ -80,9 +80,8 @@ class ClaudeClient:
         if system_prompt:
             payload["system"] = system_prompt
         
-        # Add extended thinking if specified
-        if thinking:
-            payload["thinking"] = thinking
+        # Extended thinking is enabled via model name (e.g., claude-sonnet-4-20250514)
+        # No separate parameter needed
 
         async with session.post(url, json=payload, headers=headers, timeout=self.timeout) as resp:
             resp.raise_for_status()
