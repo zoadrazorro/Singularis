@@ -823,8 +823,31 @@ class SkyrimAGI:
                 print(f"[PARALLEL] ⚠️ Hybrid initialization failed: {e}")
                 self.hybrid_llm = None
             
+            # Initialize Local MoE as additional fallback
+            try:
+                from singularis.llm.local_moe import LocalMoEOrchestrator, LocalMoEConfig
+                
+                print("\n[PARALLEL] Initializing Local MoE fallback...")
+                local_moe_config = LocalMoEConfig(
+                    num_experts=4,
+                    expert_model="qwen/qwen3-vl-8b",
+                    synthesizer_model="microsoft/phi-4",
+                    base_url="http://localhost:1234/v1",
+                    timeout=5,
+                    max_tokens=512
+                )
+                
+                self.local_moe = LocalMoEOrchestrator(local_moe_config)
+                await self.local_moe.initialize()
+                print("[PARALLEL] ✓ Local MoE fallback ready (4x Qwen3-VL + Phi-4)")
+            except Exception as e:
+                print(f"[PARALLEL] ⚠️ Local MoE initialization failed: {e}")
+                self.local_moe = None
+            
             print(f"\n[PARALLEL] ✓ Parallel mode active")
             print(f"[PARALLEL] Consensus weights: MoE={self.config.parallel_consensus_weight_moe}, Hybrid={self.config.parallel_consensus_weight_hybrid}")
+            if hasattr(self, 'local_moe') and self.local_moe:
+                print(f"[PARALLEL] Local MoE fallback: ENABLED")
         
         # ===== MIXTURE OF EXPERTS (MoE) ONLY =====
         elif self.config.use_moe:
@@ -2917,15 +2940,27 @@ REASONING: <explanation>"""
                 else:
                     print(f"[RATE-LIMIT] Skipping cloud LLM (cycle {self.cycle_count % 5}/5)")
                 
-                # Fallback: Start Huihui in background (don't wait)
-                print("[FALLBACK] Cloud LLM unavailable, using local heuristics")
+                # Fallback: Start Local MoE in background (4x Qwen3-VL + Phi-4)
+                local_moe_task = None
+                if hasattr(self, 'local_moe') and self.local_moe:
+                    print("[LOCAL-MOE] Starting local MoE query in background...")
+                    local_moe_task = asyncio.create_task(
+                        self.local_moe.get_action_recommendation(
+                            perception=perception,
+                            game_state=game_state,
+                            available_actions=available_actions,
+                            q_values=q_values,
+                            motivation=motivation.dominant_drive().value
+                        )
+                    )
+                else:
+                    print("[FALLBACK] Local MoE unavailable, using heuristics")
                 
-                # Get visual analysis from Qwen3-VL if available
+                # Also start Huihui in background for strategic reasoning
                 visual_analysis = perception.get('visual_analysis', '')
                 if visual_analysis:
                     print(f"[QWEN3-VL] Passing visual analysis to Huihui: {visual_analysis[:100]}...")
                 
-                # Start Huihui task (runs in background, we don't await it)
                 huihui_task = asyncio.create_task(
                     self.rl_reasoning_neuron.reason_about_q_values(
                         state=state_dict,
@@ -2938,7 +2973,7 @@ REASONING: <explanation>"""
                                 game_state.in_combat
                             ),
                             'meta_strategy': meta_context,
-                            'visual_analysis': visual_analysis  # Add Qwen3-VL's vision
+                            'visual_analysis': visual_analysis
                         }
                     )
                 )
@@ -3106,28 +3141,62 @@ REASONING: <explanation>"""
                         )
                     )
                     
-                    # Wait for either Phi-4 or cloud LLM (whichever finishes first)
+                    # Race: Phi-4 vs Cloud LLM vs Local MoE (whichever finishes first)
+                    # Timeout after 5 seconds to keep gameplay smooth
+                    tasks_to_race = [phi4_task]
                     if cloud_task:
-                        print("[PARALLEL] Waiting for Phi-4 or Cloud LLM (whichever finishes first)...")
-                        done, pending = await asyncio.wait(
-                            [phi4_task, cloud_task],
-                            return_when=asyncio.FIRST_COMPLETED
-                        )
-                        
-                        # Check which one finished
-                        for task in done:
-                            if task == cloud_task:
-                                cloud_recommendation = task.result()
-                                if cloud_recommendation:
-                                    action, reasoning = cloud_recommendation
-                                    print(f"[CLOUD-LLM] ✓ Won the race! Using: {action}")
-                                    return action
-                            elif task == phi4_task:
-                                llm_action = task.result()
-                                if llm_action:
-                                    print(f"[PHI4] ✓ Won the race! Using: {llm_action}")
-                                    self.stats['llm_action_count'] += 1
-                                    return llm_action
+                        tasks_to_race.append(cloud_task)
+                    if local_moe_task:
+                        tasks_to_race.append(local_moe_task)
+                    
+                    if len(tasks_to_race) > 1:
+                        print(f"[PARALLEL] Racing {len(tasks_to_race)} systems (5s timeout)...")
+                        try:
+                            done, pending = await asyncio.wait(
+                                tasks_to_race,
+                                timeout=5.0,  # 5 second timeout
+                                return_when=asyncio.FIRST_COMPLETED
+                            )
+                            
+                            # Check which one finished first
+                            for task in done:
+                                if task == cloud_task:
+                                    cloud_recommendation = task.result()
+                                    if cloud_recommendation:
+                                        action, reasoning = cloud_recommendation
+                                        print(f"[CLOUD-LLM] ✓ Won the race! Using: {action}")
+                                        # Cancel other tasks
+                                        for t in pending:
+                                            t.cancel()
+                                        return action
+                                elif task == local_moe_task:
+                                    moe_recommendation = task.result()
+                                    if moe_recommendation:
+                                        action, reasoning = moe_recommendation
+                                        print(f"[LOCAL-MOE] ✓ Won the race! Using: {action}")
+                                        # Cancel other tasks
+                                        for t in pending:
+                                            t.cancel()
+                                        return action
+                                elif task == phi4_task:
+                                    llm_action = task.result()
+                                    if llm_action:
+                                        print(f"[PHI4] ✓ Won the race! Using: {llm_action}")
+                                        self.stats['llm_action_count'] += 1
+                                        # Cancel other tasks
+                                        for t in pending:
+                                            t.cancel()
+                                        return llm_action
+                            
+                            # Timeout - cancel pending tasks and use heuristic
+                            if pending:
+                                print(f"[PARALLEL] ⏱️ Timeout after 5s, using heuristic")
+                                for task in pending:
+                                    task.cancel()
+                        except asyncio.TimeoutError:
+                            print(f"[PARALLEL] ⏱️ Timeout, using heuristic")
+                            for task in tasks_to_race:
+                                task.cancel()
                     else:
                         # No cloud task, just wait for Phi-4
                         llm_action = await phi4_task
@@ -3889,7 +3958,7 @@ QUICK DECISION - Choose ONE action from available list:"""
         # System consciousness monitor stats
         if self.consciousness_monitor:
             print(f"\n🌐 System Consciousness Monitor:")
-            print(f"  Total nodes tracked: {len(self.consciousness_monitor.nodes)}")
+            print(f"  Total nodes tracked: {len(self.consciousness_monitor.registered_nodes)}")
             
             # Get latest measurement
             if self.consciousness_monitor.history:
