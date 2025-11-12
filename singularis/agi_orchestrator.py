@@ -238,7 +238,9 @@ class AGIOrchestrator:
 
             # 2. Generate response through consciousness engine
             if self.consciousness_llm:
-                consciousness_result = await self.consciousness_llm.process(query, context)
+                # Note: process() expects (query, selected_experts), not context
+                # We let it use default expert selection based on the query
+                consciousness_result = await self.consciousness_llm.process(query)
                 result['consciousness_response'] = consciousness_result
             else:
                 result['consciousness_response'] = {
