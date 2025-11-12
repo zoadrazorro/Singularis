@@ -2081,7 +2081,9 @@ Based on this visual and contextual data, provide:
                 consciousness_context = {
                     'motivation': 'unknown',
                     'cycle': cycle_count,
-                    'scene': scene_type.value
+                    'scene': scene_type.value,
+                    'screenshot': perception.get('screenshot'),
+                    'vision_summary': perception.get('gemini_analysis')
                 }
                 # Consciousness bridge calls 2 big models in parallel - don't throttle it
                 current_consciousness = await self.consciousness_bridge.compute_consciousness(
@@ -3052,7 +3054,9 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 consciousness_context = {
                     'motivation': 'unknown',  # Will be updated after motivation computation
                     'cycle': cycle_count,
-                    'scene': scene_type.value
+                    'scene': scene_type.value,
+                    'screenshot': perception.get('screenshot'),
+                    'vision_summary': perception.get('gemini_analysis')
                 }
                 current_consciousness = await self.consciousness_bridge.compute_consciousness(
                     game_state.to_dict(),
@@ -3159,9 +3163,16 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 
                 # COMPUTE CONSCIOUSNESS AFTER ACTION (KEY)
                 print("[CONSCIOUSNESS] Computing post-action consciousness...")
+                post_consciousness_context = {
+                    'motivation': motivation_context.get('predicted_delta_coherence', 'unknown'),
+                    'cycle': cycle_count,
+                    'scene': after_perception['scene_type'].value,
+                    'screenshot': after_perception.get('screenshot'),
+                    'vision_summary': after_perception.get('gemini_analysis')
+                }
                 after_consciousness = await self.consciousness_bridge.compute_consciousness(
                     after_state,
-                    consciousness_context
+                    post_consciousness_context
                 )
                 
                 # Show coherence change

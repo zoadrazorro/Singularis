@@ -18,6 +18,7 @@ Design principles:
 
 from typing import Dict, Any, Optional, Tuple
 from dataclasses import dataclass
+import json
 import numpy as np
 
 from .skyrim_cognition import SkyrimCognitiveState
@@ -73,6 +74,22 @@ class ConsciousnessState:
         return delta > threshold
 
 
+class _HybridReasoningAdapter:
+    """Wrap HybridLLMClient to match the legacy generate() contract."""
+
+    def __init__(self, hybrid_llm):
+        self._hybrid = hybrid_llm
+
+    async def generate(self, prompt: str, max_tokens: int = 256, system_prompt: Optional[str] = None, temperature: float = 0.4) -> Dict[str, Any]:
+        text = await self._hybrid.generate_reasoning(
+            prompt=prompt,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        return {'content': text}
+
+
 class ConsciousnessBridge:
     """
     Bridge between Skyrim game state and Singularis consciousness.
@@ -93,6 +110,9 @@ class ConsciousnessBridge:
         self.consciousness_llm = consciousness_llm  # Kept for compatibility but not used
         self.world_understanding_llm = world_understanding_llm
         self.strategic_planning_llm = strategic_planning_llm
+        self.hybrid_llm = None
+        self.moe = None
+        self._last_cloud_summary: Optional[str] = None
         self.history: list[ConsciousnessState] = []
         
         # Weights for computing consciousness from game metrics
@@ -109,6 +129,24 @@ class ConsciousnessBridge:
         print("[BRIDGE] Consciousness Bridge initialized")
         print(f"[BRIDGE] World Understanding LLM: {'Connected' if world_understanding_llm else 'Not available'}")
         print(f"[BRIDGE] Strategic Planning LLM: {'Connected' if strategic_planning_llm else 'Not available'}")
+        print("[BRIDGE] Cloud Consciousness Engine: Not connected")
+
+    def set_hybrid_llm(self, hybrid_llm) -> None:
+        """Attach HybridLLMClient so Gemini/Claude can drive consciousness."""
+        self.hybrid_llm = hybrid_llm
+        if hybrid_llm:
+            adapter = _HybridReasoningAdapter(hybrid_llm)
+            self.world_understanding_llm = adapter
+            self.strategic_planning_llm = adapter
+            print("[BRIDGE] Cloud Consciousness Engine: Gemini vision + Claude reasoning ENABLED")
+        else:
+            print("[BRIDGE] Cloud Consciousness Engine: Disabled (no hybrid client)")
+
+    def set_moe(self, moe) -> None:
+        """Optional hook for MoE orchestrator."""
+        self.moe = moe
+        if moe:
+            print("[BRIDGE] MoE Consciousness advisors connected")
     
     async def compute_consciousness(
         self,
@@ -190,13 +228,36 @@ class ConsciousnessBridge:
         # 6. Compute self-awareness (HOT - Higher Order Thought)
         self_awareness = self._compute_self_awareness(game_state, context)
         
-        # 7. If big model LLMs available, enhance with parallel analysis
-        if self.world_understanding_llm or self.strategic_planning_llm:
+        heuristics = {
+            'coherence': coherence,
+            'coherence_ontical': coherence_o,
+            'coherence_structural': coherence_s,
+            'coherence_participatory': coherence_p,
+            'consciousness_level': consciousness_level,
+            'self_awareness': self_awareness,
+            'game_quality': game_quality,
+        }
+
+        # 7. Delegate to cloud LLMs when available
+        if self.hybrid_llm:
+            try:
+                cloud = await self._cloud_consciousness_assessment(game_state, heuristics, context)
+                if cloud:
+                    coherence = self._clamp(cloud.get('coherence', coherence))
+                    coherence_o = self._clamp(cloud.get('coherence_ontical', coherence_o))
+                    coherence_s = self._clamp(cloud.get('coherence_structural', coherence_s))
+                    coherence_p = self._clamp(cloud.get('coherence_participatory', coherence_p))
+                    game_quality = self._clamp(cloud.get('game_quality', game_quality))
+                    consciousness_level = self._clamp(cloud.get('consciousness_level', consciousness_level))
+                    self_awareness = self._clamp(cloud.get('self_awareness', self_awareness))
+                    self._last_cloud_summary = cloud.get('rationale', self._last_cloud_summary)
+            except Exception as exc:
+                print(f"[BRIDGE] Cloud consciousness failed: {exc}")
+        elif self.world_understanding_llm or self.strategic_planning_llm:
             try:
                 enhanced = await self._enhance_with_parallel_llms(
                     game_state, coherence, consciousness_level, context
                 )
-                # LLMs can adjust measurements based on deeper reasoning
                 if enhanced:
                     coherence = enhanced.get('coherence', coherence)
                     consciousness_level = enhanced.get('consciousness_level', consciousness_level)
@@ -220,6 +281,104 @@ class ConsciousnessBridge:
             self.history = self.history[-1000:]  # Keep last 1000
         
         return state
+
+    def _clamp(self, value: Optional[float], minimum: float = 0.0, maximum: float = 1.0) -> float:
+        if value is None:
+            return minimum
+        return max(minimum, min(maximum, float(value)))
+
+    async def _cloud_consciousness_assessment(
+        self,
+        game_state: Dict[str, Any],
+        heuristics: Dict[str, float],
+        context: Dict[str, Any]
+    ) -> Optional[Dict[str, Any]]:
+        """Use Gemini + Claude via Hybrid client to score consciousness."""
+        if not self.hybrid_llm or not getattr(self.hybrid_llm, 'claude', None):
+            return None
+
+        vision_summary = context.get('vision_summary')
+        screenshot = context.get('screenshot')
+
+        if not vision_summary and screenshot is not None and getattr(self.hybrid_llm, 'gemini', None):
+            try:
+                import asyncio
+                vision_summary = await asyncio.wait_for(
+                    self.hybrid_llm.analyze_image(
+                        prompt="Describe threats, motion cues, and tactical context in under 90 words.",
+                        image=screenshot,
+                        temperature=0.3,
+                        max_tokens=256,
+                    ),
+                    timeout=20.0,
+                )
+            except Exception as vision_error:
+                print(f"[BRIDGE] Gemini vision unavailable: {vision_error}")
+                vision_summary = None
+
+        heuristics_json = json.dumps(heuristics, sort_keys=True)
+        state_summary = self._summarize_state(game_state)
+
+        prompt = (
+            "Skyrim consciousness evaluation. "
+            "Given the state summary and optional vision report, produce a JSON object with "
+            "keys: coherence, coherence_ontical, coherence_structural, coherence_participatory, "
+            "game_quality, consciousness_level, self_awareness, rationale. Values must be in [0,1] "
+            "except rationale which is a brief string."
+            f"\n\nHeuristic baseline: {heuristics_json}"
+            f"\nState summary: {state_summary}"
+            f"\nVision summary: {vision_summary or 'unknown'}"
+        )
+
+        system_prompt = (
+            "You are the Singularis Consciousness Engine. Respond with compact JSON only."
+        )
+
+        try:
+            import asyncio
+            response = await asyncio.wait_for(
+                self.hybrid_llm.generate_reasoning(
+                    prompt=prompt,
+                    system_prompt=system_prompt,
+                    temperature=0.15,
+                    max_tokens=512,
+                ),
+                timeout=25.0,
+            )
+        except Exception as reasoning_error:
+            print(f"[BRIDGE] Claude reasoning unavailable: {reasoning_error}")
+            return None
+
+        parsed = self._parse_cloud_json(response)
+        return parsed
+
+    def _parse_cloud_json(self, text: Optional[str]) -> Optional[Dict[str, Any]]:
+        if not text:
+            return None
+        candidate = text.strip()
+        if candidate.startswith("```"):
+            parts = candidate.split('\n', 1)
+            candidate = parts[1] if len(parts) > 1 else parts[0]
+            candidate = candidate.rsplit("```", 1)[0]
+        if '{' in candidate and '}' in candidate:
+            snippet = candidate[candidate.find('{'):candidate.rfind('}') + 1]
+        else:
+            snippet = candidate
+        try:
+            return json.loads(snippet)
+        except json.JSONDecodeError:
+            return None
+
+    def _summarize_state(self, game_state: Dict[str, Any]) -> str:
+        return (
+            f"health={game_state.get('health', 'unknown')}, "
+            f"stamina={game_state.get('stamina', 'unknown')}, "
+            f"magicka={game_state.get('magicka', 'unknown')}, "
+            f"in_combat={game_state.get('in_combat', False)}, "
+            f"enemies={game_state.get('enemies_nearby', 0)}, "
+            f"scene={game_state.get('scene', 'unknown')}, "
+            f"location={game_state.get('location_name', 'unknown')}"
+        )
     
     def _compute_social_dimension(self, game_state: Dict[str, Any]) -> float:
         """Compute social awareness dimension from game state."""
