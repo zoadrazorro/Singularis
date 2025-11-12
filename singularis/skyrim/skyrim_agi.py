@@ -649,13 +649,25 @@ class SkyrimAGI:
                         print(f"[QWEN3-VL] DEBUG: scene_probs: {scene_probs}")
                         
                         # Build rich context from CLIP analysis
-                        objects_list = ', '.join([f"{obj['label']} ({obj['confidence']:.2f})" for obj in objects[:5]])
+                        print(f"[QWEN3-VL] DEBUG: Building context string...")
+                        # Objects are tuples (label, confidence), not dicts
+                        try:
+                            objects_list = ', '.join([f"{obj[0]} ({obj[1]:.2f})" for obj in objects[:5]])
+                        except Exception as e:
+                            print(f"[QWEN3-VL] DEBUG: Failed to build objects_list: {e}")
+                            objects_list = ''
+                        print(f"[QWEN3-VL] DEBUG: objects_list: {objects_list}")
                         scene_confidence = max(scene_probs.values()) if scene_probs else 0.0
+                        print(f"[QWEN3-VL] DEBUG: scene_confidence: {scene_confidence}")
+                        
+                        # Convert scene_type enum to string
+                        scene_type_str = scene_type.value if hasattr(scene_type, 'value') else str(scene_type)
+                        print(f"[QWEN3-VL] DEBUG: scene_type_str: {scene_type_str}")
                         
                         clip_context = f"""Analyze Skyrim gameplay based on CLIP visual perception:
 
 CLIP Scene Classification:
-- Scene type: {scene_type} (confidence: {scene_confidence:.2f})
+- Scene type: {scene_type_str} (confidence: {scene_confidence:.2f})
 - Detected objects: {objects_list if objects_list else 'none detected'}
 
 Game State:
