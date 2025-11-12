@@ -42,8 +42,17 @@ class ClaudeClient:
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 512,
+        thinking: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
-        """Send a single-turn message request to Claude."""
+        """Send a single-turn message request to Claude.
+        
+        Args:
+            prompt: User prompt
+            system_prompt: System prompt
+            temperature: Sampling temperature
+            max_tokens: Max tokens to generate
+            thinking: Extended thinking config, e.g. {"type": "enabled", "budget_tokens": 10000}
+        """
 
         if not self.is_available():
             raise RuntimeError("Claude API key not configured (ANTHROPIC_API_KEY)")
@@ -70,6 +79,10 @@ class ClaudeClient:
         }
         if system_prompt:
             payload["system"] = system_prompt
+        
+        # Add extended thinking if specified
+        if thinking:
+            payload["thinking"] = thinking
 
         async with session.post(url, json=payload, headers=headers, timeout=self.timeout) as resp:
             resp.raise_for_status()
@@ -78,10 +91,13 @@ class ClaudeClient:
         # Anthropic may return a list of content blocks; combine text parts
         content_blocks = data.get("content", [])
         text_parts = [block.get("text", "") for block in content_blocks if block.get("type") == "text"]
+        thinking_parts = [block.get("thinking", "") for block in content_blocks if block.get("type") == "thinking"]
         combined = "\n".join(part for part in text_parts if part)
+        thinking_combined = "\n".join(part for part in thinking_parts if part)
 
         return {
             "content": combined or data.get("output", ""),
+            "thinking": thinking_combined,
             "raw": data,
         }
 

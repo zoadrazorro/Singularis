@@ -22,6 +22,31 @@ The Skyrim AGI implements a sophisticated multi-tier reasoning architecture comb
 
 ## LLM Architecture
 
+### Specialized Reasoning Systems
+
+#### Sensorimotor & Geospatial Reasoning ⭐ NEW
+- **Model:** Claude Sonnet 4.5 with Extended Thinking
+- **Frequency:** Every 5 cycles
+- **Purpose:** Deep spatial and movement analysis
+- **Visual Learning Pipeline:**
+  1. **Gemini 2.0 Flash** → Spatial layout, obstacles, pathways, terrain features
+  2. **Local Qwen3-VL** → Backup visual analysis, navigation cues
+  3. **Claude Sonnet 4.5** → Synthesizes visual learning with extended thinking
+- **Features:**
+  - Extended thinking (10,000 token budget)
+  - Obstacle detection (from visual analysis)
+  - Navigation strategy (based on visual scene)
+  - Spatial memory (using visual descriptions)
+  - Path planning (from visible pathways)
+  - Terrain adaptation
+  - Visual similarity tracking (stuck detection)
+- **Storage:** Dedicated RAG memory with:
+  - Visual learning from Gemini & Local
+  - Claude's sensorimotor analysis
+  - Extended thinking process
+  - Context metadata (location, terrain, visual similarity)
+- **Timeout:** 90 seconds total (15s Gemini + 10s Local + 90s Claude)
+
 ### Cloud LLMs (Primary Intelligence)
 
 #### Mixture of Experts (MoE)

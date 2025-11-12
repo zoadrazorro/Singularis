@@ -1494,6 +1494,34 @@ class SkyrimAGI:
         self.action_executing = False  # Flag to prevent auxiliary exploration during main actions
         start_time = time.time()
         
+        # Stuck detection tracking
+        self.cloud_llm_failures = 0
+        self.local_moe_failures = 0
+        self.heuristic_failures = 0
+        self.auxiliary_errors = 0
+        self.last_successful_action = None
+        self.repeated_action_count = 0
+        self.last_visual_embedding = None
+        self.visual_similarity_threshold = 0.95  # 95% similar = stuck
+        
+        # Thresholds
+        self.max_consecutive_failures = 5
+        self.max_repeated_actions = 10
+        
+        # Initialize sensorimotor reasoning (Claude Sonnet 4.5 with extended thinking)
+        self.sensorimotor_llm = None
+        if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
+            from singularis.llm.claude_client import ClaudeClient
+            self.sensorimotor_llm = ClaudeClient(
+                model="claude-sonnet-4.5-20250514",
+                timeout=120
+            )
+            if self.sensorimotor_llm.is_available():
+                print("[SENSORIMOTOR] ✓ Claude Sonnet 4.5 initialized for geospatial reasoning")
+            else:
+                print("[SENSORIMOTOR] ⚠️ Claude Sonnet 4.5 not available")
+                self.sensorimotor_llm = None
+        
         # Initialize LLM semaphore for resource management
         self.llm_semaphore = asyncio.Semaphore(self.config.max_concurrent_llm_calls)
 
@@ -1636,8 +1664,13 @@ class SkyrimAGI:
                                 print(f"[AUX-EXPLORE] Jump for terrain navigation")
                     
                     except Exception as e:
+                        self.auxiliary_errors += 1
                         if cycle_count % 30 == 0:
-                            print(f"[AUX-EXPLORE] Move error: {e}")
+                            print(f"[AUX-EXPLORE] Move error: {e} (errors: {self.auxiliary_errors})")
+                        if self.auxiliary_errors >= 20:
+                            print(f"[STUCK-DETECTION] ⚠️ Auxiliary exploration has {self.auxiliary_errors} errors, pausing for 5s")
+                            await asyncio.sleep(5.0)
+                            self.auxiliary_errors = 0
                 
                 # LOOK AROUND - Explore environment
                 # Only if no main action is executing (don't interfere)
@@ -1679,8 +1712,13 @@ class SkyrimAGI:
                         last_look_time = current_time
                     
                     except Exception as e:
+                        self.auxiliary_errors += 1
                         if cycle_count % 30 == 0:
-                            print(f"[AUX-EXPLORE] Look error: {e}")
+                            print(f"[AUX-EXPLORE] Look error: {e} (errors: {self.auxiliary_errors})")
+                        if self.auxiliary_errors >= 20:
+                            print(f"[STUCK-DETECTION] ⚠️ Auxiliary exploration has {self.auxiliary_errors} errors, pausing for 5s")
+                            await asyncio.sleep(5.0)
+                            self.auxiliary_errors = 0
                 
                 # CHANGE DIRECTION - Avoid getting stuck
                 # Only if no main action is executing (don't interfere)
@@ -1698,7 +1736,12 @@ class SkyrimAGI:
                         last_direction_change = current_time
                     
                     except Exception as e:
-                        print(f"[AUX-EXPLORE] Direction change error: {e}")
+                        self.auxiliary_errors += 1
+                        print(f"[AUX-EXPLORE] Direction change error: {e} (errors: {self.auxiliary_errors})")
+                        if self.auxiliary_errors >= 20:
+                            print(f"[STUCK-DETECTION] ⚠️ Auxiliary exploration has {self.auxiliary_errors} errors, pausing for 5s")
+                            await asyncio.sleep(5.0)
+                            self.auxiliary_errors = 0
                 
                 # CENTER CAMERA - Reset vertical view periodically
                 # Only if no main action is executing (don't interfere)
@@ -1721,7 +1764,12 @@ class SkyrimAGI:
                         last_camera_center = current_time
                     
                     except Exception as e:
-                        print(f"[AUX-EXPLORE] Camera center error: {e}")
+                        self.auxiliary_errors += 1
+                        print(f"[AUX-EXPLORE] Camera center error: {e} (errors: {self.auxiliary_errors})")
+                        if self.auxiliary_errors >= 20:
+                            print(f"[STUCK-DETECTION] ⚠️ Auxiliary exploration has {self.auxiliary_errors} errors, pausing for 5s")
+                            await asyncio.sleep(5.0)
+                            self.auxiliary_errors = 0
                 
                 # Sleep to maintain interval
                 await asyncio.sleep(0.5)
@@ -1989,6 +2037,165 @@ Based on this visual and contextual data, provide:
                     self.current_goal = goal.description
                     print(f"[REASONING] New goal: {self.current_goal}")
                 
+                # Sensorimotor & Geospatial Reasoning every 5 cycles (Claude Sonnet 4.5 with thinking)
+                if cycle_count % 5 == 0 and self.sensorimotor_llm:
+                    print("\n" + "="*70)
+                    print("SENSORIMOTOR & GEOSPATIAL REASONING (Claude Sonnet 4.5)")
+                    print("="*70)
+                    
+                    # First, get visual analysis from Gemini/Local vision models
+                    visual_analysis = ""
+                    gemini_visual = ""
+                    local_visual = ""
+                    
+                    # Get Gemini visual analysis
+                    if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
+                        try:
+                            print("[SENSORIMOTOR] Getting Gemini visual analysis...")
+                            gemini_visual = await asyncio.wait_for(
+                                self.hybrid_llm.generate_vision(
+                                    image_data=perception.get('screenshot'),
+                                    prompt="Describe the visual scene focusing on: spatial layout, obstacles, pathways, terrain features, landmarks, and any navigational cues. Be specific about what's visible in each direction.",
+                                    max_tokens=512
+                                ),
+                                timeout=15.0
+                            )
+                            print(f"[SENSORIMOTOR] ✓ Gemini visual: {len(gemini_visual)} chars")
+                        except Exception as e:
+                            print(f"[SENSORIMOTOR] Gemini visual failed: {e}")
+                    
+                    # Get Local vision model analysis (Qwen3-VL) as backup/supplement
+                    if hasattr(self, 'perception_llm') and self.perception_llm:
+                        try:
+                            print("[SENSORIMOTOR] Getting local visual analysis...")
+                            local_visual = await asyncio.wait_for(
+                                self.perception_llm.generate(
+                                    prompt="Analyze this Skyrim scene for navigation: describe obstacles, open paths, terrain type, and spatial features.",
+                                    max_tokens=256
+                                ),
+                                timeout=10.0
+                            )
+                            if isinstance(local_visual, dict):
+                                local_visual = local_visual.get('content', '')
+                            print(f"[SENSORIMOTOR] ✓ Local visual: {len(local_visual)} chars")
+                        except Exception as e:
+                            print(f"[SENSORIMOTOR] Local visual failed: {e}")
+                    
+                    # Combine visual analyses
+                    if gemini_visual or local_visual:
+                        visual_analysis = f"""
+**VISUAL ANALYSIS FROM VISION MODELS:**
+
+Gemini Vision Analysis:
+{gemini_visual if gemini_visual else '[Not available]'}
+
+Local Vision Model Analysis:
+{local_visual if local_visual else '[Not available]'}
+"""
+                    
+                    # Compute visual similarity if we have embeddings
+                    visual_similarity_info = ""
+                    if perception.get('visual_embedding') is not None and self.last_visual_embedding is not None:
+                        import numpy as np
+                        similarity = np.dot(perception.get('visual_embedding'), self.last_visual_embedding) / (
+                            np.linalg.norm(perception.get('visual_embedding')) * np.linalg.norm(self.last_visual_embedding)
+                        )
+                        visual_similarity_info = f"\n- Visual similarity to last frame: {similarity:.3f} ({'STUCK' if similarity > 0.95 else 'MOVING'})"
+                    
+                    # Build comprehensive sensorimotor query with visual learning
+                    sensorimotor_query = f"""Analyze the current sensorimotor and geospatial situation in Skyrim:
+
+**Current State:**
+- Location: {game_state.location_name}
+- Position/Orientation: Unknown (no GPS in Skyrim)
+- Terrain: {perception.get('terrain_type', 'unknown')}
+- Scene: {scene_type.value}
+
+**Visual Context:**
+- CLIP embedding available: {perception.get('visual_embedding') is not None}{visual_similarity_info}
+{visual_analysis}
+
+**Movement & Action:**
+- Current action layer: {game_state.current_action_layer}
+- Recent actions: {', '.join(self.action_history[-5:]) if self.action_history else 'none'}
+- Repeated action: {self.last_successful_action} ({self.repeated_action_count}x)
+
+**Spatial Reasoning Tasks:**
+1. **Obstacle Detection:** Based on visual analysis, are we stuck against a wall/obstacle?
+2. **Navigation Strategy:** What's the best movement pattern given the visual scene?
+3. **Spatial Memory:** Have we been here before? (use visual descriptions)
+4. **Path Planning:** What direction should we explore based on visible pathways?
+5. **Terrain Adaptation:** How should we move given the terrain and obstacles?
+
+**Output Format:**
+- Obstacle Status: [clear/blocked/uncertain]
+- Navigation Recommendation: [action + reasoning based on visual analysis]
+- Spatial Memory: [new/familiar/uncertain]
+- Exploration Direction: [direction + reasoning from visual cues]
+- Confidence: [0.0-1.0]
+"""
+                    
+                    try:
+                        print("[SENSORIMOTOR] Invoking Claude Sonnet 4.5 with extended thinking...")
+                        sensorimotor_result = await asyncio.wait_for(
+                            self.sensorimotor_llm.generate(
+                                prompt=sensorimotor_query,
+                                system_prompt="You are a sensorimotor and geospatial reasoning expert for a Skyrim AI agent. You receive visual analysis from Gemini and local vision models. Use extended thinking to deeply analyze spatial relationships, movement patterns, and navigation strategies based on the visual information provided.",
+                                max_tokens=2048,
+                                temperature=0.3,
+                                thinking={"type": "enabled", "budget_tokens": 10000}
+                            ),
+                            timeout=90.0
+                        )
+                        
+                        analysis = sensorimotor_result.get('content', '')
+                        thinking = sensorimotor_result.get('thinking', '')
+                        
+                        print(f"\n[SENSORIMOTOR] Analysis ({len(analysis)} chars):")
+                        print(f"[SENSORIMOTOR] {analysis[:500]}...")
+                        
+                        if thinking:
+                            print(f"\n[SENSORIMOTOR] Extended Thinking ({len(thinking)} chars):")
+                            print(f"[SENSORIMOTOR] {thinking[:300]}...")
+                        
+                        # Store in dedicated RAG memory with visual learning
+                        self.memory_rag.store_cognitive_memory(
+                            thought=f"""SENSORIMOTOR & GEOSPATIAL ANALYSIS:
+
+VISUAL LEARNING (from Gemini & Local Models):
+{visual_analysis}
+
+CLAUDE SONNET 4.5 ANALYSIS:
+{analysis}
+
+EXTENDED THINKING PROCESS:
+{thinking}
+""",
+                            context={
+                                'type': 'sensorimotor_geospatial',
+                                'location': game_state.location_name,
+                                'terrain': perception.get('terrain_type', 'unknown'),
+                                'scene': scene_type.value,
+                                'cycle': cycle_count,
+                                'repeated_action': self.last_successful_action,
+                                'repeat_count': self.repeated_action_count,
+                                'has_gemini_visual': bool(gemini_visual),
+                                'has_local_visual': bool(local_visual),
+                                'visual_similarity': visual_similarity_info
+                            }
+                        )
+                        
+                        print("[SENSORIMOTOR] ✓ Stored in RAG memory (with visual learning from Gemini & Local)")
+                        
+                    except asyncio.TimeoutError:
+                        print("[SENSORIMOTOR] Timed out after 90s")
+                    except Exception as e:
+                        print(f"[SENSORIMOTOR] Error: {e}")
+                        import traceback
+                        traceback.print_exc()
+                    
+                    print("="*70 + "\n")
+                
                 # FULL SINGULARIS ORCHESTRATOR - Run periodically for deep strategic reasoning
                 # Uses Huihui for dialectical synthesis, expert consultation, meta-cognition
                 if cycle_count % 15 == 0 and self.huihui_llm:
@@ -2152,6 +2359,52 @@ Be concise but insightful. Focus on what Singularis might have missed."""
                     print("[REASONING] WARNING: No action returned by _plan_action, using fallback")
                     action = 'explore'  # Safe default fallback
                     self.stats['heuristic_action_count'] += 1
+                
+                # Check for repeated action stuck loop with visual similarity
+                if action == self.last_successful_action:
+                    self.repeated_action_count += 1
+                    
+                    # Check if visuals have changed significantly (progress made)
+                    current_visual = perception.get('visual_embedding')
+                    visual_changed = True
+                    
+                    if current_visual is not None and self.last_visual_embedding is not None:
+                        # Compute cosine similarity
+                        import numpy as np
+                        similarity = np.dot(current_visual, self.last_visual_embedding) / (
+                            np.linalg.norm(current_visual) * np.linalg.norm(self.last_visual_embedding)
+                        )
+                        visual_changed = similarity < self.visual_similarity_threshold
+                        
+                        if not visual_changed and self.repeated_action_count >= 3:
+                            print(f"[STUCK-DETECTION] Repeated '{action}' {self.repeated_action_count}x, visual similarity: {similarity:.3f} (stuck!)")
+                    
+                    # Only force change if visuals haven't changed AND repeated too many times
+                    if self.repeated_action_count >= self.max_repeated_actions and not visual_changed:
+                        print(f"[STUCK-DETECTION] ⚠️ Repeated action '{action}' {self.repeated_action_count} times with no visual progress!")
+                        print(f"[STUCK-DETECTION] Forcing variety - choosing random different action")
+                        # Force a different action
+                        import random
+                        game_state = perception.get('game_state')
+                        available = game_state.available_actions if game_state else ['move_forward', 'jump', 'activate']
+                        different_actions = [a for a in available if a != action]
+                        if different_actions:
+                            action = random.choice(different_actions)
+                            print(f"[STUCK-DETECTION] Switched to: {action}")
+                        self.repeated_action_count = 0
+                    elif visual_changed:
+                        # Visual progress made, allow repeated action (e.g., move_forward exploring)
+                        if self.repeated_action_count >= 3:
+                            print(f"[STUCK-DETECTION] ✓ Repeated '{action}' {self.repeated_action_count}x but making visual progress")
+                        self.repeated_action_count = 0  # Reset since progress is being made
+                else:
+                    self.repeated_action_count = 0
+                
+                # Update visual tracking
+                if perception.get('visual_embedding') is not None:
+                    self.last_visual_embedding = perception.get('visual_embedding').copy()
+                
+                self.last_successful_action = action
                 
                 print(f"[REASONING] Planned action: {action} ({planning_duration:.3f}s)")
                 
@@ -3625,19 +3878,27 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                                     if cloud_recommendation:
                                         action, reasoning = cloud_recommendation
                                         print(f"[CLOUD-LLM] ✓ Won the race! Using: {action}")
+                                        self.cloud_llm_failures = 0  # Reset on success
                                         # Cancel other tasks
                                         for t in pending:
                                             t.cancel()
                                         return action
+                                    else:
+                                        self.cloud_llm_failures += 1
+                                        print(f"[CLOUD-LLM] ⚠️ Returned None (failures: {self.cloud_llm_failures}/{self.max_consecutive_failures})")
                                 elif task == local_moe_task:
                                     moe_recommendation = task.result()
                                     if moe_recommendation:
                                         action, reasoning = moe_recommendation
                                         print(f"[LOCAL-MOE] ✓ Won the race! Using: {action}")
+                                        self.local_moe_failures = 0  # Reset on success
                                         # Cancel other tasks
                                         for t in pending:
                                             t.cancel()
                                         return action
+                                    else:
+                                        self.local_moe_failures += 1
+                                        print(f"[LOCAL-MOE] ⚠️ Returned None (failures: {self.local_moe_failures}/{self.max_consecutive_failures})")
                                 elif task == phi4_task:
                                     llm_action = task.result()
                                     if llm_action:
@@ -3675,6 +3936,22 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
             
             # Track heuristic usage
             self.stats['heuristic_action_count'] += 1
+            
+            # Check for stuck condition - all systems failing
+            if (self.cloud_llm_failures >= self.max_consecutive_failures and 
+                self.local_moe_failures >= self.max_consecutive_failures):
+                print(f"[STUCK-DETECTION] ⚠️⚠️⚠️ ALL LLM SYSTEMS FAILING!")
+                print(f"[STUCK-DETECTION] Cloud: {self.cloud_llm_failures}, Local MoE: {self.local_moe_failures}")
+                print(f"[STUCK-DETECTION] Forcing random exploration action")
+                # Force a random action to break the loop
+                import random
+                recovery_actions = ['move_forward', 'jump', 'look_around', 'activate']
+                recovery_action = random.choice([a for a in recovery_actions if a in available_actions] or available_actions)
+                # Reset counters
+                self.cloud_llm_failures = 0
+                self.local_moe_failures = 0
+                self.heuristic_failures = 0
+                return recovery_action
 
             # Fallback: Action selection within current layer based on motivation
             # More intelligent heuristics with scene awareness
