@@ -98,13 +98,13 @@ class SkyrimControllerBindings:
         
         # Basic actions
         async def jump(ctrl, duration=0.0):
-            await ctrl.tap_button(XboxButton.X)
+            await ctrl.tap_button(XboxButton.Y)  # Y for jump in Skyrim
         
         async def activate(ctrl, duration=0.0):
             await ctrl.tap_button(XboxButton.A)
         
         async def sneak_toggle(ctrl, duration=0.0):
-            await ctrl.tap_button(XboxButton.B)
+            await ctrl.tap_button(XboxButton.LS)  # Left stick click for sneak
         
         async def sheath_weapon(ctrl, duration=0.0):
             ctrl.set_left_trigger(1.0)
