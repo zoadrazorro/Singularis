@@ -349,6 +349,7 @@ class ReinforcementLearner:
             'move_right',
             'jump',
             'sneak',
+            'sneak_move',
             'look_around',
             'turn_left',
             'turn_right',
