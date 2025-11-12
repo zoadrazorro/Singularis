@@ -638,7 +638,10 @@ class SkyrimAGI:
                     try:
                         # Get the actual screenshot image
                         screenshot = perception.get('screenshot')
+                        if cycle_count % 3 == 0:  # Debug logging
+                            print(f"[QWEN3-VL] Cycle {cycle_count}: perception_llm={self.perception_llm is not None}, screenshot={screenshot is not None}")
                         if screenshot:
+                            print(f"[QWEN3-VL] Starting visual analysis for cycle {cycle_count}...")
                             # Save screenshot temporarily for VL model
                             import tempfile
                             import os
@@ -646,15 +649,20 @@ class SkyrimAGI:
                                 screenshot.save(tmp.name, 'PNG')
                                 screenshot_path = tmp.name
                             
+                            print(f"[QWEN3-VL] Screenshot saved to {screenshot_path}")
+                            
                             try:
                                 # Get visual analysis from Qwen3-VL with image
+                                game_state = perception.get('game_state')
+                                scene_type = perception.get('scene_type', 'unknown')
+                                
                                 visual_prompt = f"""You are analyzing a Skyrim gameplay screenshot.
 
 Context:
-- Scene type: {perception.get('scene_type', 'unknown')}
-- Location: {perception.get('game_state', {}).get('location_name', 'unknown')}
-- Health: {perception.get('game_state', {}).get('health', 100):.0f}/100
-- In combat: {perception.get('game_state', {}).get('in_combat', False)}
+- Scene type: {scene_type}
+- Location: {game_state.location_name if game_state else 'unknown'}
+- Health: {game_state.health if game_state else 100:.0f}/100
+- In combat: {game_state.in_combat if game_state else False}
 
 Analyze the image and provide:
 1. What objects/NPCs/enemies you see
@@ -663,14 +671,40 @@ Analyze the image and provide:
 4. Recommended focus area or action"""
                                 
                                 # Pass image to Qwen3-VL for actual vision analysis
-                                visual_analysis = await self.perception_llm.generate(
-                                    prompt=visual_prompt,
-                                    max_tokens=384,
-                                    image_path=screenshot_path  # Pass screenshot to vision model
-                                )
-                                perception['visual_analysis'] = visual_analysis.get('content', '')
-                                if cycle_count % 9 == 0:  # Log occasionally
+                                print(f"[QWEN3-VL] Calling LLM with image...")
+                                try:
+                                    visual_analysis = await self.perception_llm.generate(
+                                        prompt=visual_prompt,
+                                        max_tokens=384,
+                                        image_path=screenshot_path  # Pass screenshot to vision model
+                                    )
+                                    print(f"[QWEN3-VL] LLM response received")
+                                    perception['visual_analysis'] = visual_analysis.get('content', '')
                                     print(f"[QWEN3-VL] Visual analysis: {visual_analysis.get('content', '')[:150]}...")
+                                except Exception as vision_error:
+                                    # Vision model might not be supported by LM Studio
+                                    print(f"[QWEN3-VL] Vision API failed (model may not support images): {vision_error}")
+                                    print(f"[QWEN3-VL] Falling back to text-only analysis")
+                                    # Try text-only analysis without image
+                                    text_only_prompt = f"""Analyze Skyrim gameplay based on context (no image available):
+
+Context:
+- Scene type: {scene_type}
+- Location: {game_state.location_name if game_state else 'unknown'}
+- Health: {game_state.health if game_state else 100:.0f}/100
+- In combat: {game_state.in_combat if game_state else False}
+
+Based on this context, provide:
+1. Likely environment description
+2. Potential threats or opportunities
+3. Recommended actions"""
+                                    
+                                    visual_analysis = await self.perception_llm.generate(
+                                        prompt=text_only_prompt,
+                                        max_tokens=256
+                                    )
+                                    perception['visual_analysis'] = f"[TEXT-ONLY] {visual_analysis.get('content', '')}"
+                                    print(f"[QWEN3-VL] Text-only analysis: {visual_analysis.get('content', '')[:100]}...")
                             finally:
                                 # Clean up temp file
                                 try:
@@ -680,10 +714,10 @@ Analyze the image and provide:
                         else:
                             print(f"[QWEN3-VL] No screenshot available in perception")
                     except Exception as e:
-                        if cycle_count % 30 == 0:  # Log errors occasionally
-                            print(f"[QWEN3-VL] Visual analysis failed: {e}")
-                            import traceback
-                            traceback.print_exc()
+                        # Always log errors for debugging
+                        print(f"[QWEN3-VL] Visual analysis failed: {e}")
+                        import traceback
+                        traceback.print_exc()
                 
                 self.current_perception = perception
                 

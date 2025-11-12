@@ -98,6 +98,8 @@ class LMStudioClient:
             with open(image_path, 'rb') as img_file:
                 img_data = base64.b64encode(img_file.read()).decode('utf-8')
             
+            logger.debug(f"Vision request: model={self.config.model_name}, image_size={len(img_data)} bytes (base64)")
+            
             # Vision model format (OpenAI-compatible)
             messages.append({
                 "role": "user",
@@ -166,6 +168,25 @@ class LMStudioClient:
                     "completion_tokens": usage.get("completion_tokens", 0),
                 }
                 
+        except aiohttp.ClientResponseError as e:
+            # Log detailed error for vision requests
+            error_body = None
+            try:
+                error_body = await e.response.text() if hasattr(e, 'response') else None
+            except:
+                pass
+            
+            logger.error(
+                "LM Studio request failed",
+                extra={
+                    "error": str(e),
+                    "status": e.status if hasattr(e, 'status') else None,
+                    "model": self.config.model_name,
+                    "has_image": image_path is not None,
+                    "error_body": error_body[:500] if error_body else None
+                }
+            )
+            raise
         except aiohttp.ClientError as e:
             logger.error(
                 "LM Studio request failed",
@@ -276,6 +297,7 @@ class ExpertLLMInterface:
         system_prompt: Optional[str] = None,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
+        image_path: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Direct generation method (convenience wrapper for client.generate).
@@ -285,6 +307,7 @@ class ExpertLLMInterface:
             system_prompt: Optional system prompt
             temperature: Optional temperature
             max_tokens: Optional max tokens
+            image_path: Optional path to image for vision models
             
         Returns:
             Dict with 'content', 'tokens', etc.
@@ -293,7 +316,8 @@ class ExpertLLMInterface:
             prompt=prompt,
             system_prompt=system_prompt,
             temperature=temperature,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            image_path=image_path
         )
     
     async def expert_query(
