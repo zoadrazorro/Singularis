@@ -77,7 +77,7 @@ class SkyrimConfig:
     enable_async_reasoning: bool = True  # Run reasoning in parallel with actions
     action_queue_size: int = 3  # Max queued actions
     perception_interval: float = 0.5  # How often to perceive (seconds)
-    max_concurrent_llm_calls: int = 2  # With phi-4-mini, can handle 2 concurrent calls safely
+    max_concurrent_llm_calls: int = 3  # With 6 models (4 phi-4-mini + 2 big), can handle 3 concurrent
     reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles (reduced for phi-4-mini)
 
     # Learning
@@ -244,8 +244,12 @@ class SkyrimAGI:
         self.llm_semaphore: Optional[asyncio.Semaphore] = None  # Limit concurrent LLM calls
         self.last_reasoning_time: float = 0.0  # Track last reasoning to throttle
         
-        # Multi-phi4-mini LLM instances (initialized in initialize_llm)
-        self.action_planning_llm: Optional[Any] = None  # Dedicated LLM for action planning
+        # Multi-LLM architecture (initialized in initialize_llm)
+        # 4x phi-4-mini for fast consciousness/tactical reasoning
+        self.action_planning_llm: Optional[Any] = None  # phi-4-mini: Fast action planning
+        # 2x big models for high-level strategic planning
+        self.strategic_planning_llm: Optional[Any] = None  # Big model: Long-term strategy
+        self.world_understanding_llm: Optional[Any] = None  # Big model: Deep world understanding
 
         # Statistics
         self.stats = {
@@ -270,17 +274,30 @@ class SkyrimAGI:
 
     async def initialize_llm(self):
         """
-        Initialize multiple phi-4-mini-reasoning LLMs for parallel async processing.
+        Initialize hybrid LLM architecture: 4 phi-4-mini + 2 big models.
         
         Architecture:
-        - Phi-4-mini is lightweight (14B → 4B params), allowing multiple instances
-        - Each specialized LLM runs independently without overloading
-        - Reasoning quality optimized for Microsoft's phi-4-mini-reasoning variant
+        - 4x phi-4-mini-reasoning (4B params): Fast consciousness/tactical decisions
+          * Main consciousness engine
+          * RL tactical reasoning
+          * Action planning
+          * Meta-strategist coordination
+        
+        - 2x Big models (14B params): Deep strategic thinking
+          * phi-4 (14B): Long-term strategic planning, reasoning chains
+          * eva-qwen2.5-14b (14B): World understanding, narrative, NPCs
+        
+        This hybrid approach balances speed (phi-4-mini) with depth (big models).
+        Total: 6 LLM instances running in parallel with async execution.
         """
         print("=" * 70)
-        print("INITIALIZING MULTI-PHI4-MINI LLM ARCHITECTURE")
+        print("INITIALIZING HYBRID LLM ARCHITECTURE")
+        print("=" * 70)
+        print("4x phi-4-mini (fast) + 2x big models (strategic)")
         print("=" * 70)
         print()
+        
+        # ===== PHI-4-MINI INSTANCES (4x) - FAST CONSCIOUSNESS =====
         
         # 1. Main consciousness LLM (phi-4-mini-reasoning)
         print("[PHI4-MAIN] Initializing primary consciousness engine...")
@@ -290,14 +307,14 @@ class SkyrimAGI:
         if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
             self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
             print("[PHI4-MAIN] ✓ Consciousness LLM connected to bridge")
-            print("[PHI4-MAIN] Model: phi-4-mini-reasoning (main consciousness)")
+            print("[PHI4-MAIN] Model: phi-4-mini-reasoning (consciousness measurement)")
         else:
             print("[PHI4-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")
         
         # 2. RL Reasoning LLM (phi-4-mini-reasoning)
         # Dedicated instance for tactical action selection
         try:
-            print("\n[PHI4-RL] Initializing phi-4-mini for RL reasoning neuron...")
+            print("\n[PHI4-RL] Initializing phi-4-mini for RL tactical reasoning...")
             rl_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
                 model_name='microsoft/phi-4-mini-reasoning',
@@ -310,7 +327,7 @@ class SkyrimAGI:
             self.rl_reasoning_neuron.llm_interface = rl_interface
             print("[PHI4-RL] ✓ RL reasoning neuron connected to phi-4-mini")
             print(f"[PHI4-RL] Model: {rl_config.model_name}")
-            print(f"[PHI4-RL] Max tokens: {rl_config.max_tokens} (fast tactical reasoning)")
+            print(f"[PHI4-RL] Role: Fast tactical Q-value analysis")
         except Exception as e:
             print(f"[PHI4-RL] ⚠️ phi-4-mini initialization failed: {e}")
             print("[PHI4-RL] RL reasoning will use heuristics")
@@ -320,15 +337,15 @@ class SkyrimAGI:
                     self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
                     print("[PHI4-RL] ✓ Using main consciousness LLM as fallback")
         
-        # 3. Meta-Strategist LLM (phi-4-mini-reasoning)
-        # Dedicated instance for strategic instruction generation
+        # 3. Meta-Strategist Coordinator (phi-4-mini-reasoning)
+        # Coordinates between fast tactical and slow strategic thinking
         try:
-            print("\n[PHI4-META] Initializing phi-4-mini for meta-strategist...")
+            print("\n[PHI4-META] Initializing phi-4-mini for meta-strategy coordination...")
             meta_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
                 model_name='microsoft/phi-4-mini-reasoning',
-                temperature=0.8,  # Higher temp for creative strategic thinking
-                max_tokens=2048   # Medium length for strategic instructions
+                temperature=0.7,  # Balanced for coordination
+                max_tokens=1536   # Medium length for coordination
             )
             meta_client = LMStudioClient(meta_config)
             meta_interface = ExpertLLMInterface(meta_client)
@@ -336,38 +353,94 @@ class SkyrimAGI:
             self.meta_strategist.llm_interface = meta_interface
             print("[PHI4-META] ✓ Meta-strategist connected to phi-4-mini")
             print(f"[PHI4-META] Model: {meta_config.model_name}")
-            print(f"[PHI4-META] Max tokens: {meta_config.max_tokens} (strategic planning)")
+            print(f"[PHI4-META] Role: Coordinate tactical & strategic systems")
         except Exception as e:
             print(f"[PHI4-META] ⚠️ phi-4-mini initialization failed: {e}")
             print("[PHI4-META] Meta-strategist will use heuristic strategies")
         
         # 4. Action Planning LLM (phi-4-mini-reasoning) 
-        # Dedicated instance for terrain-aware action planning
+        # Dedicated instance for immediate terrain-aware action planning
         try:
-            print("\n[PHI4-ACTION] Initializing phi-4-mini for action planning...")
+            print("\n[PHI4-ACTION] Initializing phi-4-mini for immediate action planning...")
             action_config = LMStudioConfig(
                 base_url=self.config.base_config.lm_studio_url,
                 model_name='microsoft/phi-4-mini-reasoning',
-                temperature=0.7,  # Balanced for exploration vs exploitation
-                max_tokens=512    # Short responses for quick action decisions
+                temperature=0.65,  # Balanced for exploration vs exploitation
+                max_tokens=512    # Very short for immediate decisions
             )
             action_client = LMStudioClient(action_config)
             self.action_planning_llm = ExpertLLMInterface(action_client)
             print("[PHI4-ACTION] ✓ Action planning LLM initialized")
             print(f"[PHI4-ACTION] Model: {action_config.model_name}")
-            print(f"[PHI4-ACTION] Max tokens: {action_config.max_tokens} (fast action planning)")
+            print(f"[PHI4-ACTION] Role: Immediate terrain-aware decisions (<1s)")
         except Exception as e:
             print(f"[PHI4-ACTION] ⚠️ phi-4-mini initialization failed: {e}")
             print("[PHI4-ACTION] Will use main consciousness LLM for action planning")
             self.action_planning_llm = None
         
+        print("\n" + "=" * 70)
+        print("PHI-4-MINI LAYER COMPLETE (4 instances)")
+        print("=" * 70)
+        
+        # ===== BIG MODEL INSTANCES (2x) - DEEP STRATEGY =====
+        
+        print("\n" + "=" * 70)
+        print("INITIALIZING BIG MODEL LAYER (2 instances)")
+        print("=" * 70)
+        print()
+        
+        # 5. Strategic Planning LLM (Big Model - phi-4)
+        # Long-term planning, quest strategy, reasoning chains
+        try:
+            print("[STRATEGY-BIG] Initializing phi-4 (full) for strategic planning...")
+            strategy_config = LMStudioConfig(
+                base_url=self.config.base_config.lm_studio_url,
+                model_name='microsoft/phi-4',  # Full phi-4 (14B params)
+                temperature=0.8,  # Higher temp for creative strategic thinking
+                max_tokens=4096   # Long responses for detailed strategy
+            )
+            strategy_client = LMStudioClient(strategy_config)
+            self.strategic_planning_llm = ExpertLLMInterface(strategy_client)
+            print("[STRATEGY-BIG] ✓ Strategic planning LLM initialized")
+            print(f"[STRATEGY-BIG] Model: {strategy_config.model_name} (14B params)")
+            print(f"[STRATEGY-BIG] Role: Long-term goals, quest planning, reasoning chains")
+            print(f"[STRATEGY-BIG] Max tokens: {strategy_config.max_tokens} (verbose strategy)")
+        except Exception as e:
+            print(f"[STRATEGY-BIG] ⚠️ phi-4 initialization failed: {e}")
+            print("[STRATEGY-BIG] Will use phi-4-mini fallback for strategy")
+            self.strategic_planning_llm = None
+        
+        # 6. World Understanding LLM (Big Model - eva-qwen2.5-14b)
+        # Deep environment analysis, NPC relationships, complex scenarios, narrative understanding
+        try:
+            print("\n[WORLD-BIG] Initializing eva-qwen2.5-14b for world understanding...")
+            world_config = LMStudioConfig(
+                base_url=self.config.base_config.lm_studio_url,
+                model_name='eva-qwen2.5-14b-v0.2',  # Eva-Qwen 14B
+                temperature=0.7,  # Lower temp for analytical understanding
+                max_tokens=3072   # Medium-long for detailed analysis
+            )
+            world_client = LMStudioClient(world_config)
+            self.world_understanding_llm = ExpertLLMInterface(world_client)
+            print("[WORLD-BIG] ✓ World understanding LLM initialized")
+            print(f"[WORLD-BIG] Model: {world_config.model_name} (14B params)")
+            print(f"[WORLD-BIG] Role: Deep environment, NPCs, scenarios, narrative")
+            print(f"[WORLD-BIG] Max tokens: {world_config.max_tokens} (detailed analysis)")
+        except Exception as e:
+            print(f"[WORLD-BIG] ⚠️ eva-qwen2.5-14b initialization failed: {e}")
+            print("[WORLD-BIG] Will use phi-4-mini fallback for world understanding")
+            self.world_understanding_llm = None
+        
         print()
         print("=" * 70)
-        print("MULTI-PHI4-MINI ARCHITECTURE READY")
+        print("HYBRID LLM ARCHITECTURE READY")
         print("=" * 70)
-        print("✓ 4 specialized phi-4-mini instances for parallel async processing")
-        print("✓ Lightweight model allows multiple concurrent LLM calls")
-        print("✓ Each LLM optimized for specific reasoning task")
+        print("✓ 4x phi-4-mini (4B, fast consciousness/tactical): <1s response")
+        print("✓ 1x phi-4 (14B, strategic planning): 2-4s response")
+        print("✓ 1x eva-qwen2.5-14b (14B, world understanding): 2-4s response")
+        print("✓ Fast layer handles moment-to-moment decisions")
+        print("✓ Strategic layer handles long-term planning & deep analysis")
+        print("✓ Async execution allows all 6 models to run in parallel")
         print("=" * 70)
         print()
 
