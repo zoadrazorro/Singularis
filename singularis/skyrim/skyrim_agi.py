@@ -3961,8 +3961,8 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"  Total nodes tracked: {len(self.consciousness_monitor.registered_nodes)}")
             
             # Get latest measurement
-            if self.consciousness_monitor.history:
-                latest = self.consciousness_monitor.history[-1]
+            if self.consciousness_monitor.state_history:
+                latest = self.consciousness_monitor.state_history[-1]
                 print(f"  Global coherence: {latest.global_coherence:.3f}")
                 print(f"  Integration (Φ): {latest.phi:.3f}")
                 print(f"  Unity index: {latest.unity_index:.3f}")
