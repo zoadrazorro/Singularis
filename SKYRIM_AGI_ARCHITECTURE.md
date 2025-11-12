@@ -300,11 +300,13 @@ Receives Singularis output and provides:
 5. **Auxiliary Exploration Loop** ⭐ NEW (3.0s interval)
    - **Always active** - runs while LLMs process
    - Move forward every 3 seconds
-   - Look around every 2 seconds
+   - Look around every 2 seconds (with vertical bias tracking)
    - Change direction every 10 seconds
+   - **Camera centering every 15 seconds** - prevents looking at ground/sky
    - Occasional jumps for terrain navigation
    - **Keeps gameplay smooth** during heavy reasoning
    - Pauses during combat/menus/dialogue
+   - **Smart camera control:** Tracks vertical bias, auto-corrects if looking too far up/down
 
 6. **Learning Loop** (background)
    - RL training (every N cycles)

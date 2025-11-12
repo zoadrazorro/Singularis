@@ -1575,11 +1575,16 @@ class SkyrimAGI:
         last_move_time = time.time()
         last_look_time = time.time()
         last_direction_change = time.time()
+        last_camera_center = time.time()
         
         # Movement parameters
         move_interval = 3.0  # Move forward every 3 seconds
         look_interval = 2.0  # Look around every 2 seconds
         direction_change_interval = 10.0  # Change direction every 10 seconds
+        camera_center_interval = 15.0  # Re-center camera every 15 seconds
+        
+        # Camera tracking
+        vertical_bias = 0  # Track if camera is looking too far up/down
         
         import random
         
@@ -1639,18 +1644,35 @@ class SkyrimAGI:
                 if current_time - last_look_time >= look_interval and not self.action_executing:
                     try:
                         from singularis.skyrim.actions import Action, ActionType
-                        # Random camera movement
+                        
+                        # Bias camera to stay level - prefer opposite direction if too far up/down
+                        if vertical_bias > 2:  # Looking too far down
+                            look_direction = 'look_up'
+                            vertical_bias -= 1
+                        elif vertical_bias < -2:  # Looking too far up
+                            look_direction = 'look_down'
+                            vertical_bias += 1
+                        else:
+                            # Random camera movement with slight preference for horizontal
+                            choices = ['look_left', 'look_right', 'look_left', 'look_right', 'look_up', 'look_down']
+                            look_direction = random.choice(choices)
+                            
+                            # Track vertical bias
+                            if look_direction == 'look_up':
+                                vertical_bias -= 1
+                            elif look_direction == 'look_down':
+                                vertical_bias += 1
+                        
                         look_types = {
                             'look_left': ActionType.LOOK_LEFT,
                             'look_right': ActionType.LOOK_RIGHT,
                             'look_up': ActionType.LOOK_UP,
                             'look_down': ActionType.LOOK_DOWN
                         }
-                        look_direction = random.choice(list(look_types.keys()))
                         look_duration = random.uniform(0.3, 0.8)
                         
                         if cycle_count % 10 == 0:
-                            print(f"[AUX-EXPLORE] Looking around: {look_direction}")
+                            print(f"[AUX-EXPLORE] Looking around: {look_direction} (v-bias: {vertical_bias})")
                         
                         look_action = Action(look_types[look_direction], duration=look_duration)
                         await self.actions.execute(look_action)
@@ -1677,6 +1699,29 @@ class SkyrimAGI:
                     
                     except Exception as e:
                         print(f"[AUX-EXPLORE] Direction change error: {e}")
+                
+                # CENTER CAMERA - Reset vertical view periodically
+                # Only if no main action is executing (don't interfere)
+                if current_time - last_camera_center >= camera_center_interval and not self.action_executing:
+                    try:
+                        from singularis.skyrim.actions import Action, ActionType
+                        
+                        # Center camera by looking in opposite direction of bias
+                        if vertical_bias > 0:  # Looking down
+                            print(f"[AUX-EXPLORE] Centering camera (looking up to correct v-bias: {vertical_bias})")
+                            center_action = Action(ActionType.LOOK_UP, duration=0.5 * abs(vertical_bias))
+                            await self.actions.execute(center_action)
+                            vertical_bias = 0  # Reset bias
+                        elif vertical_bias < 0:  # Looking up
+                            print(f"[AUX-EXPLORE] Centering camera (looking down to correct v-bias: {vertical_bias})")
+                            center_action = Action(ActionType.LOOK_DOWN, duration=0.5 * abs(vertical_bias))
+                            await self.actions.execute(center_action)
+                            vertical_bias = 0  # Reset bias
+                        
+                        last_camera_center = current_time
+                    
+                    except Exception as e:
+                        print(f"[AUX-EXPLORE] Camera center error: {e}")
                 
                 # Sleep to maintain interval
                 await asyncio.sleep(0.5)
