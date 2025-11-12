@@ -554,6 +554,7 @@ class SkyrimPerception:
             'objects': objects,
             'game_state': game_state,
             'timestamp': timestamp,
+            'screenshot': screen,  # Include screenshot for VL models
         }
 
         # 7. Add to history
