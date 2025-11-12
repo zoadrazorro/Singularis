@@ -1382,31 +1382,10 @@ Provide: 1) What you see, 2) Spatial layout, 3) Threats/opportunities, 4) Recomm
                 
                 # RL reasoning neuron already connected to huihui
                 
-                # Start parallel pipelines: Huihui (deep) + Heuristic (fast)
-                print("[PARALLEL] Starting dual pipeline: Huihui (strategic) + Heuristic (fast)")
+                # Start Huihui in background (don't wait)
+                print("[PARALLEL] Starting Huihui in background, using fast heuristic for immediate action")
                 
-                # Create heuristic task (runs in parallel)
-                async def fast_heuristic_pipeline():
-                    """Fast heuristic reasoning while Huihui thinks."""
-                    print("[HEURISTIC-FAST] Computing quick fallback action...")
-                    
-                    # Quick Q-value based selection
-                    top_q_action = max(
-                        [(a, q_values.get(a, 0.0)) for a in available_actions],
-                        key=lambda x: x[1]
-                    )[0]
-                    
-                    # Context-aware adjustment
-                    if game_state.health < 30 and 'rest' in available_actions:
-                        return 'rest', "Low health emergency"
-                    elif game_state.in_combat and game_state.enemies_nearby > 2 and 'power_attack' in available_actions:
-                        return 'power_attack', "Multiple enemies"
-                    elif not game_state.in_combat and 'move_forward' in available_actions:
-                        return 'move_forward', "Safe exploration"
-                    else:
-                        return top_q_action, f"Top Q-value action"
-                
-                # Run both in parallel
+                # Start Huihui task (runs in background, we don't await it)
                 huihui_task = asyncio.create_task(
                     self.rl_reasoning_neuron.reason_about_q_values(
                         state=state_dict,
@@ -1423,26 +1402,38 @@ Provide: 1) What you see, 2) Spatial layout, 3) Threats/opportunities, 4) Recomm
                     )
                 )
                 
-                heuristic_task = asyncio.create_task(fast_heuristic_pipeline())
+                # Compute fast heuristic immediately (no await needed)
+                print("[HEURISTIC-FAST] Computing quick action for Phi-4...")
                 
-                # Wait for both (heuristic will finish first)
-                heuristic_result, rl_reasoning = await asyncio.gather(
-                    heuristic_task,
-                    huihui_task
-                )
+                # Quick Q-value based selection
+                top_q_action = max(
+                    [(a, q_values.get(a, 0.0)) for a in available_actions],
+                    key=lambda x: x[1]
+                )[0]
                 
-                heuristic_action, heuristic_reason = heuristic_result
+                # Context-aware adjustment
+                if game_state.health < 30 and 'rest' in available_actions:
+                    heuristic_action = 'rest'
+                    heuristic_reason = "Low health emergency"
+                elif game_state.in_combat and game_state.enemies_nearby > 2 and 'power_attack' in available_actions:
+                    heuristic_action = 'power_attack'
+                    heuristic_reason = "Multiple enemies"
+                elif not game_state.in_combat and 'move_forward' in available_actions:
+                    heuristic_action = 'move_forward'
+                    heuristic_reason = "Safe exploration"
+                else:
+                    heuristic_action = top_q_action
+                    heuristic_reason = f"Top Q-value action"
+                
                 print(f"[HEURISTIC-FAST] Quick recommendation: {heuristic_action} ({heuristic_reason})")
-                print(f"[HUIHUI-RL] Strategic recommendation: {rl_reasoning.recommended_action} (score: {rl_reasoning.tactical_score:.2f})")
-                print(f"[HUIHUI-RL] Reasoning: {rl_reasoning.reasoning[:150]}...")
-                if rl_reasoning.strategic_insight:
-                    print(f"[HUIHUI-RL] Insight: {rl_reasoning.strategic_insight[:100]}...")
+                print(f"[HUIHUI-BG] Strategic analysis running in background...")
                 
-                # Store both recommendations for Phi-4 to consider
-                huihui_recommendation = rl_reasoning.recommended_action
-                huihui_reasoning = rl_reasoning.reasoning
+                # Store heuristic for immediate use by Phi-4
                 heuristic_recommendation = heuristic_action
                 heuristic_reasoning = heuristic_reason
+                
+                # Store background task for later (optional: could check if done)
+                huihui_background_task = huihui_task
 
             # Get strategic analysis from world model (layer effectiveness)
             strategic_analysis = self.skyrim_world.get_strategic_layer_analysis(
@@ -1527,14 +1518,13 @@ Provide: 1) What you see, 2) Spatial layout, 3) Threats/opportunities, 4) Recomm
             if self.action_planning_llm:
                 print("[PLANNING] Using Phi-4 for final action selection...")
                 try:
-                    # Pass both Huihui and heuristic recommendations to Phi-4 if available
+                    # Pass only fast heuristic to Phi-4 (Huihui still thinking in background)
                     huihui_context = None
-                    if 'huihui_recommendation' in locals():
+                    if 'heuristic_recommendation' in locals():
                         huihui_context = {
-                            'huihui_recommendation': huihui_recommendation,
-                            'huihui_reasoning': huihui_reasoning[:200],  # Truncate for speed
-                            'heuristic_recommendation': heuristic_recommendation if 'heuristic_recommendation' in locals() else None,
-                            'heuristic_reasoning': heuristic_reasoning if 'heuristic_reasoning' in locals() else None
+                            'heuristic_recommendation': heuristic_recommendation,
+                            'heuristic_reasoning': heuristic_reasoning,
+                            'huihui_status': 'background' if 'huihui_background_task' in locals() else 'not_started'
                         }
                     
                     llm_action = await self._plan_action_with_llm(
@@ -1707,12 +1697,12 @@ Provide: 1) What you see, 2) Spatial layout, 3) Threats/opportunities, 4) Recomm
         # Build compact context for fast phi-4 reasoning
         recommendations_section = ""
         if huihui_context:
+            huihui_status = huihui_context.get('huihui_status', 'unknown')
             recommendations_section = f"""
-PARALLEL ANALYSIS:
-1. Huihui (Strategic): {huihui_context.get('huihui_recommendation', 'N/A')}
-   Reasoning: {huihui_context.get('huihui_reasoning', 'N/A')}
-2. Heuristic (Fast): {huihui_context.get('heuristic_recommendation', 'N/A')}
-   Reasoning: {huihui_context.get('heuristic_reasoning', 'N/A')}
+FAST HEURISTIC ANALYSIS:
+Recommended: {huihui_context.get('heuristic_recommendation', 'N/A')}
+Reasoning: {huihui_context.get('heuristic_reasoning', 'N/A')}
+(Huihui strategic analysis: {huihui_status})
 """
         
         context = f"""SKYRIM AGENT - QUICK ACTION DECISION
