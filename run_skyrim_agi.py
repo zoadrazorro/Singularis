@@ -5,7 +5,11 @@ Complete autonomous gameplay with all features enabled.
 """
 
 import asyncio
+from dotenv import load_dotenv
 from singularis.skyrim import SkyrimAGI, SkyrimConfig
+
+# Load API keys from .env file
+load_dotenv()
 
 async def main():
     print("=" * 70)
