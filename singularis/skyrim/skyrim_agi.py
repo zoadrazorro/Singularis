@@ -81,9 +81,9 @@ class SkyrimConfig:
     max_concurrent_llm_calls: int = 2  # With 4 models (2 phi-4 + 2 big), can handle 2 concurrent
     reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles
 
-    # Model names for phi-4 instances (using endpoints :2 and :3)
-    phi4_main_model: str = "microsoft/phi-4:2"
-    phi4_action_model: str = "microsoft/phi-4:3"
+    # Model names for mistral-7b instances (using base and :2 endpoints)
+    phi4_main_model: str = "mistralai/mistral-7b-instruct-v0.3"
+    phi4_action_model: str = "mistralai/mistral-7b-instruct-v0.3:2"
 
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise
@@ -217,9 +217,9 @@ class SkyrimAGI:
         self.rl_reasoning_neuron = RLReasoningNeuron()
         # Will connect LLM interface when initialized
         
-        # Initialize phi-4 pool tracking
-        self.phi4_pool = []
-        self.phi4_index = 0
+        # Initialize mistral-7b pool tracking
+        self.mistral_pool = []
+        self.mistral_index = 0
         
         # 11. Meta-Strategist (coordinates tactical & strategic thinking)
         print("  [11/12] Meta-strategist coordinator...")
@@ -297,40 +297,40 @@ class SkyrimAGI:
         print("Skyrim AGI initialization complete.")
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
 
-    def get_next_phi4(self):
-        """Get next phi-4 LLM from pool (round-robin)."""
-        if not self.phi4_pool:
+    def get_next_mistral(self):
+        """Get next mistral-7b LLM from pool (round-robin)."""
+        if not self.mistral_pool:
             return None
-        llm = self.phi4_pool[self.phi4_index]
-        self.phi4_index = (self.phi4_index + 1) % len(self.phi4_pool)
+        llm = self.mistral_pool[self.mistral_index]
+        self.mistral_index = (self.mistral_index + 1) % len(self.mistral_pool)
         return llm
 
     async def initialize_llm(self):
         """
-        Initialize hybrid LLM architecture: 2 phi-4 + 2 big models.
+        Initialize hybrid LLM architecture: 2 mistral-7b + 2 big models.
         
         Architecture:
-        - 2x phi-4 (14B params): Fast tactical decisions
-          * Main consciousness engine + action planning (phi-4:2)
-          * Strategic planning (phi-4:3)
+        - 2x mistral-7b-instruct (7B params): Fast tactical decisions
+          * Main consciousness engine + action planning (mistral-7b)
+          * RL reasoning + meta-strategist (mistral-7b:2)
         
         - 2x Big models (14B params): Deep strategic thinking
           * phi-4 (14B): Long-term strategic planning, reasoning chains
           * eva-qwen2.5-14b (14B): World understanding, narrative, NPCs
         
-        This hybrid approach uses phi-4 for both speed and quality.
+        This hybrid approach balances speed (mistral-7b) with depth (big models).
         Total: 4 LLM instances running in parallel with async execution.
         """
         print("=" * 70)
         print("INITIALIZING HYBRID LLM ARCHITECTURE")
         print("=" * 70)
-        print("2x phi-4 (tactical) + 2x big models (strategic)")
+        print("2x mistral-7b (tactical) + 2x big models (strategic)")
         print("=" * 70)
         print()
         
-        # ===== PHI-4 INSTANCES (2x) - TACTICAL REASONING =====
+        # ===== MISTRAL-7B INSTANCES (2x) - TACTICAL REASONING =====
         
-        # 1. Main consciousness LLM (phi-4:2)
+        # 1. Main consciousness LLM (mistral-7b)
         print("[PHI4-MAIN] Initializing primary consciousness engine...")
         await self.agi.initialize_llm()
         
@@ -338,58 +338,58 @@ class SkyrimAGI:
         if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
             self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
             print("[PHI4-MAIN] ✓ Consciousness LLM connected to bridge")
-            print(f"[PHI4-MAIN] Model: {self.config.phi4_main_model} (consciousness + action planning)")
+            print(f"[MISTRAL-MAIN] Model: {self.config.phi4_main_model} (consciousness + action planning)")
         else:
-            print("[PHI4-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")
+            print("[MISTRAL-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")
         
-        # 2. Initialize both phi-4 instances
+        # 2. Initialize both mistral-7b instances
         # Store both instances in a pool for load balancing
-        self.phi4_pool = []
-        self.phi4_index = 0  # For round-robin selection
+        self.mistral_pool = []
+        self.mistral_index = 0  # For round-robin selection
         
         for i, model_name in enumerate([
             self.config.phi4_main_model,
             self.config.phi4_action_model
         ], 1):
             try:
-                print(f"\n[PHI4-{i}] Initializing {model_name}...")
+                print(f"\n[MISTRAL-{i}] Initializing {model_name}...")
                 config = LMStudioConfig(
                     base_url=self.config.base_config.lm_studio_url,
                     model_name=model_name,
                     temperature=0.7,
-                    max_tokens=2048
+                    max_tokens=1024
                 )
                 client = LMStudioClient(config)
                 interface = ExpertLLMInterface(client)
-                self.phi4_pool.append(interface)
-                print(f"[PHI4-{i}] ✓ Connected: {model_name}")
+                self.mistral_pool.append(interface)
+                print(f"[MISTRAL-{i}] ✓ Connected: {model_name}")
             except Exception as e:
-                print(f"[PHI4-{i}] ⚠️ Failed to initialize {model_name}: {e}")
+                print(f"[MISTRAL-{i}] ⚠️ Failed to initialize {model_name}: {e}")
         
-        print(f"\n[PHI4-POOL] ✓ {len(self.phi4_pool)}/2 phi-4 instances ready")
-        print(f"[PHI4-POOL] Load balancing: Round-robin across both instances")
+        print(f"\n[MISTRAL-POOL] ✓ {len(self.mistral_pool)}/2 mistral-7b instances ready")
+        print(f"[MISTRAL-POOL] Load balancing: Round-robin across both instances")
         
-        # Connect first instance (phi-4:2) to RL reasoning neuron and action planner
-        if len(self.phi4_pool) >= 1:
-            self.rl_reasoning_neuron.llm_interface = self.phi4_pool[0]
-            self.action_planning_llm = self.phi4_pool[0]
-            print("[PHI4-RL] ✓ RL reasoning neuron connected to phi-4:2")
-            print("[PHI4-ACTION] ✓ Action planner connected to phi-4:2")
+        # Connect first instance (mistral-7b) to RL reasoning neuron and action planner
+        if len(self.mistral_pool) >= 1:
+            self.rl_reasoning_neuron.llm_interface = self.mistral_pool[0]
+            self.action_planning_llm = self.mistral_pool[0]
+            print("[MISTRAL-RL] ✓ RL reasoning neuron connected to mistral-7b")
+            print("[MISTRAL-ACTION] ✓ Action planner connected to mistral-7b")
         else:
-            print("[PHI4-RL] ⚠️ No phi-4 instances available")
+            print("[MISTRAL-RL] ⚠️ No mistral-7b instances available")
             # Fallback: use main LLM if available
             if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
                 if hasattr(self.agi.consciousness_llm, 'llm_interface'):
                     self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
-                    print("[PHI4-RL] ✓ Using main consciousness LLM as fallback")
+                    print("[MISTRAL-RL] ✓ Using main consciousness LLM as fallback")
         
-        # Connect second instance (phi-4:3) to meta-strategist
-        if len(self.phi4_pool) >= 2:
-            self.meta_strategist.llm_interface = self.phi4_pool[1]
-            print("[PHI4-META] ✓ Meta-strategist connected to phi-4:3")
+        # Connect second instance (mistral-7b:2) to meta-strategist
+        if len(self.mistral_pool) >= 2:
+            self.meta_strategist.llm_interface = self.mistral_pool[1]
+            print("[MISTRAL-META] ✓ Meta-strategist connected to mistral-7b:2")
         
         print("\n" + "=" * 70)
-        print("PHI-4 LAYER COMPLETE (2 instances)")
+        print("MISTRAL-7B LAYER COMPLETE (2 instances)")
         print("=" * 70)
         
         # ===== BIG MODEL INSTANCES (2x) - DEEP STRATEGY =====
@@ -1344,12 +1344,12 @@ class SkyrimAGI:
                 # Get meta-strategic context
                 meta_context = self.meta_strategist.get_active_instruction_context()
                 
-                # Get next phi-4 from pool for load balancing
-                phi4_llm = self.get_next_phi4()
-                if phi4_llm:
+                # Get next mistral-7b from pool for load balancing
+                mistral_llm = self.get_next_mistral()
+                if mistral_llm:
                     # Temporarily assign to RL reasoning neuron for this call
                     original_llm = self.rl_reasoning_neuron.llm_interface
-                    self.rl_reasoning_neuron.llm_interface = phi4_llm
+                    self.rl_reasoning_neuron.llm_interface = mistral_llm
                 
                 # Use RL reasoning neuron to think about Q-values (with meta-strategic guidance)
                 rl_reasoning = await self.rl_reasoning_neuron.reason_about_q_values(
@@ -1645,7 +1645,7 @@ TERRAIN STRATEGY:
 QUICK DECISION - Choose ONE action from available list:"""
 
         try:
-            print("[PHI4-ACTION] Fast action planning with phi-4-mini...")
+            print("[MISTRAL-ACTION] Fast action planning with mistral-7b...")
             
             # Use dedicated LLM interface directly for faster response
             if self.action_planning_llm:
@@ -1654,8 +1654,8 @@ QUICK DECISION - Choose ONE action from available list:"""
                     max_tokens=300  # Enough for reasoning + action selection
                 )
                 # Debug: Check what we got back
-                print(f"[PHI4-ACTION] DEBUG - Result type: {type(result)}")
-                print(f"[PHI4-ACTION] DEBUG - Result keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
+                print(f"[MISTRAL-ACTION] DEBUG - Result type: {type(result)}")
+                print(f"[MISTRAL-ACTION] DEBUG - Result keys: {result.keys() if isinstance(result, dict) else 'N/A'}")
                 
                 # LMStudioClient.generate() returns a dict with 'content' key (not 'response')
                 response = result.get('content', result.get('response', '')) if isinstance(result, dict) else str(result)
@@ -1664,9 +1664,9 @@ QUICK DECISION - Choose ONE action from available list:"""
                 result = await self.agi.process(context)
                 response = result.get('consciousness_response', {}).get('response', '')
             
-            print(f"[PHI4-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
+            print(f"[MISTRAL-ACTION] Response ({len(response)} chars): {response[:200] if len(response) > 200 else response}")
         except Exception as e:
-            print(f"[PHI4-ACTION] ERROR during LLM action planning: {e}")
+            print(f"[MISTRAL-ACTION] ERROR during LLM action planning: {e}")
             import traceback
             traceback.print_exc()
             return None
