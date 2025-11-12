@@ -78,14 +78,12 @@ class SkyrimConfig:
     enable_async_reasoning: bool = True  # Run reasoning in parallel with actions
     action_queue_size: int = 3  # Max queued actions
     perception_interval: float = 0.5  # How often to perceive (seconds)
-    max_concurrent_llm_calls: int = 3  # With 6 models (4 phi-4-mini + 2 big), can handle 3 concurrent
-    reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles (reduced for phi-4-mini)
+    max_concurrent_llm_calls: int = 2  # With 4 models (2 phi-4 + 2 big), can handle 2 concurrent
+    reasoning_throttle: float = 0.5  # Min seconds between reasoning cycles
 
-    # Model names for each phi-4-mini instance (can be endpoints like 'microsoft/phi-4-mini-reasoning:2')
-    phi4_main_model: str = "microsoft/phi-4-mini-reasoning"
-    phi4_rl_model: str = "microsoft/phi-4-mini-reasoning"
-    phi4_meta_model: str = "microsoft/phi-4-mini-reasoning"
-    phi4_action_model: str = "microsoft/phi-4-mini-reasoning"
+    # Model names for phi-4 instances (using endpoints :2 and :3)
+    phi4_main_model: str = "microsoft/phi-4:2"
+    phi4_action_model: str = "microsoft/phi-4:3"
 
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise
@@ -219,9 +217,9 @@ class SkyrimAGI:
         self.rl_reasoning_neuron = RLReasoningNeuron()
         # Will connect LLM interface when initialized
         
-        # Initialize phi-4-mini pool tracking
-        self.phi4_mini_pool = []
-        self.phi4_mini_index = 0
+        # Initialize phi-4 pool tracking
+        self.phi4_pool = []
+        self.phi4_index = 0
         
         # 11. Meta-Strategist (coordinates tactical & strategic thinking)
         print("  [11/12] Meta-strategist coordinator...")
@@ -299,42 +297,40 @@ class SkyrimAGI:
         print("Skyrim AGI initialization complete.")
         print("[OK] Skyrim AGI initialized with CONSCIOUSNESS INTEGRATION\n")
 
-    def get_next_phi4_mini(self):
-        """Get next phi-4-mini LLM from pool (round-robin)."""
-        if not self.phi4_mini_pool:
+    def get_next_phi4(self):
+        """Get next phi-4 LLM from pool (round-robin)."""
+        if not self.phi4_pool:
             return None
-        llm = self.phi4_mini_pool[self.phi4_mini_index]
-        self.phi4_mini_index = (self.phi4_mini_index + 1) % len(self.phi4_mini_pool)
+        llm = self.phi4_pool[self.phi4_index]
+        self.phi4_index = (self.phi4_index + 1) % len(self.phi4_pool)
         return llm
 
     async def initialize_llm(self):
         """
-        Initialize hybrid LLM architecture: 4 phi-4-mini + 2 big models.
+        Initialize hybrid LLM architecture: 2 phi-4 + 2 big models.
         
         Architecture:
-        - 4x phi-4-mini-reasoning (4B params): Fast consciousness/tactical decisions
-          * Main consciousness engine
-          * RL tactical reasoning
-          * Action planning
-          * Meta-strategist coordination
+        - 2x phi-4 (14B params): Fast tactical decisions
+          * Main consciousness engine + action planning (phi-4:2)
+          * Strategic planning (phi-4:3)
         
         - 2x Big models (14B params): Deep strategic thinking
           * phi-4 (14B): Long-term strategic planning, reasoning chains
           * eva-qwen2.5-14b (14B): World understanding, narrative, NPCs
         
-        This hybrid approach balances speed (phi-4-mini) with depth (big models).
-        Total: 6 LLM instances running in parallel with async execution.
+        This hybrid approach uses phi-4 for both speed and quality.
+        Total: 4 LLM instances running in parallel with async execution.
         """
         print("=" * 70)
         print("INITIALIZING HYBRID LLM ARCHITECTURE")
         print("=" * 70)
-        print("4x phi-4-mini (fast) + 2x big models (strategic)")
+        print("2x phi-4 (tactical) + 2x big models (strategic)")
         print("=" * 70)
         print()
         
-        # ===== PHI-4-MINI INSTANCES (4x) - FAST CONSCIOUSNESS =====
+        # ===== PHI-4 INSTANCES (2x) - TACTICAL REASONING =====
         
-        # 1. Main consciousness LLM (phi-4-mini-reasoning)
+        # 1. Main consciousness LLM (phi-4:2)
         print("[PHI4-MAIN] Initializing primary consciousness engine...")
         await self.agi.initialize_llm()
         
@@ -342,19 +338,17 @@ class SkyrimAGI:
         if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
             self.consciousness_bridge.consciousness_llm = self.agi.consciousness_llm
             print("[PHI4-MAIN] ✓ Consciousness LLM connected to bridge")
-            print("[PHI4-MAIN] Model: phi-4-mini-reasoning (consciousness measurement)")
+            print(f"[PHI4-MAIN] Model: {self.config.phi4_main_model} (consciousness + action planning)")
         else:
             print("[PHI4-MAIN] ⚠️ No consciousness LLM available, bridge uses heuristics only")
         
-        # 2. Initialize ALL 4 phi-4-mini instances for load balancing
-        # Store all instances in a pool for round-robin usage
-        self.phi4_mini_pool = []
-        self.phi4_mini_index = 0  # For round-robin selection
+        # 2. Initialize both phi-4 instances
+        # Store both instances in a pool for load balancing
+        self.phi4_pool = []
+        self.phi4_index = 0  # For round-robin selection
         
         for i, model_name in enumerate([
             self.config.phi4_main_model,
-            self.config.phi4_rl_model,
-            self.config.phi4_meta_model,
             self.config.phi4_action_model
         ], 1):
             try:
@@ -362,43 +356,40 @@ class SkyrimAGI:
                 config = LMStudioConfig(
                     base_url=self.config.base_config.lm_studio_url,
                     model_name=model_name,
-                    temperature=0.65,
-                    max_tokens=1024
+                    temperature=0.7,
+                    max_tokens=2048
                 )
                 client = LMStudioClient(config)
                 interface = ExpertLLMInterface(client)
-                self.phi4_mini_pool.append(interface)
+                self.phi4_pool.append(interface)
                 print(f"[PHI4-{i}] ✓ Connected: {model_name}")
             except Exception as e:
                 print(f"[PHI4-{i}] ⚠️ Failed to initialize {model_name}: {e}")
         
-        print(f"\n[PHI4-POOL] ✓ {len(self.phi4_mini_pool)}/4 phi-4-mini instances ready")
-        print(f"[PHI4-POOL] Load balancing: Round-robin across all instances")
+        print(f"\n[PHI4-POOL] ✓ {len(self.phi4_pool)}/2 phi-4 instances ready")
+        print(f"[PHI4-POOL] Load balancing: Round-robin across both instances")
         
-        # Connect first available to RL reasoning neuron (will use pool for actual calls)
-        if self.phi4_mini_pool:
-            self.rl_reasoning_neuron.llm_interface = self.phi4_mini_pool[0]
-            print("[PHI4-RL] ✓ RL reasoning neuron connected to phi-4-mini pool")
+        # Connect first instance (phi-4:2) to RL reasoning neuron and action planner
+        if len(self.phi4_pool) >= 1:
+            self.rl_reasoning_neuron.llm_interface = self.phi4_pool[0]
+            self.action_planning_llm = self.phi4_pool[0]
+            print("[PHI4-RL] ✓ RL reasoning neuron connected to phi-4:2")
+            print("[PHI4-ACTION] ✓ Action planner connected to phi-4:2")
         else:
-            print("[PHI4-RL] ⚠️ No phi-4-mini instances available")
+            print("[PHI4-RL] ⚠️ No phi-4 instances available")
             # Fallback: use main LLM if available
             if hasattr(self.agi, 'consciousness_llm') and self.agi.consciousness_llm:
                 if hasattr(self.agi.consciousness_llm, 'llm_interface'):
                     self.rl_reasoning_neuron.llm_interface = self.agi.consciousness_llm.llm_interface
                     print("[PHI4-RL] ✓ Using main consciousness LLM as fallback")
         
-        # Connect meta-strategist and action planner to pool
-        if len(self.phi4_mini_pool) >= 3:
-            self.meta_strategist.llm_interface = self.phi4_mini_pool[2]
-            print("[PHI4-META] ✓ Meta-strategist connected to pool")
-        
-        if len(self.phi4_mini_pool) >= 4:
-            self.action_planning_llm = self.phi4_mini_pool[3]
-            print("[PHI4-ACTION] ✓ Action planner connected to pool")
-            self.action_planning_llm = None
+        # Connect second instance (phi-4:3) to meta-strategist
+        if len(self.phi4_pool) >= 2:
+            self.meta_strategist.llm_interface = self.phi4_pool[1]
+            print("[PHI4-META] ✓ Meta-strategist connected to phi-4:3")
         
         print("\n" + "=" * 70)
-        print("PHI-4-MINI LAYER COMPLETE (4 instances)")
+        print("PHI-4 LAYER COMPLETE (2 instances)")
         print("=" * 70)
         
         # ===== BIG MODEL INSTANCES (2x) - DEEP STRATEGY =====
@@ -1353,8 +1344,8 @@ class SkyrimAGI:
                 # Get meta-strategic context
                 meta_context = self.meta_strategist.get_active_instruction_context()
                 
-                # Get next phi-4-mini from pool for load balancing
-                phi4_llm = self.get_next_phi4_mini()
+                # Get next phi-4 from pool for load balancing
+                phi4_llm = self.get_next_phi4()
                 if phi4_llm:
                     # Temporarily assign to RL reasoning neuron for this call
                     original_llm = self.rl_reasoning_neuron.llm_interface
