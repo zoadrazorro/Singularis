@@ -1610,7 +1610,8 @@ class SkyrimAGI:
                         continue
                 
                 # MOVE FORWARD - Keep exploring
-                if current_time - last_move_time >= move_interval:
+                # Only if action queue is empty (don't interfere with main actions)
+                if current_time - last_move_time >= move_interval and self.action_queue.empty():
                     try:
                         if cycle_count % 10 == 0:
                             print(f"[AUX-EXPLORE] Moving forward (cycle {cycle_count})")
@@ -1633,7 +1634,8 @@ class SkyrimAGI:
                             print(f"[AUX-EXPLORE] Move error: {e}")
                 
                 # LOOK AROUND - Explore environment
-                if current_time - last_look_time >= look_interval:
+                # Only if action queue is empty (don't interfere with main actions)
+                if current_time - last_look_time >= look_interval and self.action_queue.empty():
                     try:
                         from singularis.skyrim.actions import Action, ActionType
                         # Random camera movement
@@ -1658,7 +1660,8 @@ class SkyrimAGI:
                             print(f"[AUX-EXPLORE] Look error: {e}")
                 
                 # CHANGE DIRECTION - Avoid getting stuck
-                if current_time - last_direction_change >= direction_change_interval:
+                # Only if action queue is empty (don't interfere with main actions)
+                if current_time - last_direction_change >= direction_change_interval and self.action_queue.empty():
                     try:
                         from singularis.skyrim.actions import Action, ActionType
                         # Turn to a new direction
