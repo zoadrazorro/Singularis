@@ -805,6 +805,20 @@ class SkyrimAGI:
                 await self.hybrid_llm.initialize()
                 print("[PARALLEL] ✓ Hybrid component ready")
                 await self._connect_hybrid_llm()
+                
+                # Also initialize local LLM references if fallback enabled
+                if self.config.use_local_fallback and self.hybrid_llm.local_reasoning:
+                    print("[PARALLEL] ✓ Local LLM fallback available")
+                    self.huihui_llm = self.hybrid_llm.local_reasoning
+                    self.perception_llm = self.hybrid_llm.local_vision
+                    self.action_planning_llm = self.hybrid_llm.local_action
+                    
+                    # Connect local LLMs to components
+                    self.rl_reasoning_neuron.llm_interface = self.huihui_llm
+                    self.meta_strategist.llm_interface = self.huihui_llm
+                    self.strategic_planner.llm_interface = self.huihui_llm
+                    print("[PARALLEL] ✓ Local LLMs connected to components")
+                    
             except Exception as e:
                 print(f"[PARALLEL] ⚠️ Hybrid initialization failed: {e}")
                 self.hybrid_llm = None
