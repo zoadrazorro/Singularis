@@ -169,25 +169,20 @@ Provide 3-5 components."""
         
         # Add component nodes
         for component in components:
-            node = AnalyticNode(
-                node_id=f"node_{len(self.nodes)}",
-                content=component['description'],
-                parent_id=self.root_node_id,
-                depth=1,
-                complexity=component['complexity'],
-                clarity=component['clarity'],
-                utility=component['utility'],
-                generation=0
-            )
+            # Component is already an AnalyticNode, just update its ID and add to nodes
+            component.node_id = f"node_{len(self.nodes)}"
+            component.parent_id = self.root_node_id
+            component.depth = 1
+            component.generation = 0
             
-            self.nodes[node.node_id] = node
-            self.nodes[self.root_node_id].children_ids.append(node.node_id)
+            self.nodes[component.node_id] = component
+            self.nodes[self.root_node_id].children_ids.append(component.node_id)
         
         self.total_decompositions += 1
         
         return {
             'decision': decision,
-            'components': [c.to_dict() for c in components],
+            'components': components,  # Return AnalyticNode objects
             'total_nodes': len(self.nodes)
         }
     
