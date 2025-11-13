@@ -1,0 +1,265 @@
+.consciousness-panel {
+  padding: 2rem;
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+}
+
+.panel-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  backdrop-filter: blur(10px);
+}
+
+.panel-card h2 {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.4rem;
+  color: #00d9ff;
+}
+
+/* Main Coherence Circle */
+.main-coherence {
+  grid-column: span 2;
+}
+
+.coherence-circle {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  margin: 0 auto;
+}
+
+.circle-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.circle-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.circle-value {
+  display: block;
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #00d9ff, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.circle-label {
+  display: block;
+  font-size: 1rem;
+  color: #888;
+  margin-top: 0.5rem;
+}
+
+/* Lumina Card */
+.lumina-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.lumina-item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.lumina-icon {
+  font-size: 2.5rem;
+  flex-shrink: 0;
+}
+
+.lumina-info {
+  flex: 1;
+}
+
+.lumina-info h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.lumina-desc {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.lumina-bar {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.lumina-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+  border-radius: 6px;
+}
+
+.lumina-fill.ontical {
+  background: linear-gradient(90deg, #ff3232, #ff8c00);
+}
+
+.lumina-fill.structural {
+  background: linear-gradient(90deg, #00d9ff, #00aaff);
+}
+
+.lumina-fill.participatory {
+  background: linear-gradient(90deg, #7c3aed, #ff3aed);
+}
+
+.lumina-value {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #00d9ff;
+}
+
+/* Phi Card */
+.phi-display {
+  text-align: center;
+}
+
+.phi-value {
+  font-size: 4rem;
+  font-weight: 700;
+  color: #7c3aed;
+  margin-bottom: 1rem;
+}
+
+.phi-description {
+  color: #aaa;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.phi-interpretation {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.phi-interpretation .high {
+  color: #00ff64;
+}
+
+.phi-interpretation .medium {
+  color: #ffaa00;
+}
+
+.phi-interpretation .low {
+  color: #ff3232;
+}
+
+/* Awareness Card */
+.awareness-display {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.awareness-meter {
+  width: 60px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  position: relative;
+  overflow: hidden;
+}
+
+.awareness-level {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, #ff3aed, #7c3aed);
+  transition: height 0.5s ease;
+  border-radius: 30px;
+}
+
+.awareness-info {
+  flex: 1;
+}
+
+.awareness-value {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #ff3aed;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.awareness-info p {
+  color: #aaa;
+  font-size: 0.95rem;
+}
+
+/* History Chart */
+.history-chart {
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Nodes List */
+.nodes-list {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.node-item {
+  display: grid;
+  grid-template-columns: 150px 1fr 60px;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+}
+
+.node-name {
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.node-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.node-fill {
+  height: 100%;
+  transition: width 0.5s ease;
+}
+
+.node-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #00d9ff;
+  text-align: right;
+}

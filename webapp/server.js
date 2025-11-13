@@ -18,6 +18,9 @@ const WS_PORT = 5001;
 // Path to learning progress file
 const LEARNING_PROGRESS_PATH = path.join(__dirname, '..', 'learning_progress.json');
 
+// Path to Skyrim AGI live state file
+const SKYRIM_STATE_PATH = path.join(__dirname, '..', 'skyrim_agi_state.json');
+
 // Store current progress
 let currentProgress = {
   currentChunk: 0,
@@ -75,10 +78,41 @@ function parseProgress() {
   }
 }
 
+// Parse Skyrim AGI state from JSON file
+function parseSkyrimState() {
+  try {
+    if (!fs.existsSync(SKYRIM_STATE_PATH)) {
+      return { 
+        available: false,
+        message: 'Skyrim AGI not running or state file not found'
+      };
+    }
+
+    const data = JSON.parse(fs.readFileSync(SKYRIM_STATE_PATH, 'utf-8'));
+    
+    return {
+      available: true,
+      ...data,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Error parsing Skyrim state:', error);
+    return { 
+      available: false,
+      error: error.message
+    };
+  }
+}
+
 // REST API endpoints
 app.get('/api/progress', (req, res) => {
   const progress = parseProgress();
   res.json(progress);
+});
+
+app.get('/api/skyrim', (req, res) => {
+  const state = parseSkyrimState();
+  res.json(state);
 });
 
 app.get('/api/health', (req, res) => {
@@ -100,9 +134,15 @@ const wss = new WebSocket.Server({
 wss.on('connection', (ws) => {
   console.log('Client connected');
   
+  // Determine which mode to use based on query parameter
+  const url = ws.upgradeReq?.url || '';
+  const isSkyrimMode = url.includes('mode=skyrim');
+  
+  console.log(`Mode: ${isSkyrimMode ? 'Skyrim AGI' : 'Learning Monitor'}`);
+  
   // Send initial data
   try {
-    const initialData = parseProgress();
+    const initialData = isSkyrimMode ? parseSkyrimState() : parseProgress();
     ws.send(JSON.stringify(initialData));
   } catch (error) {
     console.error('Error sending initial data:', error);
@@ -112,13 +152,13 @@ wss.on('connection', (ws) => {
   const interval = setInterval(() => {
     if (ws.readyState === WebSocket.OPEN) {
       try {
-        const progress = parseProgress();
-        ws.send(JSON.stringify(progress));
+        const data = isSkyrimMode ? parseSkyrimState() : parseProgress();
+        ws.send(JSON.stringify(data));
       } catch (error) {
         console.error('Error sending update:', error);
       }
     }
-  }, 2000); // Update every 2 seconds
+  }, isSkyrimMode ? 1000 : 2000); // Skyrim updates every 1s, learning every 2s
   
   ws.on('error', (error) => {
     console.error('WebSocket error:', error);
@@ -142,4 +182,6 @@ wss.on('connection', (ws) => {
 });
 
 console.log(`WebSocket server running on ws://localhost:${WS_PORT}`);
-console.log('Monitoring:', LEARNING_PROGRESS_PATH);
+console.log('Monitoring:');
+console.log('  - Learning:', LEARNING_PROGRESS_PATH);
+console.log('  - Skyrim AGI:', SKYRIM_STATE_PATH);

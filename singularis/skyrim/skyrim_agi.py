@@ -488,6 +488,14 @@ class SkyrimAGI:
         self.dashboard_update_interval = 5
         self.dashboard_last_update = 0
         
+        # Dashboard streamer for real-time webapp monitoring
+        print("  [13/13] Dashboard streamer for real-time webapp...")
+        from singularis.skyrim.dashboard_streamer import DashboardStreamer
+        self.dashboard_streamer = DashboardStreamer(
+            output_path="skyrim_agi_state.json",
+            max_history=100
+        )
+        
         # LLM decision tracking (Fix 11&12)
         self.stats['llm_queued_requests'] = 0
         self.stats['llm_skipped_rate_limit'] = 0
@@ -1970,6 +1978,10 @@ Connect perception → thought → action into flowing experience.""",
         self.openai_client = OpenAIClient(model="gpt-4o", timeout=120)
         self.main_brain = MainBrain(openai_client=self.openai_client)
         
+        # Set session ID in dashboard streamer
+        if hasattr(self, 'dashboard_streamer') and self.dashboard_streamer:
+            self.dashboard_streamer.set_session_id(self.main_brain.session_id)
+        
         if self.openai_client.is_available():
             print(f"[MAIN BRAIN] 🧠 Initialized - Session: {self.main_brain.session_id}")
             print(f"[MAIN BRAIN] GPT-4o will synthesize all outputs into session report")
@@ -3101,6 +3113,9 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 self.last_successful_action = action
                 
                 print(f"[REASONING] Planned action: {action} ({planning_duration:.3f}s)")
+                
+                # Update dashboard with current state and planned action
+                self._update_dashboard_state(action=action, action_source=self.last_action_source)
                 
                 # Main Brain: Increment cycle and record action decision
                 self.main_brain.increment_cycle()
@@ -6011,6 +6026,107 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"[DIVERSITY] Action diversity: {action_diversity:.2f}")
             print(f"[DIVERSITY] Best action: {best_action[0]} (avg coherence: {best_action[1]:.3f})")
             print(f"[DIVERSITY] Learning from {len(self.reward_by_action_type)} action types")
+
+    def _update_dashboard_state(self, action: Optional[str] = None, action_source: Optional[str] = None):
+        """
+        Update dashboard streamer with current AGI state.
+        Called during the main loop to provide real-time updates to webapp.
+        """
+        if not hasattr(self, 'dashboard_streamer') or not self.dashboard_streamer:
+            return
+        
+        try:
+            # Collect current state
+            agi_state = {
+                'cycle': self.stats.get('cycles_completed', 0),
+                'action': action or self.last_executed_action or 'idle',
+                'action_source': action_source or self.last_action_source or 'unknown',
+                
+                # Perception
+                'perception': {
+                    'scene_type': self.current_perception.get('scene_type', 'unknown') if self.current_perception else 'unknown',
+                    'objects': self.current_perception.get('objects', []) if self.current_perception else [],
+                    'enemies_nearby': self.current_perception.get('enemies_nearby', False) if self.current_perception else False,
+                    'npcs_nearby': self.current_perception.get('npcs_nearby', False) if self.current_perception else False,
+                    'last_vision_time': self.current_perception.get('last_vision_time', 0) if self.current_perception else 0
+                },
+                
+                # Game state
+                'game_state': {
+                    'health': self.current_perception.get('game_state', {}).get('health', 100) if self.current_perception else 100,
+                    'magicka': self.current_perception.get('game_state', {}).get('magicka', 100) if self.current_perception else 100,
+                    'stamina': self.current_perception.get('game_state', {}).get('stamina', 100) if self.current_perception else 100,
+                    'in_combat': self.current_perception.get('game_state', {}).get('in_combat', False) if self.current_perception else False,
+                    'in_menu': self.current_perception.get('game_state', {}).get('in_menu', False) if self.current_perception else False,
+                    'location': 'Skyrim'  # TODO: Extract from perception
+                },
+                
+                # Consciousness
+                'consciousness': {
+                    'coherence': self.current_consciousness.coherence if self.current_consciousness else 0,
+                    'phi': self.current_consciousness.phi if self.current_consciousness else 0,
+                    'nodes_active': len(self.current_consciousness.node_states) if self.current_consciousness else 0
+                },
+                
+                # LLM status
+                'llm_status': {
+                    'mode': self.config.llm_architecture if hasattr(self.config, 'llm_architecture') else 'none',
+                    'cloud_active': sum([
+                        1 if hasattr(self, 'hybrid_llm') and self.hybrid_llm else 0,
+                        1 if hasattr(self, 'moe') and self.moe else 0
+                    ]),
+                    'local_active': 1 if hasattr(self, 'local_moe') and self.local_moe else 0,
+                    'total_calls': self.stats.get('llm_action_count', 0),
+                    'last_call_time': 0,  # TODO: Track this
+                    'active_models': self._get_active_models()
+                },
+                
+                # Performance
+                'performance': {
+                    'fps': 60,  # TODO: Calculate from cycle times
+                    'planning_time': sum(self.stats.get('planning_times', [0])[-5:]) / max(len(self.stats.get('planning_times', [1])[-5:]), 1),
+                    'execution_time': sum(self.stats.get('execution_times', [0])[-5:]) / max(len(self.stats.get('execution_times', [1])[-5:]), 1),
+                    'vision_time': 0,  # TODO: Track this
+                    'total_cycle_time': 0  # TODO: Calculate
+                },
+                
+                # Stats
+                'stats': {
+                    'success_rate': self.stats.get('action_success_count', 0) / max(self.stats.get('actions_taken', 1), 1),
+                    'rl_actions': self.stats.get('rl_action_count', 0),
+                    'llm_actions': self.stats.get('llm_action_count', 0),
+                    'heuristic_actions': self.stats.get('heuristic_action_count', 0)
+                },
+                
+                # World model
+                'world_model': {
+                    'beliefs': {},  # TODO: Extract from world model
+                    'goals': [self.current_goal] if self.current_goal else [],
+                    'strategy': 'explore'  # TODO: Extract from planner
+                }
+            }
+            
+            # Update dashboard
+            self.dashboard_streamer.update(agi_state)
+            
+        except Exception as e:
+            # Don't crash the AGI if dashboard fails
+            print(f"[DASHBOARD] Warning: Update failed: {e}")
+    
+    def _get_active_models(self) -> list:
+        """Get list of currently active LLM models."""
+        models = []
+        
+        if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
+            models.extend(['Gemini 2.0 Flash', 'Claude Sonnet 4.5'])
+        
+        if hasattr(self, 'moe') and self.moe:
+            models.extend(['Gemini 1', 'Gemini 2', 'Claude Sonnet', 'GPT-4o', 'Nemotron', 'Qwen3'])
+        
+        if hasattr(self, 'local_moe') and self.local_moe:
+            models.extend(['Huihui-VL', 'Qwen3-VL', 'Phi-4'])
+        
+        return models
 
     def _print_final_stats(self):
         """Print final statistics."""
