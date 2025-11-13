@@ -112,13 +112,13 @@ async def main():
             use_moe=False,  # Handled by parallel mode
             use_hybrid_llm=False,  # Handled by parallel mode
             
-            # MoE settings
-            num_gemini_experts=6,
-            num_claude_experts=3,
+            # MoE settings (optimized rate limits)
+            num_gemini_experts=2,
+            num_claude_experts=1,
             gemini_model="gemini-2.5-flash",
             claude_model="claude-sonnet-4-5-20250929",
-            gemini_rpm_limit=10,
-            claude_rpm_limit=50,
+            gemini_rpm_limit=30,  # Increased from 10
+            claude_rpm_limit=100,  # Increased from 50
             
             # Hybrid settings
             use_gemini_vision=True,
@@ -158,14 +158,14 @@ async def main():
             surprise_threshold=0.3,
             exploration_weight=0.5,
             
-            # MoE configuration
+            # MoE configuration (optimized)
             use_moe=True,
-            num_gemini_experts=6,
-            num_claude_experts=3,
+            num_gemini_experts=2,  # Reduced from 6
+            num_claude_experts=1,  # Reduced from 3
             gemini_model="gemini-2.5-flash",
             claude_model="claude-sonnet-4-5-20250929",
-            gemini_rpm_limit=10,  # Conservative rate limit
-            claude_rpm_limit=50,  # Conservative rate limit
+            gemini_rpm_limit=30,  # Increased from 10
+            claude_rpm_limit=100,  # Increased from 50
             
             # University Curriculum RAG
             use_curriculum_rag=True,

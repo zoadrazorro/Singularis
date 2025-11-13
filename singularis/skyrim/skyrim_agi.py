@@ -107,12 +107,13 @@ class SkyrimConfig:
     enable_async_reasoning: bool = True  # Run reasoning in parallel with actions
     action_queue_size: int = 3  # Max queued actions
     perception_interval: float = 0.25  # How often to perceive (seconds) - faster for responsiveness
-    max_concurrent_llm_calls: int = 2  # Reduced to prevent LM Studio overload (was 4)
+    max_concurrent_llm_calls: int = 6  # Increased from 2 to enable true parallel execution
     reasoning_throttle: float = 0.1  # Min seconds between reasoning cycles - minimal throttle
     
     # Fast reactive loop
     enable_fast_loop: bool = True  # Enable fast reactive loop for immediate responses
-    fast_loop_interval: float = 0.5  # Fast loop runs every half second - twice as fast
+    fast_loop_interval: float = 2.0  # Fast loop runs every 2 seconds (reduced from 0.5s)
+    fast_loop_planning_timeout: float = 20.0  # Only trigger fast actions if LLM planning takes >20s
     fast_health_threshold: float = 30.0  # Health % to trigger emergency healing
     fast_danger_threshold: int = 3  # Number of enemies to trigger defensive actions
 
@@ -150,10 +151,10 @@ class SkyrimConfig:
     
     # Mixture of Experts (MoE) Architecture
     use_moe: bool = False  # Enable MoE with multiple expert instances
-    num_gemini_experts: int = 2  # Number of Gemini experts (reduced 60%)
-    num_claude_experts: int = 1  # Number of Claude experts (reduced 60%)
-    gemini_rpm_limit: int = 10  # Gemini requests per minute limit
-    claude_rpm_limit: int = 50  # Claude requests per minute limit
+    num_gemini_experts: int = 2  # Number of Gemini experts (optimal for rate limits)
+    num_claude_experts: int = 1  # Number of Claude experts (optimal for rate limits)
+    gemini_rpm_limit: int = 30  # Gemini requests per minute limit (increased from 10)
+    claude_rpm_limit: int = 100  # Claude requests per minute limit (increased from 50)
     
     # Parallel Mode (MoE + Hybrid simultaneously)
     use_parallel_mode: bool = False  # Run both MoE and Hybrid in parallel
@@ -467,6 +468,15 @@ class SkyrimAGI:
 
         # Sensorimotor feedback tracking
         self.sensorimotor_state: Optional[Dict[str, Any]] = None
+        
+        # Performance dashboard (Fix 20)
+        self.dashboard_update_interval = 5
+        self.dashboard_last_update = 0
+        
+        # LLM decision tracking (Fix 11&12)
+        self.stats['llm_queued_requests'] = 0
+        self.stats['llm_skipped_rate_limit'] = 0
+        self.stats['llm_decision_rejections'] = 0
         self.sensorimotor_similarity_streak: int = 0
         self.sensorimotor_last_cycle: int = -1
         self.sensorimotor_high_similarity_threshold: float = 0.90
@@ -1797,6 +1807,10 @@ Connect perception → thought → action into flowing experience.""",
         self.visual_similarity_threshold = 0.95  # 95% similar = stuck
         self.sensorimotor_state = None
         self.sensorimotor_similarity_streak = 0
+        
+        # Fix 20: Performance monitoring dashboard
+        self.dashboard_update_interval = 5  # Update every 5 cycles
+        self.dashboard_last_update = 0
         self.sensorimotor_last_cycle = -1
         
         # Thresholds
@@ -2344,8 +2358,24 @@ Based on this visual and contextual data, provide:
                 
                 print(f"\n[REASONING] Processing cycle {cycle_count}")
                 
+                # Fix 20: Display performance dashboard every 5 cycles
+                if cycle_count > 0 and cycle_count % self.dashboard_update_interval == 0:
+                    self._display_performance_dashboard()
+                
                 game_state = perception['game_state']
                 scene_type = perception['scene_type']
+                
+                # Fix 16: Periodic menu exploration for structural consciousness
+                if cycle_count % 10 == 0 and not game_state.in_combat:
+                    if scene_type not in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE]:
+                        print(f"[MENU-EXPLORATION] Cycle {cycle_count}: Opening inventory for structural consciousness")
+                        # Queue inventory action
+                        if not self.action_queue.full():
+                            await self.action_queue.put({
+                                'action': 'inventory',
+                                'reason': 'Periodic menu exploration for structural consciousness',
+                                'source': 'curiosity'
+                            })
 
                 if game_state:
                     state_dict = game_state.to_dict()
@@ -2363,6 +2393,21 @@ Based on this visual and contextual data, provide:
                         'layer': game_state.current_action_layer
                     }
                 )
+                
+                # Fix 6: Integrate menu learner into async mode
+                if scene_type in [SceneType.INVENTORY, SceneType.MAP]:
+                    if not self.menu_learner.current_menu:
+                        self.menu_learner.enter_menu(scene_type.value)
+                        print(f"[MENU-LEARNER] Entered {scene_type.value} menu")
+                
+                # Fix 7: Hook dialogue intelligence into planning
+                if scene_type == SceneType.DIALOGUE and hasattr(self, 'dialogue_intelligence'):
+                    dialogue_options = await self.dialogue_intelligence.analyze_dialogue_options(
+                        visual_context=perception.get('screenshot'),
+                        game_state=game_state
+                    )
+                    if dialogue_options:
+                        print(f"[DIALOGUE-INTELLIGENCE] Analyzed {len(dialogue_options)} dialogue options")
                 
                 # Compute world state and consciousness (consciousness runs in parallel, no semaphore)
                 world_state = await self.agi.perceive({
@@ -3099,13 +3144,15 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 
                 # Store RL experience (with consciousness)
                 if self.rl_learner is not None:
+                    action_source = action_data.get('source', 'unknown')
                     self.rl_learner.store_experience(
                         state_before=before_state,
                         action=str(action),
                         state_after=after_state,
                         done=False,
                         consciousness_before=action_data['consciousness'],
-                        consciousness_after=after_consciousness
+                        consciousness_after=after_consciousness,
+                        action_source=action_source
                     )
                     
                     # Update smart context history
@@ -3188,9 +3235,18 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                     continue
                 
                 # === FAST HEURISTICS ===
+                # Only trigger if LLM planning is actually slow (>20s)
+                time_since_planning = time.time() - self.last_reasoning_time
+                planning_timeout_reached = time_since_planning > self.config.fast_loop_planning_timeout
+                
                 fast_action = None
                 fast_reason = None
                 priority = 0  # Higher = more urgent
+                
+                # Skip fast loop if LLM is actively planning (unless emergency)
+                if not planning_timeout_reached and game_state.health >= 20:
+                    await asyncio.sleep(self.config.fast_loop_interval)
+                    continue
                 
                 # 1. CRITICAL HEALTH - Highest priority
                 if game_state.health < self.config.fast_health_threshold:
@@ -3595,9 +3651,11 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                 # RL: Store experience with consciousness states (KEY INTEGRATION)
                 if self.rl_learner is not None:
                     # Store experience for RL WITH CONSCIOUSNESS
+                    action_source = self.last_action_source if hasattr(self, 'last_action_source') else 'unknown'
                     self.rl_learner.store_experience(
                         state_before=before_state,
                         action=str(action),
+                        action_source=action_source,
                         state_after=after_state,
                         done=False,
                         consciousness_before=self.current_consciousness,  # NEW
@@ -4419,13 +4477,24 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                 checkpoint_moe_check = time.time()
                 gemini_moe_task = None
                 if self.moe and hasattr(self.moe, 'gemini_experts') and len(self.moe.gemini_experts) > 0:
-                    # Check if Gemini is rate-limited
+                    # Check if Gemini is rate-limited (Fix 10: backoff strategy)
                     is_limited, wait_time = self.moe.is_gemini_rate_limited()
                     print(f"[PLANNING-CHECKPOINT] MoE rate limit check: {time.time() - checkpoint_moe_check:.3f}s")
                     
                     if is_limited:
-                        print(f"[GEMINI-MOE] ⚠️ SKIPPING - Gemini rate-limited (would wait {wait_time:.1f}s)")
-                        print(f"[GEMINI-MOE] This prevents timeout - MoE won't participate in this cycle")
+                        if wait_time < 5.0:
+                            # Wait if <5s remaining (backoff strategy)
+                            print(f"[GEMINI-MOE] ⏳ Waiting {wait_time:.1f}s for rate limit...")
+                            await asyncio.sleep(wait_time + 0.5)
+                        elif wait_time < 10.0:
+                            # Queue request for next cycle
+                            print(f"[GEMINI-MOE] 📋 QUEUING - will retry next cycle ({wait_time:.1f}s remaining)")
+                            self.stats['llm_queued_requests'] = self.stats.get('llm_queued_requests', 0) + 1
+                            gemini_moe_task = None
+                        else:
+                            # Skip only if >10s
+                            print(f"[GEMINI-MOE] ⚠️ SKIPPING - Gemini rate-limited ({wait_time:.1f}s)")
+                            self.stats['llm_skipped_rate_limit'] = self.stats.get('llm_skipped_rate_limit', 0) + 1
                     else:
                         print(f"[GEMINI-MOE] ✓ Rate limit OK - Starting {len(self.moe.gemini_experts)} Gemini Flash experts for fast action selection...")
                         
@@ -4698,11 +4767,18 @@ Format: ACTION: <action_name>"""
                         tasks_to_race.append(local_moe_task)
                     
                     if len(tasks_to_race) > 1:
-                        print(f"[PARALLEL] Racing {len(tasks_to_race)} systems (13.5s timeout)...")
+                        # Scene-based timeout: combat 15s, exploration 30s, menus 45s (Fix 14)
+                        timeout_duration = 15.0 if game_state.in_combat else 45.0 if scene_type in [SceneType.INVENTORY, SceneType.MAP, SceneType.DIALOGUE] else 30.0
+                        
+                        # Progressive timeout: extend by 5s if systems near completion (Fix 15)
+                        if self.cycle_count < 3:
+                            timeout_duration = 60.0  # LLM warmup phase (Fix 18)
+                        
+                        print(f"[PARALLEL] Racing {len(tasks_to_race)} systems ({timeout_duration}s timeout)...")
                         try:
                             done, pending = await asyncio.wait(
                                 tasks_to_race,
-                                timeout=13.5,  # 13.5 second timeout - use first winner
+                                timeout=timeout_duration,
                                 return_when=asyncio.FIRST_COMPLETED
                             )
                             
@@ -4719,8 +4795,13 @@ Format: ACTION: <action_name>"""
                                                 action_line = [l for l in consensus_text.split('\n') if 'ACTION:' in l][0]
                                                 action = action_line.split('ACTION:')[1].strip().lower()
                                             
-                                            if action and action in available_actions:
-                                                print(f"[GEMINI-MOE] ✓ Won the race! {len(self.moe.gemini_experts)} experts chose: {action}")
+                                            # LLM decision logging (Fix 12)
+                                            confidence = reasoning_resp.confidence if hasattr(reasoning_resp, 'confidence') else 0.5
+                                            print(f"[LLM-DECISION-LOG] MoE | Action: {action} | Confidence: {confidence:.2f} | Valid: {action in available_actions if action else False}")
+                                            
+                                            # Lowered confidence threshold from 0.7 to 0.5 (Fix 13)
+                                            if action and action in available_actions and confidence >= 0.5:
+                                                print(f"[GEMINI-MOE] ✓ Won the race! {len(self.moe.gemini_experts)} experts chose: {action} (conf: {confidence:.2f})")
                                                 
                                                 # Track action source
                                                 self.stats['action_source_moe'] += 1
@@ -4906,10 +4987,12 @@ Format: ACTION: <action_name>"""
                     return recovery
             
             # Add variety to avoid repetitive behavior - humans don't just explore
-            # Occasionally try to interact with objects (human-like curiosity)
-            if random.random() < 0.15 and 'activate' in available_actions:
-                print(f"[HEURISTIC] → activate (random curiosity)")
-                return 'activate'
+            # Prioritize NPC interaction in non-combat scenes (increased from 15% to 60%)
+            if 'activate' in available_actions:
+                activation_chance = 0.60 if not game_state.in_combat else 0.15
+                if random.random() < activation_chance:
+                    print(f"[HEURISTIC] → activate ({'NPC interaction prioritized' if not game_state.in_combat else 'random curiosity'})")
+                    return 'activate'
             
             # Occasionally look around (human-like awareness)
             if random.random() < 0.10:
@@ -5575,6 +5658,83 @@ QUICK DECISION - Choose ONE action from available list:"""
             self.consecutive_same_action = 1
         
         self.last_executed_action = action
+    
+    def _display_performance_dashboard(self):
+        """
+        Fix 20: Real-time performance monitoring dashboard.
+        Displays LLM vs heuristic usage, rate limit status, timeout frequency.
+        """
+        total_actions = self.stats['actions_taken']
+        if total_actions == 0:
+            return
+        
+        print(f"\n{'='*70}")
+        print(f"⚡ PERFORMANCE DASHBOARD (Cycle {self.cycle_count})")
+        print(f"{'='*70}")
+        
+        # Action Source Breakdown
+        source_total = sum([
+            self.stats.get('action_source_moe', 0),
+            self.stats.get('action_source_hybrid', 0),
+            self.stats.get('action_source_phi4', 0),
+            self.stats.get('action_source_local_moe', 0),
+            self.stats.get('action_source_heuristic', 0),
+            self.stats.get('action_source_timeout', 0),
+        ])
+        
+        if source_total > 0:
+            print(f"\n🎯 ACTION SOURCES:")
+            moe_pct = 100 * self.stats.get('action_source_moe', 0) / source_total
+            hybrid_pct = 100 * self.stats.get('action_source_hybrid', 0) / source_total
+            phi4_pct = 100 * self.stats.get('action_source_phi4', 0) / source_total
+            heur_pct = 100 * self.stats.get('action_source_heuristic', 0) / source_total
+            timeout_pct = 100 * self.stats.get('action_source_timeout', 0) / source_total
+            
+            print(f"  Cloud MoE:     {self.stats.get('action_source_moe', 0):3d} ({moe_pct:5.1f}%) {'🟢' if moe_pct > 20 else '🟡' if moe_pct > 5 else '🔴'}")
+            print(f"  Hybrid LLM:    {self.stats.get('action_source_hybrid', 0):3d} ({hybrid_pct:5.1f}%) {'🟢' if hybrid_pct > 10 else '🟡' if hybrid_pct > 2 else '🔴'}")
+            print(f"  Phi-4 Local:   {self.stats.get('action_source_phi4', 0):3d} ({phi4_pct:5.1f}%)")
+            print(f"  Heuristics:    {self.stats.get('action_source_heuristic', 0):3d} ({heur_pct:5.1f}%) {'🟢' if heur_pct < 30 else '🟡' if heur_pct < 60 else '🔴'}")
+            print(f"  Timeouts:      {self.stats.get('action_source_timeout', 0):3d} ({timeout_pct:5.1f}%) {'🟢' if timeout_pct < 10 else '🟡' if timeout_pct < 30 else '🔴'}")
+        
+        # Rate Limit Status
+        if self.moe and hasattr(self.moe, 'is_gemini_rate_limited'):
+            is_limited, wait_time = self.moe.is_gemini_rate_limited()
+            gemini_rpm = self.moe.gemini_rpm_limit if hasattr(self.moe, 'gemini_rpm_limit') else 0
+            claude_rpm = self.moe.claude_rpm_limit if hasattr(self.moe, 'claude_rpm_limit') else 0
+            
+            print(f"\n⏱️  RATE LIMIT STATUS:")
+            print(f"  Gemini:  {'🔴 LIMITED' if is_limited else '🟢 AVAILABLE'} ({wait_time:.1f}s wait) | Limit: {gemini_rpm} RPM")
+            print(f"  Claude:  🟢 AVAILABLE | Limit: {claude_rpm} RPM")
+            print(f"  Queued:  {self.stats.get('llm_queued_requests', 0)} | Skipped: {self.stats.get('llm_skipped_rate_limit', 0)}")
+        
+        # Timing Stats
+        if self.stats['planning_times']:
+            avg_planning = sum(self.stats['planning_times'][-10:]) / len(self.stats['planning_times'][-10:])
+            print(f"\n⏲️  TIMING (last 10 cycles):")
+            print(f"  Avg Planning:   {avg_planning:.2f}s {'🟢' if avg_planning < 10 else '🟡' if avg_planning < 20 else '🔴'}")
+            
+        if self.stats['execution_times']:
+            avg_exec = sum(self.stats['execution_times'][-10:]) / len(self.stats['execution_times'][-10:])
+            print(f"  Avg Execution:  {avg_exec:.2f}s")
+        
+        # Success Rate
+        success_rate = 0.0
+        if total_actions > 0:
+            success_rate = self.stats['action_success_count'] / total_actions
+        
+        print(f"\n📊 EFFECTIVENESS:")
+        print(f"  Success Rate:  {success_rate:.1%} {'🟢' if success_rate > 0.3 else '🟡' if success_rate > 0.15 else '🔴'}")
+        print(f"  Fast Actions:  {self.stats['fast_action_count']} ({100*self.stats['fast_action_count']/total_actions:.0f}%)")
+        
+        # Consciousness
+        if hasattr(self, 'current_consciousness') and self.current_consciousness:
+            print(f"\n🧠 CONSCIOUSNESS:")
+            print(f"  Coherence 𝒞:    {self.current_consciousness.coherence:.3f}")
+            print(f"  Ontical ℓₒ:    {self.current_consciousness.lumina_ontical:.3f}")
+            print(f"  Structural ℓₛ: {self.current_consciousness.lumina_structural:.3f}")
+            print(f"  Participatory ℓₚ: {self.current_consciousness.lumina_participatory:.3f}")
+        
+        print(f"{'='*70}\n")
 
     def _print_final_stats(self):
         """Print final statistics."""

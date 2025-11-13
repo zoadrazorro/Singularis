@@ -700,7 +700,8 @@ class ReinforcementLearner:
         state_after: Dict[str, Any],
         done: bool = False,
         consciousness_before: Optional['ConsciousnessState'] = None,
-        consciousness_after: Optional['ConsciousnessState'] = None
+        consciousness_after: Optional['ConsciousnessState'] = None,
+        action_source: Optional[str] = None  # Fix 17: Track action source
     ):
         """
         Store experience in replay buffer with consciousness measurements.
@@ -717,12 +718,26 @@ class ReinforcementLearner:
             done: Whether episode ended
             consciousness_before: Optional consciousness state before
             consciousness_after: Optional consciousness state after
+            action_source: Optional source of action (llm/heuristic)
         """
+        # Fix 17: Only train on LLM-based actions, exclude heuristics
+        if action_source in ['heuristic', 'timeout']:
+            print(f"[RL] Skipping heuristic experience (breaking reinforcement of bad behavior)")
+            return
+        
         # Compute reward (using consciousness if available)
         reward = self.compute_reward(
             state_before, action, state_after,
             consciousness_before, consciousness_after
         )
+        
+        # Fix 9: Add curiosity reward for NPC interactions
+        if action == 'activate':
+            npcs_before = state_before.get('npcs_nearby', 0)
+            npcs_after = state_after.get('npcs_nearby', 0)
+            if npcs_after > npcs_before:
+                reward += 0.5
+                print(f"[RL] +0.5 NPC curiosity bonus (participatory consciousness boost)")
 
         # Compute coherence delta
         coherence_delta = 0.0
