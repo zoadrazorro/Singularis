@@ -220,6 +220,25 @@ class ConsciousnessBridge:
         # 4. Compute overall coherence (geometric mean per MATHEMATICA SINGULARIS)
         coherence = (coherence_o * coherence_s * coherence_p) ** (1/3)
         
+        # 4b. Apply motion-based coherence adjustment (prevents frozen coherence)
+        # This increases coherence when visual scene is changing (motion = progress)
+        if context:
+            # Check for visual similarity (high similarity = stuck/frozen)
+            visual_similarity = context.get('visual_similarity')
+            if visual_similarity is not None:
+                # Low similarity (< 0.85) means scene is changing = good progress
+                # High similarity (> 0.85) means stuck = reduce coherence
+                if visual_similarity < 0.85:
+                    # Scene is changing - boost coherence for making progress
+                    motion_bonus = (1.0 - visual_similarity) * 0.15  # Up to +0.15
+                    coherence = min(1.0, coherence + motion_bonus)
+                    print(f"[BRIDGE] Motion bonus: similarity={visual_similarity:.3f}, bonus={motion_bonus:.3f}")
+                elif visual_similarity > 0.95:
+                    # Very stuck - penalize coherence
+                    stuck_penalty = (visual_similarity - 0.95) * 0.3  # Up to -0.015
+                    coherence = max(0.1, coherence - stuck_penalty)
+                    print(f"[BRIDGE] Stuck penalty: similarity={visual_similarity:.3f}, penalty={stuck_penalty:.3f}")
+        
         # 5. Compute consciousness level (simplified IIT + GWT)
         consciousness_level = self._compute_consciousness_level(
             game_state, coherence_o, coherence_s, coherence_p
@@ -240,9 +259,11 @@ class ConsciousnessBridge:
 
         # 7. Delegate to cloud LLMs when available
         if self.hybrid_llm:
+            print(f"[BRIDGE] Attempting cloud consciousness assessment...")
             try:
                 cloud = await self._cloud_consciousness_assessment(game_state, heuristics, context)
                 if cloud:
+                    print(f"[BRIDGE] ✓ Cloud assessment successful: coherence={cloud.get('coherence', 'N/A'):.3f}")
                     coherence = self._clamp(cloud.get('coherence', coherence))
                     coherence_o = self._clamp(cloud.get('coherence_ontical', coherence_o))
                     coherence_s = self._clamp(cloud.get('coherence_structural', coherence_s))
@@ -251,8 +272,12 @@ class ConsciousnessBridge:
                     consciousness_level = self._clamp(cloud.get('consciousness_level', consciousness_level))
                     self_awareness = self._clamp(cloud.get('self_awareness', self_awareness))
                     self._last_cloud_summary = cloud.get('rationale', self._last_cloud_summary)
+                else:
+                    print(f"[BRIDGE] ⚠️ Cloud assessment returned None - using heuristic fallback")
             except Exception as exc:
-                print(f"[BRIDGE] Cloud consciousness failed: {exc}")
+                print(f"[BRIDGE] ⚠️ Cloud consciousness failed: {exc} - using heuristic fallback")
+                import traceback
+                traceback.print_exc()
         elif self.world_understanding_llm or self.strategic_planning_llm:
             try:
                 enhanced = await self._enhance_with_parallel_llms(

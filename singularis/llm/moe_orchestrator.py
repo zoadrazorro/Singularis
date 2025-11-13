@@ -333,6 +333,29 @@ class MoEOrchestrator:
             # Record this request
             self.gemini_request_times.append(time.time())
     
+    def is_gemini_rate_limited(self) -> Tuple[bool, float]:
+        """
+        Check if Gemini is currently rate-limited without waiting.
+        
+        Returns:
+            Tuple of (is_limited, wait_time_seconds)
+        """
+        now = time.time()
+        
+        # Remove requests older than 1 minute
+        while self.gemini_request_times and (now - self.gemini_request_times[0]) > 60:
+            self.gemini_request_times.popleft()
+        
+        # Check if we're at the limit
+        if len(self.gemini_request_times) >= self.gemini_rpm_limit:
+            oldest_request = self.gemini_request_times[0]
+            wait_time = 60 - (now - oldest_request)
+            
+            if wait_time > 0:
+                return True, wait_time
+        
+        return False, 0.0
+    
     async def _wait_for_claude_rate_limit(self):
         """Wait if necessary to respect Claude rate limits."""
         async with self.claude_rate_lock:
