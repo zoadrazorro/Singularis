@@ -3724,9 +3724,11 @@ EXTENDED THINKING PROCESS:
                                 )
                                 
                                 if gpt5_guidance:
+                                    # GPT5Response is a dataclass, use attribute access not .get()
+                                    guidance_text = gpt5_guidance.guidance or gpt5_guidance.response_text or "N/A"
                                     self.main_brain.record_output(
                                         system_name='GPT-5 Orchestrator',
-                                        content=f"Sensorimotor Guidance:\n{gpt5_guidance.get('guidance', 'N/A')[:400]}",
+                                        content=f"Sensorimotor Guidance:\n{guidance_text[:400]}",
                                         metadata={'cycle': cycle_count, 'subsystem': 'sensorimotor'},
                                         success=True
                                     )
@@ -4513,9 +4515,11 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                             )
                             
                             if gpt5_guidance:
+                                # GPT5Response is a dataclass, use attribute access not .get()
+                                guidance_text = gpt5_guidance.guidance or gpt5_guidance.response_text or "N/A"
                                 self.main_brain.record_output(
                                     system_name='GPT-5 Orchestrator',
-                                    content=f"Action Planning Guidance:\n{gpt5_guidance.get('guidance', 'N/A')[:400]}",
+                                    content=f"Action Planning Guidance:\n{guidance_text[:400]}",
                                     metadata={'cycle': cycle_count, 'subsystem': 'action_planning'},
                                     success=True
                                 )

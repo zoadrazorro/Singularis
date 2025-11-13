@@ -297,7 +297,7 @@ Be concise but insightful. Focus on coordination and optimization."""
                 "model": self.model,
                 "messages": messages,
                 "temperature": 0.7,
-                "max_tokens": 1024,
+                "max_completion_tokens": 1024,  # GPT-5 uses max_completion_tokens, not max_tokens
             }
             
             logger.debug(f"[GPT5-ORCHESTRATOR] Querying GPT-5 for {msg.system_id}")
