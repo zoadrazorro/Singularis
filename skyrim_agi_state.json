@@ -1,23 +1,71 @@
 {
-  "session_id": "skyrim_agi_20251113_152931_c81b1269",
-  "cycle": 1,
-  "uptime": 46.69740152359009,
-  "last_update": "2025-11-13T15:30:18.538182",
+  "session_id": "skyrim_agi_20251113_153730_2ddcddc7",
+  "cycle": 103,
+  "uptime": 289.5896255970001,
+  "last_update": "2025-11-13T15:42:19.874335",
   "current_action": "look_around",
-  "last_action": "look_around",
-  "action_source": "unknown",
+  "last_action": "block",
+  "action_source": "heuristic",
   "recent_actions": [
     {
-      "name": "look_around",
-      "timestamp": 1763065796.1709833,
-      "cycle": 0,
-      "source": "unknown"
+      "name": "attack",
+      "timestamp": 1763066395.8676965,
+      "cycle": 18,
+      "source": "heuristic"
     },
     {
       "name": "look_around",
-      "timestamp": 1763065818.5381732,
-      "cycle": 1,
-      "source": "unknown"
+      "timestamp": 1763066403.5239136,
+      "cycle": 38,
+      "source": "heuristic"
+    },
+    {
+      "name": "retreat",
+      "timestamp": 1763066449.124345,
+      "cycle": 41,
+      "source": "heuristic"
+    },
+    {
+      "name": "look_around",
+      "timestamp": 1763066455.1987767,
+      "cycle": 45,
+      "source": "heuristic"
+    },
+    {
+      "name": "retreat",
+      "timestamp": 1763066505.3340933,
+      "cycle": 49,
+      "source": "heuristic"
+    },
+    {
+      "name": "block",
+      "timestamp": 1763066513.0029256,
+      "cycle": 70,
+      "source": "heuristic"
+    },
+    {
+      "name": "look_around",
+      "timestamp": 1763066519.0969443,
+      "cycle": 73,
+      "source": "heuristic"
+    },
+    {
+      "name": "attack",
+      "timestamp": 1763066525.6460173,
+      "cycle": 77,
+      "source": "heuristic"
+    },
+    {
+      "name": "block",
+      "timestamp": 1763066531.6838233,
+      "cycle": 81,
+      "source": "heuristic"
+    },
+    {
+      "name": "look_around",
+      "timestamp": 1763066539.8743253,
+      "cycle": 103,
+      "source": "heuristic"
     }
   ],
   "perception": {
@@ -25,23 +73,23 @@
     "objects_detected": [
       [
         "dragon",
-        0.06759005784988403
-      ],
-      [
-        "armor",
-        0.06720254570245743
-      ],
-      [
-        "sword",
-        0.06717851758003235
+        0.06761188060045242
       ],
       [
         "mage",
-        0.06714581698179245
+        0.06753929704427719
       ],
       [
-        "guard",
-        0.06691744178533554
+        "sword",
+        0.06746015697717667
+      ],
+      [
+        "armor",
+        0.06712982058525085
+      ],
+      [
+        "bow",
+        0.06708809733390808
       ]
     ],
     "enemies_nearby": false,
@@ -49,30 +97,138 @@
     "last_vision_time": 0
   },
   "game_state": {
-    "health": 38.517551117312685,
-    "magicka": 67.49745755755434,
-    "stamina": 27.991151102937426,
+    "health": 20.0,
+    "magicka": 5.527603894752502,
+    "stamina": 6.574034330765478,
     "in_combat": true,
     "in_menu": false,
     "location": "Skyrim"
   },
   "consciousness": {
     "coherence": 0.22,
-    "phi": 0.08,
+    "phi": 0.52,
     "nodes_active": 18,
     "trend": "stable",
     "history": [
       {
-        "timestamp": 1763065796.1709833,
+        "timestamp": 1763066260.3364124,
         "cycle": 0,
-        "coherence": 0.22,
-        "phi": 0.12
+        "coherence": 0.37,
+        "phi": 0.19
       },
       {
-        "timestamp": 1763065818.5381732,
+        "timestamp": 1763066266.1324458,
         "cycle": 1,
+        "coherence": 0.42,
+        "phi": 0.52
+      },
+      {
+        "timestamp": 1763066271.5397975,
+        "cycle": 2,
+        "coherence": 0.42,
+        "phi": 0.47
+      },
+      {
+        "timestamp": 1763066277.088982,
+        "cycle": 3,
+        "coherence": 0.42,
+        "phi": 0.47
+      },
+      {
+        "timestamp": 1763066318.8019469,
+        "cycle": 4,
+        "coherence": 0.42,
+        "phi": 0.47
+      },
+      {
+        "timestamp": 1763066325.1225686,
+        "cycle": 5,
+        "coherence": 0.4782,
+        "phi": 0.5246
+      },
+      {
+        "timestamp": 1763066332.9653668,
+        "cycle": 6,
+        "coherence": 0.4732,
+        "phi": 0.5219
+      },
+      {
+        "timestamp": 1763066339.5534832,
+        "cycle": 9,
+        "coherence": 0.2764,
+        "phi": 0.2543
+      },
+      {
+        "timestamp": 1763066382.847648,
+        "cycle": 12,
+        "coherence": 0.2764,
+        "phi": 0.52
+      },
+      {
+        "timestamp": 1763066389.7189255,
+        "cycle": 15,
+        "coherence": 0.2764,
+        "phi": 0.53
+      },
+      {
+        "timestamp": 1763066395.8676965,
+        "cycle": 18,
+        "coherence": 0.2764,
+        "phi": 0.37
+      },
+      {
+        "timestamp": 1763066403.5239136,
+        "cycle": 38,
+        "coherence": 0.23,
+        "phi": 0.24
+      },
+      {
+        "timestamp": 1763066449.124345,
+        "cycle": 41,
         "coherence": 0.22,
-        "phi": 0.08
+        "phi": 0.52
+      },
+      {
+        "timestamp": 1763066455.1987767,
+        "cycle": 45,
+        "coherence": 0.22,
+        "phi": 0.22
+      },
+      {
+        "timestamp": 1763066505.3340933,
+        "cycle": 49,
+        "coherence": 0.2764,
+        "phi": 0.52
+      },
+      {
+        "timestamp": 1763066513.0029256,
+        "cycle": 70,
+        "coherence": 0.2764,
+        "phi": 0.37
+      },
+      {
+        "timestamp": 1763066519.0969443,
+        "cycle": 73,
+        "coherence": 0.2187,
+        "phi": 0.1876
+      },
+      {
+        "timestamp": 1763066525.6460173,
+        "cycle": 77,
+        "coherence": 0.2764,
+        "phi": 0.3912
+      },
+      {
+        "timestamp": 1763066531.6838233,
+        "cycle": 81,
+        "coherence": 0.2764,
+        "phi": 0.52
+      },
+      {
+        "timestamp": 1763066539.8743253,
+        "cycle": 103,
+        "coherence": 0.22,
+        "phi": 0.52
       }
     ]
   },
@@ -89,46 +245,213 @@
   },
   "performance": {
     "fps": 60,
-    "planning_time": 0.0012265443801879883,
-    "execution_time": 2.604382276535034,
+    "planning_time": 0.0015175819396972656,
+    "execution_time": 1.2899792194366455,
     "vision_time": 0,
     "total_cycle_time": 0,
     "history": [
       {
-        "timestamp": 1763065796.1709833,
+        "timestamp": 1763066260.3364124,
         "cycle": 0,
         "fps": 60,
-        "planning_time": 0.0014188289642333984,
+        "planning_time": 0.006283283233642578,
         "execution_time": 0.0,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763065818.5381732,
+        "timestamp": 1763066266.1324458,
         "cycle": 1,
         "fps": 60,
-        "planning_time": 0.0012265443801879883,
-        "execution_time": 2.604382276535034,
+        "planning_time": 0.004050731658935547,
+        "execution_time": 4.285857439041138,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066271.5397975,
+        "cycle": 2,
+        "fps": 60,
+        "planning_time": 0.00323335329691569,
+        "execution_time": 2.3577003479003906,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066277.088982,
+        "cycle": 3,
+        "fps": 60,
+        "planning_time": 0.002733290195465088,
+        "execution_time": 1.7105833689371746,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066318.8019469,
+        "cycle": 4,
+        "fps": 60,
+        "planning_time": 0.002314472198486328,
+        "execution_time": 1.421996295452118,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066325.1225686,
+        "cycle": 5,
+        "fps": 60,
+        "planning_time": 0.0014410018920898438,
+        "execution_time": 1.3079307556152344,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066332.9653668,
+        "cycle": 6,
+        "fps": 60,
+        "planning_time": 0.001572895050048828,
+        "execution_time": 0.620978307723999,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066339.5534832,
+        "cycle": 9,
+        "fps": 60,
+        "planning_time": 0.0019069671630859374,
+        "execution_time": 0.6655765056610108,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066382.847648,
+        "cycle": 12,
+        "fps": 60,
+        "planning_time": 0.0017462730407714843,
+        "execution_time": 1.4362898826599122,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066389.7189255,
+        "cycle": 15,
+        "fps": 60,
+        "planning_time": 0.0020397663116455077,
+        "execution_time": 1.6254118919372558,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066395.8676965,
+        "cycle": 18,
+        "fps": 60,
+        "planning_time": 0.0019931793212890625,
+        "execution_time": 1.7380498886108398,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066403.5239136,
+        "cycle": 38,
+        "fps": 60,
+        "planning_time": 0.0017159461975097656,
+        "execution_time": 1.6775009632110596,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066449.124345,
+        "cycle": 41,
+        "fps": 60,
+        "planning_time": 0.0011738777160644532,
+        "execution_time": 1.867562484741211,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066455.1987767,
+        "cycle": 45,
+        "fps": 60,
+        "planning_time": 0.0013225078582763672,
+        "execution_time": 1.3186846256256104,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066505.3340933,
+        "cycle": 49,
+        "fps": 60,
+        "planning_time": 0.0010195255279541015,
+        "execution_time": 1.3387928485870362,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066513.0029256,
+        "cycle": 70,
+        "fps": 60,
+        "planning_time": 0.0011610984802246094,
+        "execution_time": 1.4202384948730469,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066519.0969443,
+        "cycle": 73,
+        "fps": 60,
+        "planning_time": 0.001133108139038086,
+        "execution_time": 1.5107336044311523,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066525.6460173,
+        "cycle": 77,
+        "fps": 60,
+        "planning_time": 0.00133514404296875,
+        "execution_time": 1.5904946327209473,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066531.6838233,
+        "cycle": 81,
+        "fps": 60,
+        "planning_time": 0.0014328956604003906,
+        "execution_time": 1.4102096080780029,
+        "vision_time": 0,
+        "total_cycle_time": 0
+      },
+      {
+        "timestamp": 1763066539.8743253,
+        "cycle": 103,
+        "fps": 60,
+        "planning_time": 0.0015175819396972656,
+        "execution_time": 1.2899792194366455,
         "vision_time": 0,
         "total_cycle_time": 0
       }
     ]
   },
   "diversity": {
-    "score": 0.5,
-    "unique_actions": 1,
-    "total_actions": 2,
-    "variety_rate": 0.5,
+    "score": 0.3,
+    "unique_actions": 6,
+    "total_actions": 20,
+    "variety_rate": 0.3,
     "action_distribution": {
-      "look_around": 2
+      "attack": 7,
+      "look_around": 4,
+      "retreat": 3,
+      "block": 3,
+      "explore": 2,
+      "activate": 1
     }
   },
   "stats": {
     "success_rate": 1.0,
-    "rl_actions": 0,
+    "rl_actions": 6,
     "llm_actions": 0,
-    "heuristic_actions": 0,
-    "total_actions": 2
+    "heuristic_actions": 8,
+    "total_actions": 20
   },
   "world_model": {
     "beliefs": {},

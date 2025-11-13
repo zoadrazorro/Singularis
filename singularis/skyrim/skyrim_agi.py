@@ -4276,8 +4276,8 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 )
                 
                 action = action_data['action']
-                scene_type = action_data['scene_type']
-                game_state = action_data['game_state']
+                scene_type = action_data.get('scene_type', 'unknown')
+                game_state = action_data.get('game_state', {})
                 
                 print(f"\n[ACTION] Executing: {action}")
                 
