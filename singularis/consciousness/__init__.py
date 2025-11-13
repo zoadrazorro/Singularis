@@ -16,6 +16,12 @@ from .self_reflection import (
     SelfReflection,
     SelfModel
 )
+from .voice_system import (
+    VoiceSystem,
+    VoiceType,
+    ThoughtPriority,
+    VocalizedThought
+)
 
 __all__ = [
     'SpiritualAwarenessSystem',
@@ -24,5 +30,9 @@ __all__ = [
     'SpiritualTextCorpus',
     'SelfReflectionSystem',
     'SelfReflection',
-    'SelfModel'
+    'SelfModel',
+    'VoiceSystem',
+    'VoiceType',
+    'ThoughtPriority',
+    'VocalizedThought'
 ]

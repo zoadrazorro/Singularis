@@ -1,15 +1,15 @@
 {
-  "session_id": "skyrim_agi_20251113_142108_ffdfedaf",
+  "session_id": "skyrim_agi_20251113_142827_4559150b",
   "cycle": 0,
-  "uptime": 28.242544651031494,
-  "last_update": "2025-11-13T14:21:36.489951",
-  "current_action": "look_around",
+  "uptime": 29.223577737808228,
+  "last_update": "2025-11-13T14:28:57.057292",
+  "current_action": "attack",
   "last_action": "none",
   "action_source": "unknown",
   "recent_actions": [
     {
-      "name": "look_around",
-      "timestamp": 1763061696.489942,
+      "name": "attack",
+      "timestamp": 1763062137.0572822,
       "cycle": 0,
       "source": "unknown"
     }
@@ -18,24 +18,24 @@
     "scene_type": "SceneType.COMBAT",
     "objects_detected": [
       [
-        "mage",
-        0.06736553460359573
+        "dragon",
+        0.06747890263795853
       ],
       [
-        "dragon",
-        0.06735120713710785
+        "mage",
+        0.06728875637054443
+      ],
+      [
+        "door",
+        0.06704635173082352
       ],
       [
         "sword",
-        0.06734835356473923
-      ],
-      [
-        "bow",
-        0.06702591478824615
+        0.06703018397092819
       ],
       [
         "potion",
-        0.0668453723192215
+        0.06693100184202194
       ]
     ],
     "enemies_nearby": false,
@@ -43,24 +43,24 @@
     "last_vision_time": 0
   },
   "game_state": {
-    "health": 78.71123750508414,
-    "magicka": 87.83499286004809,
-    "stamina": 72.62873393510819,
+    "health": 60.63185023439687,
+    "magicka": 77.50391441965536,
+    "stamina": 49.383807444224544,
     "in_combat": true,
     "in_menu": false,
     "location": "Skyrim"
   },
   "consciousness": {
-    "coherence": 0.21,
-    "phi": 0.11,
+    "coherence": 0.42,
+    "phi": 0.44,
     "nodes_active": 21,
     "trend": "stable",
     "history": [
       {
-        "timestamp": 1763061696.489942,
+        "timestamp": 1763062137.0572822,
         "cycle": 0,
-        "coherence": 0.21,
-        "phi": 0.11
+        "coherence": 0.42,
+        "phi": 0.44
       }
     ]
   },
@@ -86,16 +86,16 @@
   },
   "performance": {
     "fps": 60,
-    "planning_time": 0.0015480518341064453,
+    "planning_time": 0.0031087398529052734,
     "execution_time": 0.0,
     "vision_time": 0,
     "total_cycle_time": 0,
     "history": [
       {
-        "timestamp": 1763061696.489942,
+        "timestamp": 1763062137.0572822,
         "cycle": 0,
         "fps": 60,
-        "planning_time": 0.0015480518341064453,
+        "planning_time": 0.0031087398529052734,
         "execution_time": 0.0,
         "vision_time": 0,
         "total_cycle_time": 0
@@ -108,12 +108,12 @@
     "total_actions": 1,
     "variety_rate": 1.0,
     "action_distribution": {
-      "look_around": 1
+      "attack": 1
     }
   },
   "stats": {
     "success_rate": 1.0,
-    "rl_actions": 0,
+    "rl_actions": 1,
     "llm_actions": 0,
     "heuristic_actions": 0,
     "total_actions": 1

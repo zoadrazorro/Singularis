@@ -21,6 +21,12 @@ from .gpt_realtime_client import (
     RealtimeDecision,
     SubsystemType,
 )
+from .gpt5_orchestrator import (
+    GPT5Orchestrator,
+    SystemType,
+    SystemMessage,
+    GPT5Response,
+)
 
 __all__ = [
     "LMStudioClient",
@@ -40,4 +46,8 @@ __all__ = [
     "RealtimeConfig",
     "RealtimeDecision",
     "SubsystemType",
+    "GPT5Orchestrator",
+    "SystemType",
+    "SystemMessage",
+    "GPT5Response",
 ]

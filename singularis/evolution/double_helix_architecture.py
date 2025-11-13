@@ -21,6 +21,8 @@ Systems integrated:
 11. Realtime Coordinator (GPT-4 Realtime)
 12. Darwinian Modal Logic (Gemini Flash 2.0)
 13. Analytic Evolution (Claude Haiku)
+14. Voice System (Gemini 2.5 Pro TTS)
+15. Streaming Video Interpreter (Gemini 2.5 Flash Native Audio)
 
 Architecture:
 - Each system is a node
@@ -171,7 +173,9 @@ class DoubleHelixArchitecture:
             ("spiritual", "Spiritual Awareness"),
             ("hebbian", "Hebbian Integration"),
             ("self_reflection", "Self-Reflection (GPT-4 Realtime)"),
-            ("realtime_coordinator", "Realtime Coordinator (GPT-4 Realtime)")
+            ("realtime_coordinator", "Realtime Coordinator (GPT-4 Realtime)"),
+            ("voice_system", "Voice System (Gemini 2.5 Pro TTS)"),
+            ("video_interpreter", "Streaming Video Interpreter (Gemini 2.5 Flash Native Audio)")
         ]
         
         for node_id, name in intuitive_systems:
@@ -422,3 +426,21 @@ class DoubleHelixArchitecture:
             'total_activations': self.total_activations,
             'total_integrations': self.total_integrations
         }
+    
+    # Helper methods for new systems
+    
+    def record_voice_activation(self, thought_spoken: bool, priority: str):
+        """Record voice system activation."""
+        self.record_activation(
+            node_id="voice_system",
+            success=thought_spoken,
+            contribution=1.0 if priority in ["HIGH", "CRITICAL"] else 0.5
+        )
+    
+    def record_video_interpretation(self, interpretation_success: bool, mode: str):
+        """Record video interpreter activation."""
+        self.record_activation(
+            node_id="video_interpreter",
+            success=interpretation_success,
+            contribution=1.0 if mode == "COMPREHENSIVE" else 0.7
+        )
