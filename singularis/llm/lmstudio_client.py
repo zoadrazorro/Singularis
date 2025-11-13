@@ -61,6 +61,50 @@ class LMStudioClient:
         if self.session:
             await self.session.close()
     
+    async def close(self):
+        """Close the aiohttp session."""
+        if self.session and not self.session.closed:
+            await self.session.close()
+            logger.info("LM Studio client session closed")
+    
+    async def health_check(self) -> bool:
+        """
+        Check if LM Studio is accessible and a model is loaded.
+        
+        Returns:
+            True if LM Studio is responding, False otherwise
+        """
+        if not self.session:
+            self.session = aiohttp.ClientSession()
+        
+        try:
+            # Try to get models list
+            async with self.session.get(
+                f"{self.config.base_url}/models",
+                timeout=aiohttp.ClientTimeout(total=5)
+            ) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    models = data.get('data', [])
+                    if models:
+                        logger.info(f"LM Studio health check passed - {len(models)} model(s) loaded")
+                        for model in models:
+                            logger.info(f"  Available: {model.get('id', 'unknown')}")
+                        return True
+                    else:
+                        logger.warning("LM Studio is running but no models are loaded")
+                        return False
+                else:
+                    logger.warning(f"LM Studio returned status {response.status}")
+                    return False
+        except aiohttp.ClientConnectorError:
+            logger.error(f"Cannot connect to LM Studio at {self.config.base_url}")
+            logger.error("Make sure LM Studio is running and the local server is started")
+            return False
+        except Exception as e:
+            logger.error(f"LM Studio health check failed: {e}")
+            return False
+    
     async def generate(
         self,
         prompt: str,
@@ -174,7 +218,7 @@ class LMStudioClient:
                 }
                 
         except aiohttp.ClientResponseError as e:
-            # Log detailed error for vision requests
+            # Log detailed error for debugging
             error_body = None
             try:
                 error_body = await e.response.text() if hasattr(e, 'response') else None
@@ -186,9 +230,21 @@ class LMStudioClient:
                 extra={
                     "error": str(e),
                     "status": e.status if hasattr(e, 'status') else None,
+                    "url": f"{self.config.base_url}/chat/completions",
                     "model": self.config.model_name,
                     "has_image": image_path is not None,
-                    "error_body": error_body[:500] if error_body else None
+                    "error_body": error_body[:500] if error_body else None,
+                    "message": "Check if LM Studio is running and model is loaded"
+                }
+            )
+            raise
+        except aiohttp.ClientConnectorError as e:
+            logger.error(
+                "Cannot connect to LM Studio",
+                extra={
+                    "error": str(e),
+                    "url": self.config.base_url,
+                    "message": "Is LM Studio running on localhost:1234?"
                 }
             )
             raise

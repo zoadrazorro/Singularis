@@ -125,6 +125,17 @@ class LocalMoEOrchestrator:
                 'success': False
             }
     
+    async def close(self):
+        """Close all expert and synthesizer sessions."""
+        for expert in self.experts:
+            if expert.session:
+                await expert.session.close()
+        
+        if self.synthesizer and self.synthesizer.session:
+            await self.synthesizer.session.close()
+        
+        logger.info("Local MoE closed - all sessions terminated")
+    
     async def get_action_recommendation(
         self,
         perception: Dict[str, Any],

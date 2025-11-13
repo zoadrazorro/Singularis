@@ -851,6 +851,17 @@ class SkyrimAGI:
                     state_printer_client = LMStudioClient(state_printer_config)
                     self.state_printer_llm = ExpertLLMInterface(state_printer_client)
                     
+                    # Run health check for local LLMs
+                    print("\n[PARALLEL] Running LM Studio health check...")
+                    if await state_printer_client.health_check():
+                        print("[PARALLEL] ✓ LM Studio connection verified")
+                    else:
+                        print("[PARALLEL] ⚠️ LM Studio health check failed - local models may not work")
+                        print("[PARALLEL] Please ensure:")
+                        print("[PARALLEL]   1. LM Studio is running")
+                        print("[PARALLEL]   2. Local server is started (Server tab)")
+                        print("[PARALLEL]   3. A model is loaded")
+                    
                     print("[PARALLEL] ✓ Huihui connected to AGI orchestrator (enables dialectical synthesis)")
                     print("[PARALLEL] ✓ State printer LLM connected (microsoft/phi-4)")
                     print("[PARALLEL] ✓ Local LLMs connected to components")
@@ -1636,12 +1647,16 @@ class SkyrimAGI:
                 if self.openai_client:
                     await self.openai_client.close()
                 if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
-                    if hasattr(self.hybrid_llm, 'gemini_client'):
-                        await self.hybrid_llm.gemini_client.close()
-                    if hasattr(self.hybrid_llm, 'claude_client'):
-                        await self.hybrid_llm.claude_client.close()
+                    await self.hybrid_llm.close()
+                if hasattr(self, 'moe') and self.moe:
+                    await self.moe.close()
+                if hasattr(self, 'local_moe') and self.local_moe:
+                    await self.local_moe.close()
                 if hasattr(self, 'sensorimotor_llm') and self.sensorimotor_llm:
                     await self.sensorimotor_llm.close()
+                if hasattr(self, 'state_printer_llm') and hasattr(self.state_printer_llm, 'client'):
+                    if hasattr(self.state_printer_llm.client, 'session') and self.state_printer_llm.client.session:
+                        await self.state_printer_llm.client.session.close()
                 print("[CLEANUP] ✓ All sessions closed")
             except Exception as e:
                 print(f"[CLEANUP] Warning: {e}")
@@ -1873,7 +1888,10 @@ class SkyrimAGI:
                 
                 # Sleep to maintain interval
                 await asyncio.sleep(0.5)
-                
+            
+            except asyncio.CancelledError:
+                print(f"[AUX-EXPLORE] Loop cancelled gracefully at cycle {cycle_count}")
+                break
             except Exception as e:
                 print(f"[AUX-EXPLORE] Error in cycle {cycle_count}: {e}")
                 import traceback
