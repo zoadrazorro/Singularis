@@ -123,6 +123,11 @@ class LMStudioClient:
             payload["stop"] = stop
         
         try:
+            # Staggered delay to prevent overwhelming LM Studio with simultaneous requests
+            # Each request waits 0.4s to create 0.4s intervals between activations
+            import asyncio
+            await asyncio.sleep(0.4)
+            
             logger.debug(
                 "Sending request to LM Studio",
                 extra={

@@ -105,7 +105,7 @@ class SkyrimConfig:
     enable_async_reasoning: bool = True  # Run reasoning in parallel with actions
     action_queue_size: int = 3  # Max queued actions
     perception_interval: float = 0.25  # How often to perceive (seconds) - faster for responsiveness
-    max_concurrent_llm_calls: int = 4  # With 4 models (2 mistral + 2 big), can handle 4 concurrent
+    max_concurrent_llm_calls: int = 2  # Reduced to prevent LM Studio overload (was 4)
     reasoning_throttle: float = 0.1  # Min seconds between reasoning cycles - minimal throttle
     
     # Fast reactive loop
@@ -4292,11 +4292,11 @@ Format: ACTION: <action_name>"""
                         tasks_to_race.append(local_moe_task)
                     
                     if len(tasks_to_race) > 1:
-                        print(f"[PARALLEL] Racing {len(tasks_to_race)} systems (10s timeout)...")
+                        print(f"[PARALLEL] Racing {len(tasks_to_race)} systems (13.5s timeout)...")
                         try:
                             done, pending = await asyncio.wait(
                                 tasks_to_race,
-                                timeout=10.0,  # 10 second timeout - use first winner
+                                timeout=13.5,  # 13.5 second timeout - use first winner
                                 return_when=asyncio.FIRST_COMPLETED
                             )
                             
@@ -4399,13 +4399,13 @@ Format: ACTION: <action_name>"""
                             
                             # Timeout - cancel pending tasks and use heuristic
                             if pending:
-                                print(f"[PARALLEL] ⏱️ Timeout after 10s, using heuristic (cancelled {len(pending)} pending tasks)")
+                                print(f"[PARALLEL] ⏱️ Timeout after 13.5s, using heuristic (cancelled {len(pending)} pending tasks)")
                                 self.stats['action_source_timeout'] += 1
                                 self.last_action_source = 'timeout'
                                 for task in pending:
                                     task.cancel()
                         except asyncio.TimeoutError:
-                            print(f"[PARALLEL] ⏱️ Timeout after 10s, using heuristic")
+                            print(f"[PARALLEL] ⏱️ Timeout after 13.5s, using heuristic")
                             self.stats['action_source_timeout'] += 1
                             self.last_action_source = 'timeout'
                             for task in tasks_to_race:
