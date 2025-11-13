@@ -81,7 +81,7 @@ class SkyrimControllerBindings:
             await ctrl.move(1.0, 0, duration=duration)
         
         async def sprint(ctrl):
-            await ctrl.tap_button(XboxButton.LS)  # Click left stick to sprint
+            await ctrl.tap_button(XboxButton.LB)  # FIXED: LB (Left Bumper) for sprint, not LS
         
         # Camera actions
         async def look_up(ctrl, duration=1.0):
@@ -234,7 +234,7 @@ class SkyrimControllerBindings:
         
         async def retreat(ctrl, duration=1.5):
             # Sprint backward
-            await ctrl.tap_button(XboxButton.LS)
+            await ctrl.tap_button(XboxButton.LB)  # FIXED: LB for sprint
             await ctrl.move(0, -1.0, duration=duration if duration > 0 else 1.5)
         
         async def quick_heal(ctrl, duration=0.0):
