@@ -132,9 +132,15 @@ class LMStudioClient:
             self.session = aiohttp.ClientSession()
         
         # Build messages
+        # Note: Some models don't support system role, so we prepend it to user message
         messages = []
+        
+        # Combine system prompt with user prompt if provided
         if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
+            # Prepend system instructions to user message (more compatible)
+            combined_prompt = f"{system_prompt}\n\n{prompt}"
+        else:
+            combined_prompt = prompt
         
         # For vision models, add image as base64
         if image_path:
@@ -148,12 +154,12 @@ class LMStudioClient:
             messages.append({
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": prompt},
+                    {"type": "text", "text": combined_prompt},
                     {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{img_data}"}}
                 ]
             })
         else:
-            messages.append({"role": "user", "content": prompt})
+            messages.append({"role": "user", "content": combined_prompt})
         
         # Build request
         payload = {
@@ -186,8 +192,22 @@ class LMStudioClient:
                 json=payload,
                 timeout=aiohttp.ClientTimeout(total=self.config.timeout)
             ) as response:
-                response.raise_for_status()
-                data = await response.json()
+                # Read response body first (before raise_for_status)
+                response_text = await response.text()
+                
+                # Check for error status
+                if response.status != 200:
+                    logger.error(
+                        f"LM Studio returned {response.status}\n"
+                        f"Model: {self.config.model_name}\n"
+                        f"Response: {response_text[:1000]}\n"
+                        f"Payload: {str(payload)[:500]}"
+                    )
+                    response.raise_for_status()
+                
+                # Parse JSON
+                import json
+                data = json.loads(response_text)
                 
                 # Extract response
                 choice = data["choices"][0]
@@ -218,13 +238,7 @@ class LMStudioClient:
                 }
                 
         except aiohttp.ClientResponseError as e:
-            # Log detailed error for debugging
-            error_body = None
-            try:
-                error_body = await e.response.text() if hasattr(e, 'response') else None
-            except:
-                pass
-            
+            # Error body should already be logged above
             logger.error(
                 "LM Studio request failed",
                 extra={
@@ -233,7 +247,6 @@ class LMStudioClient:
                     "url": f"{self.config.base_url}/chat/completions",
                     "model": self.config.model_name,
                     "has_image": image_path is not None,
-                    "error_body": error_body[:500] if error_body else None,
                     "message": "Check if LM Studio is running and model is loaded"
                 }
             )
