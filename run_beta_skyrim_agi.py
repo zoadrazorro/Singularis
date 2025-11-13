@@ -111,8 +111,11 @@ async def main():
     print("─" * 70)
     use_llm = get_yes_no("Use LLM for smarter decisions?", default=True)
     use_gpt5 = get_yes_no("Enable GPT-5 orchestrator (OpenAI)?", default=True)
-    use_voice = get_yes_no("Enable voice system (Gemini TTS)?", default=False)
-    use_video = get_yes_no("Enable video interpreter (Gemini Flash)?", default=False)
+    use_live_audio = get_yes_no("Enable LIVE audio stream (Gemini+OpenAI)?", default=True)
+    print()
+    print("⚠️  Note: Voice and Video systems disabled by default (check rate limits)")
+    use_voice = False  # Disabled - uses Gemini
+    use_video = False  # Disabled - uses Gemini
     use_double_helix = get_yes_no("Enable double helix architecture?", default=True)
     
     # Beta 1.0 features
@@ -174,6 +177,11 @@ async def main():
         enable_video_interpreter=use_video,  # Video uses Gemini Flash (check rate limits)
         video_interpretation_mode="COMPREHENSIVE",
         video_frame_rate=0.5,
+        
+        # Live audio stream - Real-time commentary
+        enable_live_audio=use_live_audio,
+        live_audio_frequency=5.0,
+        live_audio_style="analytical",
         
         # Double helix
         use_double_helix=use_double_helix,
@@ -241,6 +249,7 @@ async def main():
         print(f"  LLM:               {'✓' if use_llm else '✗'}")
         print(f"  Gemini Flash Lite: ✓ (PRIMARY - UNLIMITED)")
         print(f"  GPT-5 Orchestrator: {'✓' if use_gpt5 else '✗'} (OpenAI)")
+        print(f"  Live Audio Stream: {'✓' if use_live_audio else '✗'} (Gemini+OpenAI)")
         print(f"  Claude Reasoning:  ✓ (Anthropic - secondary)")
         print(f"  Local Fallback:    ✓ (Qwen3-VL, Phi-4)")
         print(f"  Voice System:      {'✓' if use_voice else '✗'} (Gemini TTS)")

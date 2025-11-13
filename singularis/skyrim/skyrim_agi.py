@@ -221,6 +221,11 @@ class SkyrimConfig:
     max_active_goals: int = 3  # Maximum concurrent active goals
     goal_novelty_threshold: float = 0.7  # Minimum novelty for new goals (0-1)
     
+    # Beta 1.0 Features - Live Audio Stream
+    enable_live_audio: bool = True  # Enable real-time audio commentary
+    live_audio_frequency: float = 5.0  # Seconds between audio updates
+    live_audio_style: str = "analytical"  # Narration style (analytical, dramatic, technical, casual)
+    
     # Legacy external augmentation (deprecated in favor of hybrid)
     enable_claude_meta: bool = False
     enable_gemini_vision: bool = False
@@ -619,14 +624,40 @@ class SkyrimAGI:
         self.claude_caller = None
         print("    ✓ Async expert pools configured (will initialize with LLMs)")
         
-        # 26. Unified Metrics Aggregator
-        print("  [26/27] Unified metrics aggregator...")
+        # 26. Live Audio Stream (NEW - Real-time Commentary)
+        print("  [26/28] Live audio stream...")
+        from ..consciousness.live_audio_stream import LiveAudioStream, AudioStreamConfig, StreamPriority
+        
+        self.live_audio = None
+        if self.config.enable_live_audio:
+            try:
+                audio_config = AudioStreamConfig(
+                    enable_gemini_live=True,
+                    enable_openai_realtime=True,
+                    stream_frequency=5.0,
+                    min_priority=StreamPriority.MEDIUM,
+                    narration_style="analytical",
+                    max_streams_per_minute=12,
+                )
+                self.live_audio = LiveAudioStream(audio_config)
+                print("    ✓ Live audio stream initialized")
+                print("    ✓ Gemini 2.5 Flash Live + OpenAI Realtime")
+                print("    ✓ Real-time thought vocalization enabled")
+            except Exception as e:
+                print(f"    ⚠️ Live audio stream initialization failed: {e}")
+                self.live_audio = None
+        else:
+            print("    ⚠️ Live audio stream disabled")
+        
+        # 27. Unified Metrics Aggregator
+        print("  [27/28] Unified metrics aggregator...")
         self.unified_metrics = {
             'consciousness': {},
             'double_helix': {},
             'gpt5': {},
             'voice': {},
             'video': {},
+            'live_audio': {},
             'performance': {},
             'temporal': {},
             'coherence': {},
@@ -635,8 +666,8 @@ class SkyrimAGI:
         }
         print("    ✓ Unified metrics tracking enabled")
         
-        # 27. Skyrim-specific Motivation System
-        print("  [27/27] Skyrim-specific motivation system...")
+        # 28. Skyrim-specific Motivation System
+        print("  [28/28] Skyrim-specific motivation system...")
         self.skyrim_motivation = SkyrimMotivation(
             survival_weight=0.35,  # Prioritize staying alive
             progression_weight=0.25,  # Character growth important
@@ -1453,6 +1484,20 @@ class SkyrimAGI:
         print("FULL SYSTEM INITIALIZATION COMPLETE")
         print("=" * 70)
         print()
+        
+        # Initialize and start live audio stream
+        if self.live_audio:
+            print("\n" + "=" * 70)
+            print("STARTING LIVE AUDIO STREAM")
+            print("=" * 70)
+            try:
+                await self.live_audio.initialize()
+                await self.live_audio.start()
+                print("✓ Live audio stream active")
+                print()
+            except Exception as e:
+                print(f"⚠️ Failed to start live audio stream: {e}")
+                self.live_audio = None
         
         # Measure initial consciousness state
         print("\n" + "=" * 70)
@@ -4148,6 +4193,26 @@ Top Predicates:
                     action = 'explore'  # Safe default fallback
                     self.stats['heuristic_action_count'] += 1
                 
+                # TEMPORAL BINDING: Check for stuck loop via temporal tracker
+                if self.temporal_tracker and self.temporal_tracker.is_stuck():
+                    stuck_count = self.temporal_tracker.stuck_loop_count
+                    print(f"[TEMPORAL-OVERRIDE] 🚨 STUCK LOOP DETECTED ({stuck_count} cycles)")
+                    print(f"[TEMPORAL-OVERRIDE] Forcing emergency corrective action")
+                    
+                    # Emergency action sequence based on stuck count
+                    if stuck_count >= 5:
+                        # Severe stuck - try drastic action
+                        action = random.choice(['turn_around', 'jump', 'sprint'])
+                        print(f"[TEMPORAL-OVERRIDE] Severe stuck (5+ cycles) → {action}")
+                    elif stuck_count >= 3:
+                        # Moderate stuck - try navigation
+                        action = random.choice(['look_around', 'move_backward', 'turn_left', 'turn_right'])
+                        print(f"[TEMPORAL-OVERRIDE] Moderate stuck (3+ cycles) → {action}")
+                    else:
+                        # Initial stuck - try simple correction
+                        action = random.choice(['look_down', 'look_up', 'activate'])
+                        print(f"[TEMPORAL-OVERRIDE] Initial stuck → {action}")
+                
                 # Check for repeated action stuck loop with visual similarity
                 if action == self.last_successful_action:
                     self.repeated_action_count += 1
@@ -4201,6 +4266,20 @@ Top Predicates:
                 self.last_successful_action = action
                 
                 print(f"[REASONING] Planned action: {action} ({planning_duration:.3f}s)")
+                
+                # LIVE AUDIO: Stream decision announcement
+                if self.live_audio and hasattr(self, 'last_reasoning'):
+                    try:
+                        asyncio.create_task(
+                            self.live_audio.stream_decision(
+                                action=action,
+                                reasoning=self.last_reasoning.get('reasoning', 'No reasoning available'),
+                                confidence=self.last_reasoning.get('confidence', 0.5),
+                                scene_type=scene_type
+                            )
+                        )
+                    except Exception as e:
+                        logger.debug(f"Live audio stream error: {e}")
                 
                 # Update dashboard with current state and planned action
                 self._update_dashboard_state(action=action, action_source=self.last_action_source)
