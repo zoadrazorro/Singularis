@@ -142,9 +142,9 @@ class MoEOrchestrator:
         openai_model: str = "gpt-4o",
         hyperbolic_vision_model: str = "nvidia/NVIDIA-Nemotron-Nano-12B-v2-VL-BF16",
         hyperbolic_reasoning_model: str = "Qwen/Qwen3-235B-A22B-Instruct-2507",
-        # Rate limits (requests per minute)
-        gemini_rpm_limit: int = 10,  # Conservative limit for Gemini 2.0 Flash
-        claude_rpm_limit: int = 50,  # Conservative limit for Claude (Tier 1+)
+        # Rate limits (requests per minute) - INCREASED for better performance
+        gemini_rpm_limit: int = 30,  # Increased from 10 to reduce rate limit issues
+        claude_rpm_limit: int = 100,  # Increased from 50 for better throughput
         openai_rpm_limit: int = 500,  # GPT-4o has higher limits
         hyperbolic_rpm_limit: int = 100,  # Hyperbolic rate limit
         # Token limits (tokens per minute)
@@ -228,6 +228,12 @@ class MoEOrchestrator:
             'openai_tokens_total': 0,
             'hyperbolic_tokens_total': 0,
         }
+        
+        # Fix 19: Dynamic rate limit scaling
+        self.gemini_response_times = deque(maxlen=20)  # Track recent response times
+        self.claude_response_times = deque(maxlen=20)
+        self.adaptive_rpm_enabled = True
+        self.last_rpm_adjustment = time.time()
         
         # Concurrency control (limit simultaneous requests)
         # Use smaller value to avoid overwhelming APIs
@@ -498,6 +504,20 @@ class MoEOrchestrator:
             Tuple of (is_limited, wait_time_seconds)
         """
         now = time.time()
+        
+        # Fix 19: Dynamic rate limit adjustment every 60 seconds
+        if self.adaptive_rpm_enabled and (now - self.last_rpm_adjustment) > 60:
+            if len(self.gemini_response_times) >= 10:
+                avg_response_time = sum(self.gemini_response_times) / len(self.gemini_response_times)
+                # If average response time is fast (<2s), we can increase RPM
+                if avg_response_time < 2.0 and self.gemini_rpm_limit < 50:
+                    self.gemini_rpm_limit = min(50, int(self.gemini_rpm_limit * 1.2))
+                    logger.info(f"[ADAPTIVE-RPM] Increased Gemini RPM to {self.gemini_rpm_limit}")
+                # If slow (>5s), decrease RPM
+                elif avg_response_time > 5.0 and self.gemini_rpm_limit > 10:
+                    self.gemini_rpm_limit = max(10, int(self.gemini_rpm_limit * 0.8))
+                    logger.info(f"[ADAPTIVE-RPM] Decreased Gemini RPM to {self.gemini_rpm_limit}")
+            self.last_rpm_adjustment = now
         
         # Remove requests older than 1 minute
         while self.gemini_request_times and (now - self.gemini_request_times[0]) > 60:
@@ -853,6 +873,9 @@ class MoEOrchestrator:
                 )
             
             execution_time = time.time() - start_time
+            
+            # Fix 19: Track response time for dynamic rate scaling
+            self.gemini_response_times.append(execution_time)
             
             # Parse confidence from response
             confidence = self._extract_confidence(result)
