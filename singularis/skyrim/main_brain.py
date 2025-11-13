@@ -139,7 +139,8 @@ class MainBrain:
                 'valence_range': (0.0, 0.0),
                 'dominant_affects': [],
                 'active_ratio': 0.0,
-                'affective_volatility': 0.0
+                'affective_volatility': 0.0,
+                'total_measurements': 0
             }
 
         import numpy as np

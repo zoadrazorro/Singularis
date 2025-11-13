@@ -1,28 +1,16 @@
 {
-  "session_id": "skyrim_agi_20251113_094708_478af4e5",
-  "cycle": 2,
-  "uptime": 80.52203464508057,
-  "last_update": "2025-11-13T09:48:29.235246",
+  "session_id": "skyrim_agi_20251113_142108_ffdfedaf",
+  "cycle": 0,
+  "uptime": 28.242544651031494,
+  "last_update": "2025-11-13T14:21:36.489951",
   "current_action": "look_around",
-  "last_action": "look_around",
+  "last_action": "none",
   "action_source": "unknown",
   "recent_actions": [
     {
       "name": "look_around",
-      "timestamp": 1763045257.5847633,
+      "timestamp": 1763061696.489942,
       "cycle": 0,
-      "source": "unknown"
-    },
-    {
-      "name": "look_around",
-      "timestamp": 1763045283.466946,
-      "cycle": 1,
-      "source": "unknown"
-    },
-    {
-      "name": "look_around",
-      "timestamp": 1763045309.2352417,
-      "cycle": 2,
       "source": "unknown"
     }
   ],
@@ -30,24 +18,24 @@
     "scene_type": "SceneType.COMBAT",
     "objects_detected": [
       [
-        "sword",
-        0.0675877258181572
-      ],
-      [
-        "bow",
-        0.0672159269452095
-      ],
-      [
         "mage",
-        0.06715498119592667
-      ],
-      [
-        "armor",
-        0.06689746677875519
+        0.06736553460359573
       ],
       [
         "dragon",
-        0.06682801991701126
+        0.06735120713710785
+      ],
+      [
+        "sword",
+        0.06734835356473923
+      ],
+      [
+        "bow",
+        0.06702591478824615
+      ],
+      [
+        "potion",
+        0.0668453723192215
       ]
     ],
     "enemies_nearby": false,
@@ -55,36 +43,24 @@
     "last_vision_time": 0
   },
   "game_state": {
-    "health": 20.0,
-    "magicka": 5.0,
-    "stamina": 5.0,
+    "health": 78.71123750508414,
+    "magicka": 87.83499286004809,
+    "stamina": 72.62873393510819,
     "in_combat": true,
     "in_menu": false,
     "location": "Skyrim"
   },
   "consciousness": {
-    "coherence": 0.19,
-    "phi": 0.06,
-    "nodes_active": 22,
+    "coherence": 0.21,
+    "phi": 0.11,
+    "nodes_active": 21,
     "trend": "stable",
     "history": [
       {
-        "timestamp": 1763045257.5847633,
+        "timestamp": 1763061696.489942,
         "cycle": 0,
         "coherence": 0.21,
         "phi": 0.11
-      },
-      {
-        "timestamp": 1763045283.466946,
-        "cycle": 1,
-        "coherence": 0.19,
-        "phi": 0.06
-      },
-      {
-        "timestamp": 1763045309.2352417,
-        "cycle": 2,
-        "coherence": 0.19,
-        "phi": 0.06
       }
     ]
   },
@@ -110,47 +86,29 @@
   },
   "performance": {
     "fps": 60,
-    "planning_time": 0.0019928614298502603,
-    "execution_time": 1.6679781675338745,
+    "planning_time": 0.0015480518341064453,
+    "execution_time": 0.0,
     "vision_time": 0,
     "total_cycle_time": 0,
     "history": [
       {
-        "timestamp": 1763045257.5847633,
+        "timestamp": 1763061696.489942,
         "cycle": 0,
         "fps": 60,
-        "planning_time": 0.004282474517822266,
+        "planning_time": 0.0015480518341064453,
         "execution_time": 0.0,
-        "vision_time": 0,
-        "total_cycle_time": 0
-      },
-      {
-        "timestamp": 1763045283.466946,
-        "cycle": 1,
-        "fps": 60,
-        "planning_time": 0.0025713443756103516,
-        "execution_time": 1.6182515621185303,
-        "vision_time": 0,
-        "total_cycle_time": 0
-      },
-      {
-        "timestamp": 1763045309.2352417,
-        "cycle": 2,
-        "fps": 60,
-        "planning_time": 0.0019928614298502603,
-        "execution_time": 1.6679781675338745,
         "vision_time": 0,
         "total_cycle_time": 0
       }
     ]
   },
   "diversity": {
-    "score": 0.3333333333333333,
+    "score": 1.0,
     "unique_actions": 1,
-    "total_actions": 3,
-    "variety_rate": 0.3333333333333333,
+    "total_actions": 1,
+    "variety_rate": 1.0,
     "action_distribution": {
-      "look_around": 3
+      "look_around": 1
     }
   },
   "stats": {
@@ -158,7 +116,7 @@
     "rl_actions": 0,
     "llm_actions": 0,
     "heuristic_actions": 0,
-    "total_actions": 3
+    "total_actions": 1
   },
   "world_model": {
     "beliefs": {},
