@@ -3828,6 +3828,56 @@ Strongest System: {stats['strongest_system']} ({stats['strongest_weight']:.2f})"
                     # Save RL model periodically
                     if cycle_count % 50 == 0:
                         self.rl_learner.save('skyrim_rl_model.pkl')
+                
+                # Cloud RL: Store rich experience with cloud evaluation
+                if self.cloud_rl_memory is not None and after_consciousness:
+                    from singularis.skyrim.cloud_rl_system import Experience
+                    
+                    # Build state vector (simple encoding for now)
+                    state_vec = np.array([
+                        perception.get('game_state', {}).get('health', 100) / 100.0 if isinstance(perception.get('game_state'), dict) else getattr(perception.get('game_state'), 'health', 100) / 100.0,
+                        perception.get('game_state', {}).get('stamina', 100) / 100.0 if isinstance(perception.get('game_state'), dict) else getattr(perception.get('game_state'), 'stamina', 100) / 100.0,
+                        perception.get('game_state', {}).get('magicka', 100) / 100.0 if isinstance(perception.get('game_state'), dict) else getattr(perception.get('game_state'), 'magicka', 100) / 100.0,
+                        float(perception.get('game_state', {}).get('in_combat', False) if isinstance(perception.get('game_state'), dict) else getattr(perception.get('game_state'), 'in_combat', False)),
+                        float(perception.get('game_state', {}).get('enemies_nearby', 0)) / 10.0 if isinstance(perception.get('game_state'), dict) else float(getattr(perception.get('game_state'), 'enemies_nearby', 0)) / 10.0
+                    ])
+                    
+                    next_state_vec = np.array([
+                        after_state.get('health', 100) / 100.0,
+                        after_state.get('stamina', 100) / 100.0,
+                        after_state.get('magicka', 100) / 100.0,
+                        float(after_state.get('in_combat', False)),
+                        float(after_state.get('enemies_nearby', 0)) / 10.0
+                    ])
+                    
+                    cloud_exp = Experience(
+                        state_vector=state_vec,
+                        state_description=f"{scene_type.value}: {perception.get('visual_analysis', '')[:100]}",
+                        scene_type=scene_type.value,
+                        location=perception.get('game_state', {}).get('location_name', 'Unknown') if isinstance(perception.get('game_state'), dict) else getattr(perception.get('game_state'), 'location_name', 'Unknown'),
+                        health=float(state_vec[0] * 100),
+                        stamina=float(state_vec[1] * 100),
+                        magicka=float(state_vec[2] * 100),
+                        enemies_nearby=int(state_vec[4] * 10),
+                        in_combat=bool(state_vec[3]),
+                        action=str(action),
+                        action_type=action.action_type.value if hasattr(action, 'action_type') else 'unknown',
+                        reward=0.0,  # Will be computed by cloud RL
+                        next_state_vector=next_state_vec,
+                        next_state_description=f"After {action}",
+                        done=False,
+                        coherence_before=self.current_consciousness.coherence if self.current_consciousness else 0.0,
+                        coherence_after=after_consciousness.coherence,
+                        coherence_delta=after_consciousness.coherence_delta(self.current_consciousness) if self.current_consciousness else 0.0,
+                        episode_id=int(time.time()),
+                        step_id=cycle_count
+                    )
+                    
+                    # Add to cloud RL memory (will auto-save periodically)
+                    import asyncio
+                    asyncio.create_task(self.cloud_rl_memory.add(cloud_exp, request_cloud_evaluation=(cycle_count % 10 == 0)))
+                    print(f"[CLOUD-RL] Experience added to memory (total: {len(self.cloud_rl_memory.experiences)})")
+
 
                 # 8. UPDATE STATS (with consciousness tracking)
                 self.stats['cycles_completed'] = cycle_count

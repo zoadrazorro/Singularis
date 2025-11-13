@@ -202,11 +202,17 @@ class LocalMoEOrchestrator:
         
         # Build prompt for experts
         visual_info = perception.get('visual_analysis', 'No visual analysis available')
-        scene_type = perception.get('scene_type', 'unknown')
+        scene_type_str = perception.get('scene_type', 'unknown')
+        
+        # Convert scene_type to string if it's an enum
+        if hasattr(scene_type_str, 'value'):
+            scene_type_str = scene_type_str.value
+        elif not isinstance(scene_type_str, str):
+            scene_type_str = str(scene_type_str)
         
         expert_prompt = f"""Analyze this Skyrim gameplay situation:
 
-SCENE: {scene_type}
+SCENE: {scene_type_str}
 VISUAL: {visual_info[:200]}...
 
 GAME STATE:
