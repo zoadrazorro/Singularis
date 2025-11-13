@@ -1,65 +1,59 @@
 {
-  "session_id": "skyrim_agi_20251113_175517_a08bc0d4",
-  "cycle": 4,
-  "uptime": 87.34921097755432,
-  "last_update": "2025-11-13T17:56:44.762779",
-  "current_action": "activate",
+  "session_id": "skyrim_agi_20251113_180231_a5f752a8",
+  "cycle": 3,
+  "uptime": 37.958136796951294,
+  "last_update": "2025-11-13T18:03:09.834366",
+  "current_action": "explore",
   "last_action": "attack",
   "action_source": "unknown",
   "recent_actions": [
     {
       "name": "attack",
-      "timestamp": 1763074527.3268938,
+      "timestamp": 1763074961.4818199,
       "cycle": 0,
       "source": "unknown"
     },
     {
       "name": "attack",
-      "timestamp": 1763074533.20771,
+      "timestamp": 1763074967.4739244,
       "cycle": 1,
       "source": "unknown"
     },
     {
       "name": "attack",
-      "timestamp": 1763074539.980639,
+      "timestamp": 1763074974.9252193,
       "cycle": 2,
       "source": "unknown"
     },
     {
-      "name": "attack",
-      "timestamp": 1763074547.1367414,
+      "name": "explore",
+      "timestamp": 1763074989.8343532,
       "cycle": 3,
-      "source": "unknown"
-    },
-    {
-      "name": "activate",
-      "timestamp": 1763074604.7627265,
-      "cycle": 4,
       "source": "unknown"
     }
   ],
   "perception": {
-    "scene_type": "SceneType.OUTDOOR_WILDERNESS",
+    "scene_type": "SceneType.COMBAT",
     "objects_detected": [
       [
         "dragon",
-        0.06755629926919937
-      ],
-      [
-        "mage",
-        0.06712174415588379
+        0.06787862628698349
       ],
       [
         "sword",
-        0.06688793748617172
+        0.06720263510942459
       ],
       [
         "armor",
-        0.06685621291399002
+        0.06716330349445343
       ],
       [
-        "bow",
-        0.06680408865213394
+        "mage",
+        0.06714122742414474
+      ],
+      [
+        "warrior",
+        0.06693150103092194
       ]
     ],
     "enemies_nearby": false,
@@ -67,48 +61,42 @@
     "last_vision_time": 0
   },
   "game_state": {
-    "health": 75.65686510860391,
-    "magicka": 100.0,
-    "stamina": 100.0,
-    "in_combat": false,
+    "health": 20.0,
+    "magicka": 37.43327202817576,
+    "stamina": 5.0,
+    "in_combat": true,
     "in_menu": false,
-    "location": "Pine Forest"
+    "location": "Skyrim"
   },
   "consciousness": {
-    "coherence": 0.4782,
-    "phi": 0.4876,
+    "coherence": 0.42,
+    "phi": 0.49,
     "nodes_active": 22,
-    "trend": "increasing",
+    "trend": "stable",
     "history": [
       {
-        "timestamp": 1763074527.3268938,
+        "timestamp": 1763074961.4818199,
         "cycle": 0,
-        "coherence": 0.3742,
-        "phi": 0.5678
+        "coherence": 0.37,
+        "phi": 0.52
       },
       {
-        "timestamp": 1763074533.20771,
+        "timestamp": 1763074967.4739244,
         "cycle": 1,
         "coherence": 0.42,
-        "phi": 0.49
+        "phi": 0.47
       },
       {
-        "timestamp": 1763074539.980639,
+        "timestamp": 1763074974.9252193,
         "cycle": 2,
         "coherence": 0.42,
-        "phi": 0.49
+        "phi": 0.41
       },
       {
-        "timestamp": 1763074547.1367414,
+        "timestamp": 1763074989.8343532,
         "cycle": 3,
-        "coherence": 0.4231,
-        "phi": 0.4987
-      },
-      {
-        "timestamp": 1763074604.7627265,
-        "cycle": 4,
-        "coherence": 0.4782,
-        "phi": 0.4876
+        "coherence": 0.42,
+        "phi": 0.49
       }
     ]
   },
@@ -134,74 +122,65 @@
   },
   "performance": {
     "fps": 60,
-    "planning_time": 0.0045162677764892575,
-    "execution_time": 1.3768917918205261,
+    "planning_time": 1.5666685104370117,
+    "execution_time": 1.1901580492655437,
     "vision_time": 0,
     "total_cycle_time": 0,
     "history": [
       {
-        "timestamp": 1763074527.3268938,
+        "timestamp": 1763074961.4818199,
         "cycle": 0,
         "fps": 60,
-        "planning_time": 0.002407550811767578,
+        "planning_time": 0.0033130645751953125,
         "execution_time": 0.0,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763074533.20771,
+        "timestamp": 1763074967.4739244,
         "cycle": 1,
         "fps": 60,
-        "planning_time": 0.004382014274597168,
-        "execution_time": 0.4920327663421631,
+        "planning_time": 0.007622718811035156,
+        "execution_time": 0.45688390731811523,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763074539.980639,
+        "timestamp": 1763074974.9252193,
         "cycle": 2,
         "fps": 60,
-        "planning_time": 0.004968484242757161,
-        "execution_time": 1.4388014078140259,
+        "planning_time": 0.007469971974690755,
+        "execution_time": 1.6344144344329834,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763074547.1367414,
+        "timestamp": 1763074989.8343532,
         "cycle": 3,
         "fps": 60,
-        "planning_time": 0.0053768157958984375,
-        "execution_time": 1.378268877665202,
-        "vision_time": 0,
-        "total_cycle_time": 0
-      },
-      {
-        "timestamp": 1763074604.7627265,
-        "cycle": 4,
-        "fps": 60,
-        "planning_time": 0.0045162677764892575,
-        "execution_time": 1.3768917918205261,
+        "planning_time": 1.5666685104370117,
+        "execution_time": 1.1901580492655437,
         "vision_time": 0,
         "total_cycle_time": 0
       }
     ]
   },
   "diversity": {
-    "score": 0.4,
+    "score": 0.5,
     "unique_actions": 2,
-    "total_actions": 5,
-    "variety_rate": 0.4,
+    "total_actions": 4,
+    "variety_rate": 0.5,
     "action_distribution": {
-      "attack": 4,
-      "activate": 1
+      "attack": 3,
+      "explore": 1
     }
   },
   "stats": {
     "success_rate": 1.0,
-    "rl_actions": 2,
+    "rl_actions": 3,
     "llm_actions": 0,
     "heuristic_actions": 1,
-    "total_actions": 5
+    "total_actions": 4
   },
   "world_model": {
     "beliefs": {},

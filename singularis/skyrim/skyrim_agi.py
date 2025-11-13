@@ -4437,12 +4437,16 @@ Top Predicates:
                 # ═══════════════════════════════════════════════════════════
                 if self.voice_system and self.config.enable_voice:
                     try:
-                        reasoning_text = reasoning[:200] if reasoning else "Acting on intuition"
+                        # Get reasoning from last_reasoning if available
+                        reasoning_text = "Acting on intuition"
+                        if hasattr(self, 'last_reasoning') and self.last_reasoning:
+                            reasoning_text = self.last_reasoning.get('reasoning', 'Acting on intuition')
+                            if isinstance(reasoning_text, str) and len(reasoning_text) > 200:
+                                reasoning_text = reasoning_text[:200]
+                        
                         await self.speak_decision(
-                            decision=action,
-                            reasoning=reasoning_text,
-                            confidence=current_consciousness.coherence if current_consciousness else 0.5,
-                            cycle=cycle_count
+                            action=action,
+                            reason=reasoning_text
                         )
                         
                         # Record to Main Brain (every 10 cycles to avoid spam)
