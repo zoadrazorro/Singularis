@@ -3747,6 +3747,25 @@ EXTENDED THINKING PROCESS:
                             except Exception as e:
                                 print(f"[GPT-5] Sensorimotor guidance error: {e}")
                         
+                        # ═══════════════════════════════════════════════════════════
+                        # VOICE - Describe landscape/environment (every 15 cycles)
+                        # ═══════════════════════════════════════════════════════════
+                        if self.voice_system and self.config.enable_voice and cycle_count % 15 == 0:
+                            try:
+                                # Extract landscape description from Gemini visual analysis
+                                if gemini_visual and len(gemini_visual) > 50:
+                                    # Get first 2 sentences of visual description
+                                    sentences = gemini_visual.split('.')[:2]
+                                    landscape_desc = '. '.join(sentences).strip()
+                                    if landscape_desc:
+                                        await self.voice_system.speak(
+                                            text=f"I observe: {landscape_desc}",
+                                            priority=ThoughtPriority.HIGH,
+                                            category="observation"
+                                        )
+                            except Exception as e:
+                                print(f"[VOICE] Landscape commentary error: {e}")
+                        
                         # If Gemini provided visual, record its contribution
                         if gemini_visual:
                             self.hebbian.record_activation(
