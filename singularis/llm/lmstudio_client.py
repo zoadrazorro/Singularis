@@ -19,8 +19,8 @@ class LMStudioConfig:
     model_name: str = "microsoft/phi-4-mini-reasoning"
     temperature: float = 0.7
     max_tokens: int = 4096  # Increased for Phi-4 models
-    timeout: int = 30  # Reduced for faster failures and retries
-    request_timeout: int = 25  # Per-request timeout (slightly lower than session timeout)
+    timeout: int = 60  # Increased for heavy parallel load
+    request_timeout: int = 50  # Per-request timeout (slightly lower than session timeout)
     
 
 class LMStudioClient:

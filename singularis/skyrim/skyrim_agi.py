@@ -2515,17 +2515,27 @@ Based on this visual and contextual data, provide:
                 # Fix 6: Integrate menu learner into async mode
                 if scene_type in [SceneType.INVENTORY, SceneType.MAP]:
                     if not self.menu_learner.current_menu:
-                        self.menu_learner.enter_menu(scene_type.value)
+                        available_menu_actions = self.action_affordances.get_available_actions(
+                            scene_type=scene_type,
+                            game_state=game_state
+                        )
+                        self.menu_learner.enter_menu(scene_type.value, available_menu_actions)
                         print(f"[MENU-LEARNER] Entered {scene_type.value} menu")
                 
                 # Fix 7: Hook dialogue intelligence into planning
                 if scene_type == SceneType.DIALOGUE and hasattr(self, 'dialogue_intelligence'):
-                    dialogue_options = await self.dialogue_intelligence.analyze_dialogue_options(
-                        visual_context=perception.get('screenshot'),
-                        game_state=game_state
-                    )
-                    if dialogue_options:
-                        print(f"[DIALOGUE-INTELLIGENCE] Analyzed {len(dialogue_options)} dialogue options")
+                    # Extract dialogue options from perception if available
+                    dialogue_data = perception.get('dialogue', {})
+                    npc_name = dialogue_data.get('npc_name', 'Unknown')
+                    options = dialogue_data.get('options', [])
+                    if options:
+                        dialogue_choice = await self.dialogue_intelligence.analyze_dialogue_options(
+                            npc_name=npc_name,
+                            options=options,
+                            context=f"Scene: {scene_type.value}, HP: {game_state.health}"
+                        )
+                        if dialogue_choice:
+                            print(f"[DIALOGUE-INTELLIGENCE] Recommended: {dialogue_choice}")
                 
                 # Compute world state and consciousness (consciousness runs in parallel, no semaphore)
                 world_state = await self.agi.perceive({
@@ -5924,9 +5934,9 @@ QUICK DECISION - Choose ONE action from available list:"""
         if hasattr(self, 'current_consciousness') and self.current_consciousness:
             print(f"\n🧠 CONSCIOUSNESS:")
             print(f"  Coherence 𝒞:    {self.current_consciousness.coherence:.3f}")
-            print(f"  Ontical ℓₒ:    {self.current_consciousness.lumina_ontical:.3f}")
-            print(f"  Structural ℓₛ: {self.current_consciousness.lumina_structural:.3f}")
-            print(f"  Participatory ℓₚ: {self.current_consciousness.lumina_participatory:.3f}")
+            print(f"  Ontical ℓₒ:    {self.current_consciousness.coherence_ontical:.3f}")
+            print(f"  Structural ℓₛ: {self.current_consciousness.coherence_structural:.3f}")
+            print(f"  Participatory ℓₚ: {self.current_consciousness.coherence_participatory:.3f}")
         
         print(f"{'='*70}\n")
 
