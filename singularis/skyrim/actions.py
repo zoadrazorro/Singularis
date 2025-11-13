@@ -107,25 +107,43 @@ class SkyrimActions:
     4. Action timing and coordination
     """
 
-    # Default key bindings (can be customized)
+    # Default key bindings (Skyrim PC defaults)
     DEFAULT_KEYS = {
+        # Movement (WASD standard)
         ActionType.MOVE_FORWARD: 'w',
         ActionType.MOVE_BACKWARD: 's',
         ActionType.MOVE_LEFT: 'a',
         ActionType.MOVE_RIGHT: 'd',
         ActionType.JUMP: 'space',
-        ActionType.SPRINT: 'shift',
+        ActionType.SPRINT: 'alt',  # FIXED: Default is Alt, not Shift
         ActionType.SNEAK: 'ctrl',
+        
+        # Combat
         ActionType.ATTACK: 'left_click',
+        ActionType.POWER_ATTACK: 'left_click',  # Hold for power attack
         ActionType.BLOCK: 'right_click',
-        ActionType.HEAL: 'h',  # Healing spell hotkey
-        ActionType.ACTIVATE: 'e',
         ActionType.SHOUT: 'z',
+        ActionType.HEAL: 'h',  # Custom hotkey (user must set)
+        
+        # Interaction
+        ActionType.ACTIVATE: 'e',  # Use/Talk/Loot/Open
+        ActionType.WAIT: 't',  # FIXED: Default is T
+        ActionType.SLEEP: 'e',  # Same as activate when near bed
+        
+        # Menus (FIXED: Skyrim uses Tab for inventory, ESC for back)
         ActionType.OPEN_INVENTORY: 'tab',
-        ActionType.OPEN_MAP: 'm',
-        ActionType.OPEN_MAGIC: 'p',
-        ActionType.OPEN_SKILLS: 'k',
-        ActionType.BACK: 'tab',  # Tab exits menus/dialogues in Skyrim
+        ActionType.OPEN_MAP: 'm',  # FIXED: Default is M (not in Tab menu)
+        ActionType.OPEN_MAGIC: 'p',  # FIXED: Default is P (not in Tab menu)
+        ActionType.OPEN_SKILLS: 'k',  # FIXED: Default is K (not in Tab menu)
+        ActionType.BACK: 'esc',  # FIXED: ESC exits menus, not Tab
+        
+        # Camera (mouse movement - these are relative)
+        ActionType.LOOK_UP: 'mouse_up',
+        ActionType.LOOK_DOWN: 'mouse_down',
+        ActionType.LOOK_LEFT: 'mouse_left',
+        ActionType.LOOK_RIGHT: 'mouse_right',
+        
+        # Special
         ActionType.QUICK_SAVE: 'f5',
         ActionType.QUICK_LOAD: 'f9',
     }
@@ -280,6 +298,20 @@ class SkyrimActions:
 
         action_type = action.action_type
         duration = action.duration
+
+        # Handle camera movements (mouse relative movement)
+        if action_type == ActionType.LOOK_UP:
+            await self.look_up(30.0)
+            return True
+        elif action_type == ActionType.LOOK_DOWN:
+            await self.look_down(30.0)
+            return True
+        elif action_type == ActionType.LOOK_LEFT:
+            await self.look_horizontal(-30.0)
+            return True
+        elif action_type == ActionType.LOOK_RIGHT:
+            await self.look_horizontal(30.0)
+            return True
 
         # Get key binding
         key = self.keys.get(action_type)
