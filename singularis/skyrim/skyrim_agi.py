@@ -254,6 +254,11 @@ class SkyrimAGI:
         print("  [5b/11] Expert rule system...")
         from .expert_rules import RuleEngine
         self.rule_engine = RuleEngine()
+        
+        # 5c. Emergency Rules System (NEW - critical situation handler)
+        print("  [5c/11] Emergency response rules...")
+        from .emergency_rules import EmergencyRules
+        self.emergency_rules = EmergencyRules()
         print("[BRIDGE] Consciousness bridge initialized")
         print("[BRIDGE] This unifies game quality and philosophical coherence 𝒞")
         
@@ -4758,6 +4763,44 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                 print(f"[RULES] No rules fired")
             
             print(f"[PLANNING-CHECKPOINT] Rule engine: {time.time() - checkpoint_rules:.3f}s")
+
+            # EMERGENCY RULES - Check for critical situations requiring immediate override
+            checkpoint_emergency = time.time()
+            print("\n[EMERGENCY] Evaluating emergency rules...")
+            
+            # Prepare emergency context (includes sensorimotor status)
+            emergency_context = {
+                'visual_similarity': perception.get('visual_similarity', 0.0),
+                'recent_actions': self.action_history[-10:] if hasattr(self, 'action_history') else [],
+                'coherence': self.current_consciousness.coherence if self.current_consciousness else 0.5,
+                'action_confidence': 0.84,  # Default from logic system
+                'sensorimotor_status': perception.get('sensorimotor_status', ''),
+                'cycles_since_change': getattr(self.emergency_rules, 'cycles_since_strategy_change', 0),
+                'coherence_history': self.coherence_history[-10:] if hasattr(self, 'coherence_history') else [],
+            }
+            
+            # Evaluate emergency state
+            emergency_response = self.emergency_rules.evaluate_emergency_state(emergency_context)
+            
+            if emergency_response:
+                print(f"[EMERGENCY] {emergency_response.level.name} situation detected!")
+                print(f"[EMERGENCY] Reason: {emergency_response.reason}")
+                
+                if emergency_response.override and emergency_response.action:
+                    # CRITICAL: Immediate override
+                    print(f"[EMERGENCY] ⚡ OVERRIDE: Using emergency action: {emergency_response.action}")
+                    print(f"[PLANNING-CHECKPOINT] Emergency override: {time.time() - checkpoint_emergency:.3f}s")
+                    self.stats['heuristic_action_count'] += 1
+                    self.stats['emergency_overrides'] = self.stats.get('emergency_overrides', 0) + 1
+                    return emergency_response.action
+                elif emergency_response.confidence_modifier < 1.0:
+                    # Modify confidence for later planning
+                    print(f"[EMERGENCY] Confidence modifier: {emergency_response.confidence_modifier:.2f}x")
+                    emergency_context['action_confidence'] *= emergency_response.confidence_modifier
+            else:
+                print(f"[EMERGENCY] No emergency conditions detected")
+            
+            print(f"[PLANNING-CHECKPOINT] Emergency rules: {time.time() - checkpoint_emergency:.3f}s")
 
             # Prepare state dict for RL
             state_dict = game_state.to_dict()
