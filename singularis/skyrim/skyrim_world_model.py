@@ -42,6 +42,52 @@ class LogicPredicate:
         return (self.name == other.name and 
                 self.args == other.args and 
                 self.truth_value == other.truth_value)
+    
+    def is_variable(self, arg: str) -> bool:
+        """Check if an argument is a variable (starts with uppercase or '?')."""
+        return arg.startswith('?') or (len(arg) > 0 and arg[0].isupper() and arg not in ['Player', 'NPC', 'Enemy', 'Guards', 'Location', 'Item', 'Quest'])
+    
+    def unify(self, other: 'LogicPredicate', bindings: Optional[Dict[str, str]] = None) -> Optional[Dict[str, str]]:
+        """Unify this predicate with another, returning variable bindings if successful."""
+        if bindings is None:
+            bindings = {}
+        
+        # Names must match
+        if self.name != other.name or self.truth_value != other.truth_value:
+            return None
+        
+        # Arguments must unify
+        if len(self.args) != len(other.args):
+            return None
+        
+        new_bindings = bindings.copy()
+        for arg1, arg2 in zip(self.args, other.args):
+            # If both are variables
+            if self.is_variable(arg1) and self.is_variable(arg2):
+                if arg1 in new_bindings:
+                    if new_bindings[arg1] != arg2:
+                        return None
+                else:
+                    new_bindings[arg1] = arg2
+            # If arg1 is variable
+            elif self.is_variable(arg1):
+                if arg1 in new_bindings:
+                    if new_bindings[arg1] != arg2:
+                        return None
+                else:
+                    new_bindings[arg1] = arg2
+            # If arg2 is variable
+            elif self.is_variable(arg2):
+                if arg2 in new_bindings:
+                    if new_bindings[arg2] != arg1:
+                        return None
+                else:
+                    new_bindings[arg2] = arg1
+            # Both constants - must match
+            elif arg1 != arg2:
+                return None
+        
+        return new_bindings
 
 
 @dataclass
@@ -50,10 +96,31 @@ class LogicRule:
     premises: List[LogicPredicate]
     conclusion: LogicPredicate
     confidence: float = 1.0  # How certain we are about this rule
+    usage_count: int = 0  # How many times this rule has been used
+    success_count: int = 0  # How many times it led to successful outcomes
+    last_used_cycle: int = 0  # Track when rule was last used
     
     def __str__(self):
         prem_str = " ∧ ".join(str(p) for p in self.premises)
-        return f"{prem_str} → {self.conclusion} (confidence={self.confidence:.2f})"
+        usage_str = f" [used {self.usage_count}x, success {self.success_count}x]" if self.usage_count > 0 else ""
+        return f"{prem_str} → {self.conclusion} (confidence={self.confidence:.2f}){usage_str}"
+    
+    def update_confidence_from_outcome(self, success: bool, learning_rate: float = 0.05):
+        """Adjust rule confidence based on outcome."""
+        self.usage_count += 1
+        if success:
+            self.success_count += 1
+            # Increase confidence if successful
+            self.confidence = min(0.99, self.confidence + learning_rate)
+        else:
+            # Decrease confidence if failed
+            self.confidence = max(0.3, self.confidence - learning_rate * 0.5)
+    
+    def get_success_rate(self) -> float:
+        """Get empirical success rate."""
+        if self.usage_count == 0:
+            return 0.0
+        return self.success_count / self.usage_count
 
 
 class LogicEngine:
@@ -131,20 +198,19 @@ class LogicEngine:
         
         return False
     
-    def _unify(self, pred1: LogicPredicate, pred2: LogicPredicate) -> bool:
+    def _unify(self, pred1: LogicPredicate, pred2: LogicPredicate, bindings: Optional[Dict[str, str]] = None) -> Optional[Dict[str, str]]:
         """
-        Simple unification check (exact match for now).
+        Unify two predicates with variable support.
         
         Args:
             pred1: First predicate
             pred2: Second predicate
+            bindings: Current variable bindings
             
         Returns:
-            True if predicates unify
+            Variable bindings if unification succeeds, None otherwise
         """
-        return (pred1.name == pred2.name and 
-                pred1.args == pred2.args and
-                pred1.truth_value == pred2.truth_value)
+        return pred1.unify(pred2, bindings)
     
     def forward_chain(self) -> Set[LogicPredicate]:
         """
@@ -455,7 +521,179 @@ class SkyrimWorldModel:
             confidence=0.95
         ))
         
-        print("[OK] Initialized Skyrim symbolic logic rules")
+        # === OUTDOOR EXPLORATION RULES ===
+        
+        # Rule: If outdoor AND daytime AND no enemies, then should explore landmarks
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("IsOutdoor", ("Location",), True),
+                LogicPredicate("IsDaytime", ("Environment",), True),
+                LogicPredicate("EnemyNearby", ("Player",), False)
+            ],
+            conclusion=LogicPredicate("ShouldExploreLandmarks", ("Player",), True),
+            confidence=0.75
+        ))
+        
+        # Rule: If outdoor AND high elevation AND can see distance, then should scout
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("IsOutdoor", ("Location",), True),
+                LogicPredicate("HighElevation", ("Player",), True),
+                LogicPredicate("GoodVisibility", ("Environment",), True)
+            ],
+            conclusion=LogicPredicate("ShouldScout", ("Player",), True),
+            confidence=0.70
+        ))
+        
+        # Rule: If outdoor AND nighttime AND enemies nearby, then seek cover
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("IsOutdoor", ("Location",), True),
+                LogicPredicate("IsNighttime", ("Environment",), True),
+                LogicPredicate("EnemyNearby", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldSeekCover", ("Player",), True),
+            confidence=0.80
+        ))
+        
+        # Rule: If path blocked AND alternate route visible, then should navigate alternate
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("PathBlocked", ("Player",), True),
+                LogicPredicate("AlternateRouteVisible", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldTakeAlternateRoute", ("Player",), True),
+            confidence=0.85
+        ))
+        
+        # Rule: If stamina low AND not in combat AND outdoor, then should rest
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("StaminaLow", ("Player",), True),
+                LogicPredicate("InCombat", ("Player",), False),
+                LogicPredicate("IsOutdoor", ("Location",), True)
+            ],
+            conclusion=LogicPredicate("ShouldRest", ("Player",), True),
+            confidence=0.78
+        ))
+        
+        # === DUNGEON NAVIGATION RULES ===
+        
+        # Rule: If in dungeon AND unexplored paths, then should explore systematically
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("InDungeon", ("Location",), True),
+                LogicPredicate("HasUnexploredPaths", ("Location",), True)
+            ],
+            conclusion=LogicPredicate("ShouldExploreSystematically", ("Player",), True),
+            confidence=0.82
+        ))
+        
+        # Rule: If in dungeon AND hear enemy sounds, then should proceed cautiously
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("InDungeon", ("Location",), True),
+                LogicPredicate("HearEnemySounds", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldProceedCautiously", ("Player",), True),
+            confidence=0.88
+        ))
+        
+        # Rule: If in dungeon AND found treasure, then check for traps
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("InDungeon", ("Location",), True),
+                LogicPredicate("TreasureNearby", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldCheckForTraps", ("Player",), True),
+            confidence=0.80
+        ))
+        
+        # Rule: If in dungeon AND resources low, then should consider retreat
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("InDungeon", ("Location",), True),
+                LogicPredicate("ResourcesLow", ("Player",), True),
+                LogicPredicate("DeepInDungeon", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldConsiderRetreat", ("Player",), True),
+            confidence=0.72
+        ))
+        
+        # Rule: If in dungeon AND found exit, then should mark for return
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("InDungeon", ("Location",), True),
+                LogicPredicate("FoundExit", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldMarkExit", ("Player",), True),
+            confidence=0.90
+        ))
+        
+        # === SOCIAL INTERACTION RULES ===
+        
+        # Rule: If NPC is merchant AND inventory full, then should sell items
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("IsMerchant", ("NPC",), True),
+                LogicPredicate("InventoryFull", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldSellItems", ("Player",), True),
+            confidence=0.85
+        ))
+        
+        # Rule: If NPC is quest giver AND no active quest, then should inquire
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("IsQuestGiver", ("NPC",), True),
+                LogicPredicate("HasActiveQuest", ("Player",), False)
+            ],
+            conclusion=LogicPredicate("ShouldInquireQuest", ("Player",), True),
+            confidence=0.80
+        ))
+        
+        # Rule: If NPC is guard AND has bounty, then should avoid interaction
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("IsGuard", ("NPC",), True),
+                LogicPredicate("HasBounty", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldAvoidInteraction", ("Player",), True),
+            confidence=0.95
+        ))
+        
+        # Rule: If NPC is companion AND health low, then should protect
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("IsCompanion", ("NPC",), True),
+                LogicPredicate("NPCHealthLow", ("NPC",), True)
+            ],
+            conclusion=LogicPredicate("ShouldProtectCompanion", ("Player",), True),
+            confidence=0.88
+        ))
+        
+        # Rule: If in dialogue AND speech skill high, then should persuade
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("InDialogue", ("Player",), True),
+                LogicPredicate("SpeechSkillHigh", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldAttemptPersuasion", ("Player",), True),
+            confidence=0.75
+        ))
+        
+        # Rule: If NPC is hostile AND can intimidate, then should try intimidation
+        self.logic_engine.add_rule(LogicRule(
+            premises=[
+                LogicPredicate("IsHostile", ("NPC",), True),
+                LogicPredicate("CanIntimidate", ("Player",), True),
+                LogicPredicate("InDialogue", ("Player",), True)
+            ],
+            conclusion=LogicPredicate("ShouldIntimidate", ("Player",), True),
+            confidence=0.70
+        ))
+        
+        print("[OK] Initialized Skyrim symbolic logic rules (32 rules total)")
 
     def learn_from_experience(
         self,
@@ -834,6 +1072,7 @@ class SkyrimWorldModel:
     def update_logic_facts_from_state(self, game_state: Dict[str, Any]):
         """
         Update symbolic logic facts based on current game state.
+        Enhanced with more detailed predicates for better context recognition.
         
         Args:
             game_state: Current game state dictionary
@@ -841,50 +1080,80 @@ class SkyrimWorldModel:
         # Clear old temporal facts (keep persistent knowledge)
         # We'll selectively remove and re-add based on current state
         
-        # Health status
+        # === HEALTH STATUS (detailed) ===
         health = game_state.get('health', 100)
         if health < 30:
             self.logic_engine.add_fact(LogicPredicate("HealthCritical", ("Player",), True))
             self.logic_engine.remove_fact(LogicPredicate("HealthLow", ("Player",), True))
+            self.logic_engine.remove_fact(LogicPredicate("HealthModerate", ("Player",), True))
         elif health < 50:
             self.logic_engine.add_fact(LogicPredicate("HealthLow", ("Player",), True))
             self.logic_engine.remove_fact(LogicPredicate("HealthCritical", ("Player",), True))
-        else:
-            self.logic_engine.remove_fact(LogicPredicate("HealthLow", ("Player",), True))
+            self.logic_engine.remove_fact(LogicPredicate("HealthModerate", ("Player",), True))
+        elif health < 75:
+            self.logic_engine.add_fact(LogicPredicate("HealthModerate", ("Player",), True))
             self.logic_engine.remove_fact(LogicPredicate("HealthCritical", ("Player",), True))
+            self.logic_engine.remove_fact(LogicPredicate("HealthLow", ("Player",), True))
+        else:
+            self.logic_engine.remove_fact(LogicPredicate("HealthCritical", ("Player",), True))
+            self.logic_engine.remove_fact(LogicPredicate("HealthLow", ("Player",), True))
+            self.logic_engine.remove_fact(LogicPredicate("HealthModerate", ("Player",), True))
         
-        # Combat status
+        # === STAMINA STATUS ===
+        stamina = game_state.get('stamina', 100)
+        if stamina < 30:
+            self.logic_engine.add_fact(LogicPredicate("StaminaLow", ("Player",), True))
+        else:
+            self.logic_engine.remove_fact(LogicPredicate("StaminaLow", ("Player",), True))
+        
+        # === COMBAT STATUS ===
         in_combat = game_state.get('in_combat', False)
         if in_combat:
             self.logic_engine.add_fact(LogicPredicate("InCombat", ("Player",), True))
         else:
             self.logic_engine.remove_fact(LogicPredicate("InCombat", ("Player",), True))
         
-        # Stealth status
+        # === STEALTH STATUS ===
         is_sneaking = game_state.get('is_sneaking', False)
         if is_sneaking:
             self.logic_engine.add_fact(LogicPredicate("InStealth", ("Player",), True))
         else:
             self.logic_engine.remove_fact(LogicPredicate("InStealth", ("Player",), True))
         
-        # Bounty status
+        # === BOUNTY STATUS ===
         bounty = game_state.get('bounty', 0)
         if bounty > 0:
             self.logic_engine.add_fact(LogicPredicate("HasBounty", ("Player",), True))
         else:
             self.logic_engine.remove_fact(LogicPredicate("HasBounty", ("Player",), True))
         
-        # Location status
+        # === LOCATION CONTEXT (detailed) ===
         location = game_state.get('location', '')
+        scene_type = game_state.get('scene', 'unknown')
+        
         if location:
-            # Check if in a city
+            # Cities
             cities = ['Whiterun', 'Solitude', 'Riften', 'Windhelm', 'Markarth']
             if any(city in location for city in cities):
                 self.logic_engine.add_fact(LogicPredicate("InCity", ("Player",), True))
+                self.logic_engine.remove_fact(LogicPredicate("IsOutdoor", ("Location",), True))
+                self.logic_engine.remove_fact(LogicPredicate("InDungeon", ("Location",), True))
+            # Dungeons
+            elif any(dungeon in location.lower() for dungeon in ['cave', 'ruin', 'barrow', 'fort', 'mine']):
+                self.logic_engine.add_fact(LogicPredicate("InDungeon", ("Location",), True))
+                self.logic_engine.remove_fact(LogicPredicate("InCity", ("Player",), True))
+                self.logic_engine.remove_fact(LogicPredicate("IsOutdoor", ("Location",), True))
+            # Outdoor
+            elif 'outdoor' in scene_type.lower() or 'wilderness' in scene_type.lower():
+                self.logic_engine.add_fact(LogicPredicate("IsOutdoor", ("Location",), True))
+                self.logic_engine.remove_fact(LogicPredicate("InCity", ("Player",), True))
+                self.logic_engine.remove_fact(LogicPredicate("InDungeon", ("Location",), True))
             else:
                 self.logic_engine.remove_fact(LogicPredicate("InCity", ("Player",), True))
+                self.logic_engine.remove_fact(LogicPredicate("InDungeon", ("Location",), True))
+                self.logic_engine.remove_fact(LogicPredicate("IsOutdoor", ("Location",), True))
         
-        # Enemy status
+        # === ENEMY STATUS (detailed) ===
         enemies_nearby = game_state.get('enemies_nearby', 0)
         if enemies_nearby > 0:
             self.logic_engine.add_fact(LogicPredicate("EnemyNearby", ("Player",), True))
@@ -896,21 +1165,52 @@ class SkyrimWorldModel:
             self.logic_engine.remove_fact(LogicPredicate("EnemyNearby", ("Player",), True))
             self.logic_engine.remove_fact(LogicPredicate("Outnumbered", ("Player",), True))
         
-        # Magicka status
+        # === RESOURCE STATUS ===
         magicka = game_state.get('magicka', 100)
         if magicka > 30:
             self.logic_engine.add_fact(LogicPredicate("HasMagicka", ("Player",), True))
         else:
             self.logic_engine.remove_fact(LogicPredicate("HasMagicka", ("Player",), True))
         
-        # NPC hostility (from relationship tracking)
+        # Resources low check (health + stamina + magicka)
+        resources_low = (health < 40 and stamina < 40) or (health < 40 and magicka < 40)
+        if resources_low:
+            self.logic_engine.add_fact(LogicPredicate("ResourcesLow", ("Player",), True))
+        else:
+            self.logic_engine.remove_fact(LogicPredicate("ResourcesLow", ("Player",), True))
+        
+        # === DIALOGUE STATUS ===
+        if 'dialogue' in scene_type.lower():
+            self.logic_engine.add_fact(LogicPredicate("InDialogue", ("Player",), True))
+        else:
+            self.logic_engine.remove_fact(LogicPredicate("InDialogue", ("Player",), True))
+        
+        # === INVENTORY STATUS ===
+        # Note: This would need actual inventory data from game state
+        # For now, using placeholder logic
+        
+        # === TIME/ENVIRONMENT (if available) ===
+        # These would require additional data from game state
+        # Placeholder for future enhancement
+        
+        # === NPC RELATIONSHIPS (enhanced) ===
         for npc_name, relationship in self.npc_relationships.items():
             if relationship.relationship_value < -0.3:
                 self.logic_engine.add_fact(LogicPredicate("IsHostile", (npc_name,), True))
                 self.logic_engine.remove_fact(LogicPredicate("IsFriend", (npc_name,), True))
+                self.logic_engine.remove_fact(LogicPredicate("IsCompanion", (npc_name,), True))
+            elif relationship.relationship_value > 0.7:
+                self.logic_engine.add_fact(LogicPredicate("IsCompanion", (npc_name,), True))
+                self.logic_engine.add_fact(LogicPredicate("IsFriend", (npc_name,), True))
+                self.logic_engine.remove_fact(LogicPredicate("IsHostile", (npc_name,), True))
             elif relationship.relationship_value > 0.3:
                 self.logic_engine.add_fact(LogicPredicate("IsFriend", (npc_name,), True))
                 self.logic_engine.remove_fact(LogicPredicate("IsHostile", (npc_name,), True))
+                self.logic_engine.remove_fact(LogicPredicate("IsCompanion", (npc_name,), True))
+            else:
+                self.logic_engine.remove_fact(LogicPredicate("IsFriend", (npc_name,), True))
+                self.logic_engine.remove_fact(LogicPredicate("IsHostile", (npc_name,), True))
+                self.logic_engine.remove_fact(LogicPredicate("IsCompanion", (npc_name,), True))
 
     def query_logic_recommendation(self, game_state: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -997,9 +1297,50 @@ class SkyrimWorldModel:
     def _unify_predicates(self, pred1: LogicPredicate, pred2: LogicPredicate) -> bool:
         """Check if two predicates unify."""
         return (pred1.name == pred2.name and 
-                pred1.args == pred2.args and
+                pred1.args == pred2.args and 
                 pred1.truth_value == pred2.truth_value)
-
+    
+    def update_rule_confidences_from_outcome(
+        self,
+        used_recommendations: List[str],
+        outcome_success: bool,
+        cycle_number: int
+    ):
+        """
+        Update confidence of rules that were used to generate recommendations.
+        
+        Args:
+            used_recommendations: List of recommendation types that were followed
+            outcome_success: Whether the outcome was successful
+            cycle_number: Current cycle number
+        """
+        # Map recommendation types to conclusion predicates
+        recommendation_mapping = {
+            'should_defend': LogicPredicate("ShouldDefend", ("Player",), True),
+            'should_heal': LogicPredicate("ShouldHeal", ("Player",), True),
+            'should_retreat': LogicPredicate("ShouldRetreat", ("Player",), True),
+            'should_use_magic': LogicPredicate("ShouldUseMagic", ("Player",), True),
+            'should_avoid_detection': LogicPredicate("ShouldAvoidDetection", ("Player",), True),
+        }
+        
+        # Find and update rules that generated these recommendations
+        for rec_key in used_recommendations:
+            if rec_key in recommendation_mapping:
+                target_conclusion = recommendation_mapping[rec_key]
+                
+                # Find rules with this conclusion
+                for rule in self.logic_engine.rules:
+                    if (rule.conclusion.name == target_conclusion.name and 
+                        rule.conclusion.args == target_conclusion.args):
+                        # Update confidence based on outcome
+                        rule.update_confidence_from_outcome(outcome_success)
+                        rule.last_used_cycle = cycle_number
+                        
+                        if outcome_success:
+                            print(f"[LOGIC-LEARNING] ✓ Rule confidence increased: {rule.conclusion} → {rule.confidence:.2f}")
+                        else:
+                            print(f"[LOGIC-LEARNING] ✗ Rule confidence decreased: {rule.conclusion} → {rule.confidence:.2f}")
+    
     def predict_outcome(
         self,
         action: str,
