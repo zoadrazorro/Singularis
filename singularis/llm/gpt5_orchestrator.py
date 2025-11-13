@@ -296,7 +296,7 @@ Be concise but insightful. Focus on coordination and optimization."""
             payload = {
                 "model": self.model,
                 "messages": messages,
-                "temperature": 0.7,
+                # GPT-5 only supports temperature=1 (default), so omit it
                 "max_completion_tokens": 1024,  # GPT-5 uses max_completion_tokens, not max_tokens
             }
             
