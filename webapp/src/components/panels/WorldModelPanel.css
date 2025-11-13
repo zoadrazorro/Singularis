@@ -1,0 +1,81 @@
+.world-model-panel {
+  padding: 20px;
+  color: #fff;
+}
+
+.strategy-display {
+  margin-bottom: 30px;
+}
+
+.strategy-display h3 {
+  margin-bottom: 15px;
+  color: #2ecc71;
+}
+
+.strategy-badge {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.2));
+  border: 2px solid rgba(46, 204, 113, 0.3);
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  font-size: 2em;
+  font-weight: bold;
+  color: #2ecc71;
+  letter-spacing: 3px;
+}
+
+.goals-section, .beliefs-section {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.goals-section h3, .beliefs-section h3 {
+  margin: 0 0 15px 0;
+  color: #f39c12;
+}
+
+.goals-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.goal-item {
+  background: rgba(243, 156, 18, 0.1);
+  border-left: 4px solid #f39c12;
+  padding: 12px 15px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+}
+
+.beliefs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.belief-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.belief-key {
+  color: #aaa;
+  font-weight: bold;
+}
+
+.belief-value {
+  color: #fff;
+}
+
+.no-data {
+  color: #666;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}

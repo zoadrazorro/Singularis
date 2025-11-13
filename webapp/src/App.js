@@ -1,18 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import Dashboard from './components/Dashboard';
+import SkyrimDashboard from './components/SkyrimDashboard';
 
 function App() {
   const [progress, setProgress] = useState(null);
   const [connected, setConnected] = useState(false);
   const [ws, setWs] = useState(null);
+  const [mode, setMode] = useState('learning'); // 'learning' or 'skyrim'
 
   useEffect(() => {
     let reconnectTimeout;
     
     const connectWebSocket = () => {
-      // Connect to WebSocket
-      const websocket = new WebSocket('ws://localhost:5001');
+      // Connect to WebSocket with mode parameter
+      const wsUrl = mode === 'skyrim' 
+        ? 'ws://localhost:5001?mode=skyrim'
+        : 'ws://localhost:5001';
+      const websocket = new WebSocket(wsUrl);
       
       websocket.onopen = () => {
         console.log('WebSocket connected');
@@ -58,24 +63,41 @@ function App() {
         websocket.close();
       }
     };
-  }, []);
+  }, [mode]); // Re-connect when mode changes
+
+  const toggleMode = () => {
+    setMode(mode === 'learning' ? 'skyrim' : 'learning');
+    setProgress(null); // Clear data when switching
+    if (ws) {
+      ws.close(); // Close existing connection
+    }
+  };
 
   return (
     <div className="App">
       <header className="App-header">
-        <h1>🧠 Singularis Learning Monitor</h1>
-        <div className="connection-status">
-          <span className={`status-dot ${connected ? 'connected' : 'disconnected'}`}></span>
-          <span>{connected ? 'Connected' : 'Disconnected'}</span>
+        <h1>🧠 Singularis {mode === 'skyrim' ? 'AGI Dashboard' : 'Learning Monitor'}</h1>
+        <div className="header-controls">
+          <button className="mode-toggle" onClick={toggleMode}>
+            {mode === 'learning' ? '🎮 Switch to Skyrim AGI' : '📚 Switch to Learning'}
+          </button>
+          <div className="connection-status">
+            <span className={`status-dot ${connected ? 'connected' : 'disconnected'}`}></span>
+            <span>{connected ? 'Connected' : 'Disconnected'}</span>
+          </div>
         </div>
       </header>
       
       {progress ? (
-        <Dashboard progress={progress} />
+        mode === 'skyrim' ? (
+          <SkyrimDashboard data={progress} connected={connected} />
+        ) : (
+          <Dashboard progress={progress} />
+        )
       ) : (
         <div className="loading">
           <div className="spinner"></div>
-          <p>Connecting to learning process...</p>
+          <p>Connecting to {mode === 'skyrim' ? 'Skyrim AGI' : 'learning process'}...</p>
         </div>
       )}
       
