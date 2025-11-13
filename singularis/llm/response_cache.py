@@ -2,15 +2,26 @@
 LLM Response Caching System for Singularis.
 
 Caches common scene→action patterns to reduce redundant LLM queries.
-Uses TTL-based expiration and similarity matching for intelligent retrieval.
+Uses TTL-based expiration, similarity matching, and optional FAISS for semantic search.
 """
 
 import hashlib
 import time
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 from dataclasses import dataclass, field
 from collections import OrderedDict
 from loguru import logger
+import numpy as np
+
+# Try to import FAISS for semantic similarity
+FAISS_AVAILABLE = False
+try:
+    import faiss
+    from sentence_transformers import SentenceTransformer
+    FAISS_AVAILABLE = True
+    logger.info("FAISS available for LLM response cache semantic search")
+except ImportError:
+    logger.debug("FAISS not available for cache, using basic similarity matching")
 
 
 @dataclass
@@ -23,6 +34,8 @@ class CacheEntry:
     scene_type: str = ""
     health_bucket: str = ""  # low/medium/high
     combat_state: bool = False
+    embedding: Optional[np.ndarray] = None  # Semantic embedding for FAISS search
+    context_text: str = ""  # Original text for embedding
 
 
 class LLMResponseCache:
@@ -58,9 +71,17 @@ class LLMResponseCache:
         self._hits = 0
         self._misses = 0
         
+        # FAISS semantic search
+        self.use_faiss = FAISS_AVAILABLE and enable_similarity
+        if self.use_faiss:
+            self.embedder = SentenceTransformer('all-MiniLM-L6-v2')
+            self.faiss_index = None
+            self.faiss_keys: List[str] = []
+            logger.info("LLM Cache: FAISS semantic search enabled")
+        
         logger.info(
             f"LLM Response Cache initialized: max_size={max_size}, "
-            f"ttl={ttl_seconds}s, similarity={enable_similarity}"
+            f"ttl={ttl_seconds}s, similarity={enable_similarity}, faiss={self.use_faiss}"
         )
     
     def _make_key(
@@ -179,7 +200,7 @@ class LLMResponseCache:
         in_combat: bool
     ) -> Optional[CacheEntry]:
         """
-        Find similar cache entry using fuzzy matching.
+        Find similar cache entry using FAISS or fuzzy matching.
         
         Args:
             scene_type: Target scene type
@@ -189,6 +210,32 @@ class LLMResponseCache:
         Returns:
             Similar entry or None
         """
+        # Try FAISS semantic search first
+        if self.use_faiss and self.faiss_index is not None and len(self.faiss_keys) > 0:
+            try:
+                # Create query embedding
+                query_text = f"scene:{scene_type} health:{health:.0f} combat:{in_combat}"
+                query_embedding = self.embedder.encode([query_text])[0].astype('float32')
+                query_embedding = query_embedding.reshape(1, -1)
+                
+                # Search top 3 similar entries
+                k = min(3, len(self.faiss_keys))
+                distances, indices = self.faiss_index.search(query_embedding, k)
+                
+                # Return first valid non-expired entry
+                for idx, distance in zip(indices[0], distances[0]):
+                    if idx >= 0 and idx < len(self.faiss_keys):
+                        key = self.faiss_keys[idx]
+                        if key in self._cache:
+                            entry = self._cache[key]
+                            age = time.time() - entry.timestamp
+                            if age < self.ttl:
+                                logger.debug(f"FAISS match: distance={distance:.3f}")
+                                return entry
+            except Exception as e:
+                logger.warning(f"FAISS search failed: {e}")
+        
+        # Fallback to basic similarity matching
         health_bucket = self._health_bucket(health)
         
         # Look for entries with same scene + health bucket + combat state
@@ -230,7 +277,20 @@ class LLMResponseCache:
         if len(self._cache) >= self.max_size:
             oldest_key = next(iter(self._cache))
             del self._cache[oldest_key]
+            # Rebuild FAISS index after eviction
+            if self.use_faiss:
+                self._rebuild_faiss_index()
             logger.debug(f"Cache evicted oldest entry (LRU)")
+        
+        # Create context text and embedding for FAISS
+        context_text = f"scene:{scene_type} health:{health:.0f} combat:{in_combat}"
+        embedding = None
+        
+        if self.use_faiss:
+            try:
+                embedding = self.embedder.encode([context_text])[0].astype('float32')
+            except Exception as e:
+                logger.warning(f"Failed to create embedding: {e}")
         
         # Store entry
         entry = CacheEntry(
@@ -239,14 +299,65 @@ class LLMResponseCache:
             timestamp=time.time(),
             scene_type=scene_type,
             health_bucket=self._health_bucket(health),
-            combat_state=in_combat
+            combat_state=in_combat,
+            embedding=embedding,
+            context_text=context_text
         )
         
         self._cache[key] = entry
+        
+        # Update FAISS index
+        if self.use_faiss and embedding is not None:
+            self._add_to_faiss_index(key, embedding)
+        
         logger.debug(
             f"Cache PUT: {scene_type}/{entry.health_bucket}/combat={in_combat} "
             f"(size={len(self._cache)}/{self.max_size})"
         )
+    
+    def _add_to_faiss_index(self, key: str, embedding: np.ndarray):
+        """Add embedding to FAISS index."""
+        try:
+            if self.faiss_index is None:
+                # Initialize FAISS index
+                dimension = len(embedding)
+                self.faiss_index = faiss.IndexFlatL2(dimension)
+                self.faiss_keys = []
+            
+            # Add to index
+            self.faiss_index.add(embedding.reshape(1, -1))
+            self.faiss_keys.append(key)
+            
+        except Exception as e:
+            logger.warning(f"Failed to add to FAISS index: {e}")
+    
+    def _rebuild_faiss_index(self):
+        """Rebuild FAISS index from current cache entries."""
+        if not self.use_faiss:
+            return
+        
+        try:
+            embeddings = []
+            keys = []
+            
+            for key, entry in self._cache.items():
+                if entry.embedding is not None:
+                    embeddings.append(entry.embedding)
+                    keys.append(key)
+            
+            if embeddings:
+                dimension = len(embeddings[0])
+                self.faiss_index = faiss.IndexFlatL2(dimension)
+                embeddings_array = np.array(embeddings).astype('float32')
+                self.faiss_index.add(embeddings_array)
+                self.faiss_keys = keys
+                logger.debug(f"FAISS index rebuilt with {len(keys)} entries")
+            else:
+                self.faiss_index = None
+                self.faiss_keys = []
+                
+        except Exception as e:
+            logger.warning(f"Failed to rebuild FAISS index: {e}")
     
     def clear(self):
         """Clear all cache entries."""

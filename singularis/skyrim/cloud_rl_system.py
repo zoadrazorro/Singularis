@@ -28,10 +28,18 @@ import numpy as np
 
 from loguru import logger
 
-# ChromaDB disabled - using simple fallback
+# Try FAISS for semantic search
 CHROMADB_AVAILABLE = False
 FAISS_AVAILABLE = False
-logger.info("RAG features disabled (ChromaDB/FAISS not used)")
+
+try:
+    import faiss
+    from sentence_transformers import SentenceTransformer
+    FAISS_AVAILABLE = True
+    logger.info("FAISS available for semantic search (RAG enabled)")
+except ImportError as e:
+    logger.warning(f"FAISS not available: {e}")
+    logger.info("RAG features will be disabled")
 
 
 @dataclass
