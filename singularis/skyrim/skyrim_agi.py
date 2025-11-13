@@ -119,7 +119,7 @@ class SkyrimConfig:
     # Core models
     phi4_action_model: str = "microsoft/phi-4-mini-reasoning"  # Action planning (fast, reliable)
     huihui_cognition_model: str = "microsoft/phi-4-mini-reasoning:2"  # Main cognition, reasoning, strategy (fast, reliable)
-    qwen3_vl_perception_model: str = "qwen/qwen3-vl-8b"  # Perception and spatial awareness
+    qwen3_vl_perception_model: str = "qwen/qwen3-vl-30b"  # Perception and spatial awareness
 
     # Learning
     surprise_threshold: float = 0.3  # Threshold for learning from surprise

@@ -49,8 +49,8 @@ class HybridConfig:
     # Fallback models (local - optional)
     use_local_fallback: bool = False
     local_base_url: str = "http://localhost:1234/v1"
-    local_vision_model: str = "qwen/qwen3-vl-8b"  # Qwen3-VL for vision
-    local_reasoning_model: str = "qwen/qwen3-4b-thinking-2507"  # Qwen3 thinking for reasoning
+    local_vision_model: str = "qwen/qwen3-vl-30b"  # Qwen3-VL for vision (MUST be vision-capable)
+    local_reasoning_model: str = "mistralai/mistral-7b-instruct-v0.3"  # Mistral for reasoning
     local_action_model: str = "microsoft/phi-4"  # Phi-4 for fast action
     
     # Performance settings

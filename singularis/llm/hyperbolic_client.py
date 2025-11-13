@@ -176,3 +176,18 @@ class HyperbolicClient:
         content = message.get("content", "")
 
         return content
+
+    async def generate_with_image(
+        self,
+        prompt: str,
+        image,
+        temperature: float = 0.4,
+        max_tokens: int = 2048,
+    ) -> str:
+        """Alias for analyze_image to match MoE orchestrator interface."""
+        return await self.analyze_image(
+            prompt=prompt,
+            image=image,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
