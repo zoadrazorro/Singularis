@@ -14,9 +14,13 @@ function App() {
     
     const connectWebSocket = () => {
       // Connect to WebSocket with mode parameter
+      // Use current hostname to support both local and network access
+      const hostname = window.location.hostname;
       const wsUrl = mode === 'skyrim' 
-        ? 'ws://localhost:5001?mode=skyrim'
-        : 'ws://localhost:5001';
+        ? `ws://${hostname}:5001?mode=skyrim`
+        : `ws://${hostname}:5001`;
+      
+      console.log('Connecting to WebSocket:', wsUrl);
       const websocket = new WebSocket(wsUrl);
       
       websocket.onopen = () => {

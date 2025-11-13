@@ -1,0 +1,282 @@
+{
+  "session_id": "skyrim_agi_test_session",
+  "cycle": 11,
+  "uptime": 22,
+  "last_update": "2025-11-13T03:52:31.560666",
+  "current_action": "attack",
+  "last_action": "explore",
+  "action_source": "moe",
+  "recent_actions": [
+    {
+      "name": "attack",
+      "timestamp": 1763023951.5606513,
+      "cycle": 11,
+      "source": "rl"
+    },
+    {
+      "name": "use_item",
+      "timestamp": 1763023949.5606513,
+      "cycle": 10,
+      "source": "hybrid"
+    },
+    {
+      "name": "sneak",
+      "timestamp": 1763023947.5606513,
+      "cycle": 9,
+      "source": "hybrid"
+    },
+    {
+      "name": "move_forward",
+      "timestamp": 1763023945.5606513,
+      "cycle": 8,
+      "source": "heuristic"
+    },
+    {
+      "name": "look_around",
+      "timestamp": 1763023943.5606513,
+      "cycle": 7,
+      "source": "heuristic"
+    },
+    {
+      "name": "look_around",
+      "timestamp": 1763023941.5606513,
+      "cycle": 6,
+      "source": "rl"
+    },
+    {
+      "name": "cast_spell",
+      "timestamp": 1763023939.5606513,
+      "cycle": 5,
+      "source": "hybrid"
+    },
+    {
+      "name": "cast_spell",
+      "timestamp": 1763023937.5606513,
+      "cycle": 4,
+      "source": "hybrid"
+    },
+    {
+      "name": "move_forward",
+      "timestamp": 1763023935.5606513,
+      "cycle": 3,
+      "source": "heuristic"
+    },
+    {
+      "name": "attack",
+      "timestamp": 1763023933.5606513,
+      "cycle": 2,
+      "source": "rl"
+    }
+  ],
+  "perception": {
+    "scene_type": "indoor_building",
+    "objects": [
+      "rock",
+      "path",
+      "building"
+    ],
+    "enemies_nearby": false,
+    "npcs_nearby": true,
+    "last_vision_time": 0.5084099336004466
+  },
+  "game_state": {
+    "health": 78,
+    "magicka": 82,
+    "stamina": 69,
+    "in_combat": true,
+    "in_menu": false,
+    "location": "Skyrim Test Area"
+  },
+  "consciousness": {
+    "coherence": 0.585,
+    "phi": 0.526,
+    "nodes_active": 22,
+    "trend": "increasing",
+    "history": [
+      {
+        "timestamp": 1763023951.5606513,
+        "cycle": 11,
+        "coherence": 0.335,
+        "phi": 0.409
+      },
+      {
+        "timestamp": 1763023949.5606513,
+        "cycle": 10,
+        "coherence": 0.415,
+        "phi": 0.287
+      },
+      {
+        "timestamp": 1763023947.5606513,
+        "cycle": 9,
+        "coherence": 0.549,
+        "phi": 0.38
+      },
+      {
+        "timestamp": 1763023945.5606513,
+        "cycle": 8,
+        "coherence": 0.467,
+        "phi": 0.359
+      },
+      {
+        "timestamp": 1763023943.5606513,
+        "cycle": 7,
+        "coherence": 0.496,
+        "phi": 0.292
+      },
+      {
+        "timestamp": 1763023941.5606513,
+        "cycle": 6,
+        "coherence": 0.405,
+        "phi": 0.517
+      },
+      {
+        "timestamp": 1763023939.5606513,
+        "cycle": 5,
+        "coherence": 0.457,
+        "phi": 0.418
+      },
+      {
+        "timestamp": 1763023937.5606513,
+        "cycle": 4,
+        "coherence": 0.562,
+        "phi": 0.431
+      },
+      {
+        "timestamp": 1763023935.5606513,
+        "cycle": 3,
+        "coherence": 0.419,
+        "phi": 0.545
+      },
+      {
+        "timestamp": 1763023933.5606513,
+        "cycle": 2,
+        "coherence": 0.537,
+        "phi": 0.279
+      },
+      {
+        "timestamp": 1763023931.5606513,
+        "cycle": 1,
+        "coherence": 0.331,
+        "phi": 0.397
+      }
+    ]
+  },
+  "llm_status": {
+    "mode": "hybrid",
+    "cloud_active": 2,
+    "local_active": 0,
+    "total_calls": 33,
+    "last_call_time": 0.06837356377131643,
+    "active_models": [
+      "Gemini 2.0 Flash",
+      "Claude Sonnet 4.5"
+    ]
+  },
+  "performance": {
+    "fps": 57,
+    "planning_time": 0.609,
+    "execution_time": 0.123,
+    "vision_time": 0.074,
+    "total_cycle_time": 0.629,
+    "history": [
+      {
+        "timestamp": 1763023951.5606513,
+        "cycle": 11,
+        "planning_time": 0.592,
+        "execution_time": 0.29
+      },
+      {
+        "timestamp": 1763023949.5606513,
+        "cycle": 10,
+        "planning_time": 0.625,
+        "execution_time": 0.242
+      },
+      {
+        "timestamp": 1763023947.5606513,
+        "cycle": 9,
+        "planning_time": 0.697,
+        "execution_time": 0.289
+      },
+      {
+        "timestamp": 1763023945.5606513,
+        "cycle": 8,
+        "planning_time": 0.368,
+        "execution_time": 0.195
+      },
+      {
+        "timestamp": 1763023943.5606513,
+        "cycle": 7,
+        "planning_time": 0.671,
+        "execution_time": 0.257
+      },
+      {
+        "timestamp": 1763023941.5606513,
+        "cycle": 6,
+        "planning_time": 0.527,
+        "execution_time": 0.231
+      },
+      {
+        "timestamp": 1763023939.5606513,
+        "cycle": 5,
+        "planning_time": 0.577,
+        "execution_time": 0.265
+      },
+      {
+        "timestamp": 1763023937.5606513,
+        "cycle": 4,
+        "planning_time": 0.659,
+        "execution_time": 0.208
+      },
+      {
+        "timestamp": 1763023935.5606513,
+        "cycle": 3,
+        "planning_time": 0.68,
+        "execution_time": 0.286
+      },
+      {
+        "timestamp": 1763023933.5606513,
+        "cycle": 2,
+        "planning_time": 0.614,
+        "execution_time": 0.284
+      },
+      {
+        "timestamp": 1763023931.5606513,
+        "cycle": 1,
+        "planning_time": 0.646,
+        "execution_time": 0.111
+      }
+    ]
+  },
+  "diversity": {
+    "score": 0.51,
+    "unique_actions": 4,
+    "total_actions": 11,
+    "variety_rate": 0.93,
+    "action_distribution": {
+      "cast_spell": 2,
+      "explore": 1,
+      "look_around": 1,
+      "use_item": 2
+    }
+  },
+  "stats": {
+    "success_rate": 0.9,
+    "rl_actions": 2,
+    "llm_actions": 11,
+    "heuristic_actions": 0,
+    "total_actions": 11
+  },
+  "world_model": {
+    "beliefs": {
+      "location_safe": false,
+      "npcs_friendly": false,
+      "resources_available": true
+    },
+    "goals": [
+      "Find NPCs",
+      "Complete quest",
+      "Gather resources"
+    ],
+    "strategy": "explore"
+  }
+}

@@ -14,6 +14,7 @@ app.use(express.json());
 
 const PORT = 5000;
 const WS_PORT = 5001;
+const HOST = '0.0.0.0'; // Listen on all network interfaces
 
 // Path to learning progress file
 const LEARNING_PROGRESS_PATH = path.join(__dirname, '..', 'learning_progress.json');
@@ -120,22 +121,26 @@ app.get('/api/health', (req, res) => {
 });
 
 // Start HTTP server
-app.listen(PORT, () => {
-  console.log(`HTTP server running on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`HTTP server running on:`);
+  console.log(`  - Local:   http://localhost:${PORT}`);
+  console.log(`  - Network: http://<YOUR_LOCAL_IP>:${PORT}`);
+  console.log(`\nTo find your local IP, run: ipconfig (Windows) or ifconfig (Mac/Linux)`);
 });
 
 // WebSocket server for real-time updates
 const wss = new WebSocket.Server({ 
+  host: HOST,
   port: WS_PORT,
   perMessageDeflate: false,
   clientTracking: true
 });
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
   console.log('Client connected');
   
   // Determine which mode to use based on query parameter
-  const url = ws.upgradeReq?.url || '';
+  const url = req.url || '';
   const isSkyrimMode = url.includes('mode=skyrim');
   
   console.log(`Mode: ${isSkyrimMode ? 'Skyrim AGI' : 'Learning Monitor'}`);
@@ -181,7 +186,9 @@ wss.on('connection', (ws) => {
   });
 });
 
-console.log(`WebSocket server running on ws://localhost:${WS_PORT}`);
-console.log('Monitoring:');
+console.log(`\nWebSocket server running on:`);
+console.log(`  - Local:   ws://localhost:${WS_PORT}`);
+console.log(`  - Network: ws://<YOUR_LOCAL_IP>:${WS_PORT}`);
+console.log('\nMonitoring:');
 console.log('  - Learning:', LEARNING_PROGRESS_PATH);
 console.log('  - Skyrim AGI:', SKYRIM_STATE_PATH);
