@@ -161,6 +161,16 @@ class SkyrimControllerBindings:
             await asyncio.sleep(duration if duration > 0 else 1.0)
             ctrl.set_right_trigger(0.0)
         
+        async def toggle_pov(ctrl, duration=0.0):
+            # Toggle between 1st and 3rd person view
+            await ctrl.tap_button(XboxButton.RS)  # Right stick click
+        
+        async def move_object(ctrl, duration=2.0):
+            # Hold A to grab and move objects
+            ctrl.press_button(XboxButton.A)
+            await asyncio.sleep(duration if duration > 0 else 2.0)
+            ctrl.release_button(XboxButton.A)
+        
         # Bind actions
         self.controller.bind_action("Exploration", "move_forward", move_forward)
         self.controller.bind_action("Exploration", "move_backward", move_backward)
@@ -189,6 +199,8 @@ class SkyrimControllerBindings:
         self.controller.bind_action("Exploration", "favorite_left", favorite_left)
         self.controller.bind_action("Exploration", "favorite_right", favorite_right)
         self.controller.bind_action("Exploration", "heal", heal)
+        self.controller.bind_action("Exploration", "toggle_pov", toggle_pov)
+        self.controller.bind_action("Exploration", "move_object", move_object)
     
     def _setup_combat_layer(self):
         """

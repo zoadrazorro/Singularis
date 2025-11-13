@@ -112,10 +112,8 @@ async def main():
     use_llm = get_yes_no("Use LLM for smarter decisions?", default=True)
     use_gpt5 = get_yes_no("Enable GPT-5 orchestrator (OpenAI)?", default=True)
     use_live_audio = get_yes_no("Enable LIVE audio stream (Gemini+OpenAI)?", default=True)
-    print()
-    print("⚠️  Note: Voice and Video systems disabled by default (check rate limits)")
-    use_voice = False  # Disabled - uses Gemini
-    use_video = False  # Disabled - uses Gemini
+    use_voice = get_yes_no("Enable voice system (Gemini TTS)?", default=True)
+    use_video = get_yes_no("Enable video interpreter (Gemini Flash)?", default=True)
     use_double_helix = get_yes_no("Enable double helix architecture?", default=True)
     
     # Beta 1.0 features
