@@ -30,13 +30,26 @@ except ImportError:
 
 
 class VoiceType(Enum):
-    """Available voice types for TTS."""
-    ALLOY = "Alloy"  # Neutral, balanced
-    ECHO = "Echo"    # Male, clear
-    FABLE = "Fable"  # British, expressive
-    ONYX = "Onyx"    # Deep, authoritative
-    NOVA = "Nova"    # Female, warm
-    SHIMMER = "Shimmer"  # Female, bright
+    """Available voice types for Gemini TTS."""
+    # Gemini 2.5 Pro TTS voice names (lowercase)
+    ACHERNAR = "achernar"
+    ACHIRD = "achird"
+    ALGENIB = "algenib"
+    ALGIEBA = "algieba"
+    ALNILAM = "alnilam"
+    AOEDE = "aoede"
+    AUTONOE = "autonoe"
+    CALLIRRHOE = "callirrhoe"
+    CHARON = "charon"
+    DESPINA = "despina"
+    ENCELADUS = "enceladus"
+    ERINOME = "erinome"
+    FENRIR = "fenrir"
+    HELENE = "helene"
+    IAPETUS = "iapetus"
+    KORE = "kore"
+    LEDA = "leda"
+    PHOEBE = "phoebe"
 
 
 class ThoughtPriority(Enum):
@@ -67,7 +80,7 @@ class VoiceSystem:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        voice: VoiceType = VoiceType.NOVA,
+        voice: VoiceType = VoiceType.CHARON,
         enabled: bool = True,
         min_priority: ThoughtPriority = ThoughtPriority.MEDIUM,
         rate_limit_rpm: int = 60,  # Conservative for TTS
