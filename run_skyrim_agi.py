@@ -115,7 +115,7 @@ async def main():
             # MoE settings (optimized rate limits)
             num_gemini_experts=2,
             num_claude_experts=1,
-            gemini_model="gemini-2.5-flash",
+            gemini_model="gemini-2.0-flash-exp",
             claude_model="claude-sonnet-4-5-20250929",
             gemini_rpm_limit=30,  # Increased from 10
             claude_rpm_limit=100,  # Increased from 50

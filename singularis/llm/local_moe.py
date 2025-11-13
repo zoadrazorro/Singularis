@@ -177,6 +177,12 @@ class LocalMoEOrchestrator:
         """
         # Check cache first
         scene_type = perception.get('scene_type', 'unknown')
+        # Convert SceneType enum to string if needed
+        if hasattr(scene_type, 'value'):
+            scene_type = scene_type.value
+        elif not isinstance(scene_type, str):
+            scene_type = str(scene_type)
+        
         health = getattr(game_state, 'health', 100.0)
         in_combat = getattr(game_state, 'in_combat', False)
         actions_tuple = tuple(sorted(available_actions))
