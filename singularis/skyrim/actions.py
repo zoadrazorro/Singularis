@@ -71,10 +71,12 @@ class ActionType(Enum):
     LOOK_DOWN = "look_down"
     LOOK_LEFT = "look_left"
     LOOK_RIGHT = "look_right"
+    TOGGLE_POV = "toggle_pov"  # Toggle 1st/3rd person view
 
     # Special
     QUICK_SAVE = "quick_save"
     QUICK_LOAD = "quick_load"
+    MOVE_OBJECT = "move_object"  # Hold to grab/move objects
 
 
 @dataclass
@@ -205,17 +207,19 @@ class SkyrimActions:
             ActionType.ACTIVATE: "activate",
             ActionType.WAIT: "wait",
             ActionType.SLEEP: "sleep",
-            ActionType.OPEN_INVENTORY: "menu",  # Maps to menu open
-            ActionType.OPEN_MAP: "map",  # Needs custom binding
-            ActionType.OPEN_MAGIC: "magic",  # Needs custom binding
-            ActionType.OPEN_SKILLS: "skills",  # Needs custom binding
-            ActionType.BACK: "back",  # Exit menus/dialogues
+            ActionType.OPEN_INVENTORY: "menu",  # START button
+            ActionType.OPEN_MAP: "menu",  # START button (same as inventory)
+            ActionType.OPEN_MAGIC: "menu",  # START button (same as inventory)
+            ActionType.OPEN_SKILLS: "menu",  # START button (same as inventory)
+            ActionType.BACK: "back",  # B button - exit menus/dialogues
             ActionType.LOOK_UP: "look_up",
             ActionType.LOOK_DOWN: "look_down",
             ActionType.LOOK_LEFT: "look_left",
             ActionType.LOOK_RIGHT: "look_right",
-            ActionType.QUICK_SAVE: "quick_save",  # Needs custom binding
-            ActionType.QUICK_LOAD: "quick_load",  # Needs custom binding
+            ActionType.TOGGLE_POV: "toggle_pov",  # RS click
+            ActionType.MOVE_OBJECT: "move_object",  # A hold
+            ActionType.QUICK_SAVE: "quick_save",  # Not on Xbox
+            ActionType.QUICK_LOAD: "quick_load",  # Not on Xbox
         }
 
     def _initialize_game_api(self):
