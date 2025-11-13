@@ -148,7 +148,8 @@ class SkyrimConfig:
     use_gemini_vision: bool = True
     gemini_model: str = "gemini-2.5-flash"
     use_claude_reasoning: bool = True
-    claude_model: str = "claude-sonnet-4-5-20250929"
+    claude_model: str = "claude-3-5-haiku-20241022"  # Fast Haiku for background reasoning
+    claude_sensorimotor_model: str = "claude-sonnet-4-5-20250929"  # Sonnet for critical sensorimotor
     use_local_fallback: bool = False  # Optional local LLMs as fallback
     
     # Mixture of Experts (MoE) Architecture
@@ -1579,7 +1580,7 @@ Connect perception → thought → action into flowing experience.""",
             expert_list.append("• MoE: 2 Gemini (vision) + 1 Claude (reasoning) + 1 GPT-4o (integration)")
             expert_list.append("• Hyperbolic: 1 Nemotron (visual awareness) + 1 Qwen3-235B (meta-cognition)")
         if self.hybrid_llm:
-            expert_list.append("• Hybrid: Gemini-2.5-Flash (vision) + Claude-Sonnet-4.5 (reasoning)")
+            expert_list.append("• Hybrid: Gemini-2.5-Flash (vision) + Claude-Haiku-3.5 (reasoning)")
         if hasattr(self, 'perception_llm') and self.perception_llm:
             expert_list.append("• Local: Qwen3-VL (visual analysis)")
         if hasattr(self, 'rl_reasoning_llm') and self.rl_reasoning_llm:
@@ -1968,13 +1969,13 @@ Connect perception → thought → action into flowing experience.""",
         if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
             from singularis.llm.claude_client import ClaudeClient
             self.sensorimotor_llm = ClaudeClient(
-                model="claude-sonnet-4-5-20250929",
+                model=self.config.claude_sensorimotor_model,
                 timeout=120
             )
             if self.sensorimotor_llm.is_available():
-                print("[SENSORIMOTOR] ✓ Claude Sonnet 4.5 initialized for geospatial reasoning")
+                print(f"[SENSORIMOTOR] ✓ {self.config.claude_sensorimotor_model} initialized for geospatial reasoning")
             else:
-                print("[SENSORIMOTOR] ⚠️ Claude Sonnet 4.5 not available")
+                print(f"[SENSORIMOTOR] ⚠️ {self.config.claude_sensorimotor_model} not available")
                 self.sensorimotor_llm = None
         
         # Initialize Hebbian Integration System
@@ -2011,7 +2012,8 @@ Connect perception → thought → action into flowing experience.""",
 - Cloud LLMs: {10 if self.config.use_parallel_mode else 1 if self.config.use_hybrid_llm else 0}
 - Consciousness Nodes: {len(self.consciousness_monitor.registered_nodes)}
 - Hebbian Learning: Active
-- Sensorimotor: Claude Sonnet 4.5
+- Sensorimotor: Claude Sonnet 4.5 (deep analysis)
+- Background Reasoning: Claude Haiku 3.5 (fast tactical)
 - Session ID: {self.main_brain.session_id}""",
             metadata={
                 'llm_mode': 'PARALLEL' if self.config.use_parallel_mode else 'Hybrid',
@@ -4481,43 +4483,39 @@ REASONING: <explanation>"""
         motivation: Any
     ) -> None:
         """
-        Claude runs deep reasoning/sensorimotor analysis in background.
+        Claude Haiku runs fast reasoning in background.
         Stores insights to memory independently without blocking action planning.
         """
         try:
-            print("[CLAUDE-ASYNC] Running deep analysis...")
+            print("[CLAUDE-HAIKU] Running fast strategic analysis...")
             
-            # Build comprehensive reasoning prompt
-            reasoning_prompt = f"""Analyze this Skyrim situation deeply:
+            # Build concise reasoning prompt for Haiku (faster)
+            reasoning_prompt = f"""Quick Skyrim tactical analysis:
 
-Scene: {scene_type.value}
-Location: {game_state.location_name}
-Health: {state_dict.get('health', 100)}% | Stamina: {state_dict.get('stamina', 100)}% | Magicka: {state_dict.get('magicka', 100)}%
-Combat: {state_dict.get('in_combat', False)} | Enemies: {state_dict.get('enemies_nearby', 0)}
-Motivation: {motivation.dominant_drive().value}
+Scene: {scene_type.value} | Location: {game_state.location_name}
+Health: {state_dict.get('health', 100)}% | Combat: {state_dict.get('in_combat', False)} | Enemies: {state_dict.get('enemies_nearby', 0)}
 
-Provide strategic insights about:
-1. Current tactical situation
-2. Potential threats and opportunities
-3. Resource management considerations
-4. Recommended strategic approach
+Provide:
+1. Immediate threats/opportunities
+2. Recommended tactical approach
+3. Key considerations
 
-Be detailed and thoughtful."""
+Be concise and actionable."""
 
-            # Query Claude with extended thinking
+            # Query Claude Haiku (fast, no extended thinking)
             reasoning_text = await self.hybrid_llm.generate_reasoning(
                 prompt=reasoning_prompt,
-                system_prompt="You are a strategic advisor for Skyrim gameplay. Provide deep, thoughtful analysis.",
-                temperature=0.7,
-                max_tokens=2048
+                system_prompt="You are a fast tactical advisor for Skyrim. Be concise and actionable.",
+                temperature=0.5,
+                max_tokens=512  # Reduced for speed
             )
             
-            print(f"[CLAUDE-ASYNC] ✓ Analysis complete ({len(reasoning_text)} chars)")
+            print(f"[CLAUDE-HAIKU] ✓ Analysis complete ({len(reasoning_text)} chars)")
             
             # Store in memory RAG
             self.memory_rag.store_cognitive_memory(
                 situation={
-                    'type': 'claude_strategic_analysis',
+                    'type': 'claude_haiku_tactical_analysis',
                     'scene': scene_type.value,
                     'location': game_state.location_name,
                     'health': state_dict.get('health', 100),
@@ -4529,20 +4527,20 @@ Be detailed and thoughtful."""
                 reasoning=reasoning_text
             )
             
-            # Hebbian: Record Claude contribution
+            # Hebbian: Record Claude Haiku contribution
             self.hebbian.record_activation(
-                system_name='claude_background_reasoning',
+                system_name='claude_haiku_reasoning',
                 success=True,
-                contribution_strength=0.8,
-                context={'stored_to_memory': True}
+                contribution_strength=0.7,  # Slightly lower than Sonnet
+                context={'stored_to_memory': True, 'model': 'haiku'}
             )
             
-            print("[CLAUDE-ASYNC] ✓ Stored to memory")
+            print("[CLAUDE-HAIKU] ✓ Stored to memory")
             
         except Exception as e:
-            print(f"[CLAUDE-ASYNC] Error: {e}")
+            print(f"[CLAUDE-HAIKU] Error: {e}")
             self.hebbian.record_activation(
-                system_name='claude_background_reasoning',
+                system_name='claude_haiku_reasoning',
                 success=False,
                 contribution_strength=0.3
             )
