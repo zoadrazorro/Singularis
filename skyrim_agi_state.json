@@ -1,59 +1,59 @@
 {
-  "session_id": "skyrim_agi_20251113_180935_d7eeec99",
+  "session_id": "skyrim_agi_20251113_181439_d08d4b7a",
   "cycle": 3,
-  "uptime": 45.861167192459106,
-  "last_update": "2025-11-13T18:10:21.663121",
+  "uptime": 45.25244688987732,
+  "last_update": "2025-11-13T18:15:24.934804",
   "current_action": "attack",
   "last_action": "explore",
   "action_source": "unknown",
   "recent_actions": [
     {
       "name": "attack",
-      "timestamp": 1763075385.7892125,
+      "timestamp": 1763075688.9989014,
       "cycle": 0,
       "source": "unknown"
     },
     {
       "name": "attack",
-      "timestamp": 1763075391.944989,
+      "timestamp": 1763075696.7289333,
       "cycle": 1,
       "source": "unknown"
     },
     {
       "name": "explore",
-      "timestamp": 1763075407.370813,
+      "timestamp": 1763075711.9393501,
       "cycle": 2,
       "source": "unknown"
     },
     {
       "name": "attack",
-      "timestamp": 1763075421.6631107,
+      "timestamp": 1763075724.93476,
       "cycle": 3,
       "source": "unknown"
     }
   ],
   "perception": {
-    "scene_type": "SceneType.COMBAT",
+    "scene_type": "SceneType.OUTDOOR_WILDERNESS",
     "objects_detected": [
       [
         "dragon",
-        0.06764021515846252
-      ],
-      [
-        "sword",
-        0.06735335290431976
-      ],
-      [
-        "mage",
-        0.06732643395662308
+        0.06773286312818527
       ],
       [
         "armor",
-        0.06713052839040756
+        0.06709243357181549
       ],
       [
-        "warrior",
-        0.06688866019248962
+        "sword",
+        0.06708473712205887
+      ],
+      [
+        "mage",
+        0.06705059111118317
+      ],
+      [
+        "potion",
+        0.06681609153747559
       ]
     ],
     "enemies_nearby": false,
@@ -61,42 +61,42 @@
     "last_vision_time": 0
   },
   "game_state": {
-    "health": 20.0,
-    "magicka": 16.8982367087785,
-    "stamina": 5.0,
-    "in_combat": true,
+    "health": 31.454435740909663,
+    "magicka": 76.63037347121575,
+    "stamina": 56.527780192009075,
+    "in_combat": false,
     "in_menu": false,
-    "location": "Skyrim"
+    "location": "Pine Forest"
   },
   "consciousness": {
-    "coherence": 0.3742,
-    "phi": 0.4287,
+    "coherence": 0.4625,
+    "phi": 0.4818,
     "nodes_active": 22,
     "trend": "stable",
     "history": [
       {
-        "timestamp": 1763075385.7892125,
+        "timestamp": 1763075688.9989014,
         "cycle": 0,
-        "coherence": 0.4782,
-        "phi": 0.5234
+        "coherence": 0.4721,
+        "phi": 0.5012
       },
       {
-        "timestamp": 1763075391.944989,
+        "timestamp": 1763075696.7289333,
         "cycle": 1,
-        "coherence": 0.42,
-        "phi": 0.41
+        "coherence": 0.4231,
+        "phi": 0.4321
       },
       {
-        "timestamp": 1763075407.370813,
+        "timestamp": 1763075711.9393501,
         "cycle": 2,
-        "coherence": 0.42,
-        "phi": 0.47
+        "coherence": 0.4523,
+        "phi": 0.4287
       },
       {
-        "timestamp": 1763075421.6631107,
+        "timestamp": 1763075724.93476,
         "cycle": 3,
-        "coherence": 0.3742,
-        "phi": 0.4287
+        "coherence": 0.4625,
+        "phi": 0.4818
       }
     ]
   },
@@ -122,44 +122,44 @@
   },
   "performance": {
     "fps": 60,
-    "planning_time": 2.979044020175934,
-    "execution_time": 1.7538361549377441,
+    "planning_time": 2.5834702849388123,
+    "execution_time": 3.0830372174580893,
     "vision_time": 0,
     "total_cycle_time": 0,
     "history": [
       {
-        "timestamp": 1763075385.7892125,
+        "timestamp": 1763075688.9989014,
         "cycle": 0,
         "fps": 60,
-        "planning_time": 0.0030972957611083984,
+        "planning_time": 0.0026657581329345703,
         "execution_time": 0.0,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763075391.944989,
+        "timestamp": 1763075696.7289333,
         "cycle": 1,
         "fps": 60,
-        "planning_time": 0.0038251876831054688,
-        "execution_time": 0.9297568798065186,
+        "planning_time": 0.0035605430603027344,
+        "execution_time": 1.4946112632751465,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763075407.370813,
+        "timestamp": 1763075711.9393501,
         "cycle": 2,
         "fps": 60,
-        "planning_time": 1.9554825623830159,
-        "execution_time": 1.316461205482483,
+        "planning_time": 1.773600975672404,
+        "execution_time": 1.641251802444458,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763075421.6631107,
+        "timestamp": 1763075724.93476,
         "cycle": 3,
         "fps": 60,
-        "planning_time": 2.979044020175934,
-        "execution_time": 1.7538361549377441,
+        "planning_time": 2.5834702849388123,
+        "execution_time": 3.0830372174580893,
         "vision_time": 0,
         "total_cycle_time": 0
       }

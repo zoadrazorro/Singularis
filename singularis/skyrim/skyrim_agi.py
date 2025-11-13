@@ -522,12 +522,21 @@ class SkyrimAGI:
         self.voice_system = None
         if self.config.enable_voice:
             try:
+                # Get voice type from config (default to CHARON)
+                voice_name = self.config.voice_type if hasattr(self.config, 'voice_type') else "CHARON"
+                voice_type = getattr(VoiceType, voice_name.upper(), VoiceType.CHARON)
+                
+                # Get min priority from config (default to MEDIUM)
+                priority_name = self.config.voice_min_priority if hasattr(self.config, 'voice_min_priority') else "MEDIUM"
+                min_priority = getattr(ThoughtPriority, priority_name.upper(), ThoughtPriority.MEDIUM)
+                
                 self.voice_system = VoiceSystem(
-                    voice=VoiceType.NOVA,
+                    voice=voice_type,
                     enabled=True,
-                    min_priority=ThoughtPriority.HIGH
+                    min_priority=min_priority
                 )
-                print("    ✓ Voice system initialized with NOVA voice")
+                print(f"    ✓ Voice system initialized with {voice_name} voice")
+                print(f"    ✓ Min priority: {priority_name}")
                 print("    ✓ AGI can now speak its thoughts aloud")
             except Exception as e:
                 print(f"    ⚠️ Voice system initialization failed: {e}")
