@@ -362,4 +362,6 @@ REASONING: <brief explanation>"""
                     logger.error(f"[LOCAL-MOE] Fallback synthesis also failed: {fallback_err}")
                     return None
             else:
-            return None
+                # No fallback synthesizer available
+                logger.warning("[LOCAL-MOE] No fallback synthesizer configured")
+                return None

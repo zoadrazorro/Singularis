@@ -17,7 +17,7 @@ class GeminiClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        model: str = "gemini-2.5-pro",
+        model: str = "gemini-2.0-flash-exp",
         base_url: str = "https://generativelanguage.googleapis.com/v1beta",
         timeout: int = 90,  # Increased from 60s for vision requests
     ) -> None:

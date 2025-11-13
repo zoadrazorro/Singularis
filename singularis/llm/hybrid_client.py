@@ -38,7 +38,7 @@ class HybridConfig:
     """Configuration for hybrid LLM system."""
     # Primary models (cloud)
     use_gemini_vision: bool = True
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-2.0-flash-exp"
     
     use_claude_reasoning: bool = True
     claude_model: str = "claude-sonnet-4-5-20250929"
