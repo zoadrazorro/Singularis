@@ -19,8 +19,8 @@ class LMStudioConfig:
     model_name: str = "microsoft/phi-4-mini-reasoning"
     temperature: float = 0.7
     max_tokens: int = 4096  # Increased for Phi-4 models
-    timeout: int = 120  # Increased for heavy parallel load with multiple experts
-    request_timeout: int = 100  # Per-request timeout (slightly lower than session timeout)
+    timeout: int = 300  # 5 minutes for vision models (Qwen3-VL needs time)
+    request_timeout: int = 100  # Per-request timeout for text-only (slightly lower than session timeout)
     
 
 class LMStudioClient:
@@ -175,7 +175,7 @@ class LMStudioClient:
         
         try:
             # Adaptive timeout based on request type
-            # Vision requests need more time than text-only
+            # Vision requests (Qwen3-VL) need much more time: 300s vs 100s for text-only
             adaptive_timeout = self.config.timeout if image_path else self.config.request_timeout
             
             # Staggered delay to prevent overwhelming LM Studio with simultaneous requests

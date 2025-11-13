@@ -12,6 +12,7 @@ All operations are async for maximum performance.
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from typing import Any, Dict, Optional, List
 from dataclasses import dataclass
@@ -285,6 +286,44 @@ class HybridLLMClient:
                     
                     if not self.config.fallback_on_error:
                         raise
+            
+            # Try Gemini 2.5 Pro as fallback (superior quality, separate rate limit pool)
+            if self.gemini and self.config.fallback_on_error:
+                try:
+                    logger.info("Trying Gemini 2.5 Pro vision fallback")
+                    
+                    # Create temporary Gemini 2.5 Pro client
+                    import os as os_module
+                    gemini_pro = GeminiClient(
+                        api_key=os_module.getenv("GEMINI_API_KEY"),
+                        model="gemini-2.5-pro",  # Gemini 2.5 Pro (best quality)
+                        timeout=90  # Pro is slower, needs more time
+                    )
+                    
+                    result = await asyncio.wait_for(
+                        gemini_pro.analyze_image(
+                            prompt=prompt,
+                            image=image,
+                            temperature=temperature,
+                            max_output_tokens=max_tokens,
+                            max_retries=2
+                        ),
+                        timeout=90
+                    )
+                    
+                    await gemini_pro.close()
+                    
+                    if result and len(result) > 0:
+                        logger.info(f"Gemini 2.5 Pro vision success: {len(result)} chars")
+                        self.stats['gemini_calls'] += 1
+                        self.stats['total_time'] += time.time() - start_time
+                        return result
+                    else:
+                        logger.warning("Gemini 2.5 Pro returned empty response")
+                        
+                except Exception as e:
+                    logger.warning(f"Gemini 2.5 Pro vision fallback failed: {type(e).__name__}: {e}")
+                    # Continue to local fallback
             
             # Fallback to local vision model
             if self.local_vision and self.config.use_local_fallback:
