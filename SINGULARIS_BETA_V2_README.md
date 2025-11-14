@@ -38,11 +38,11 @@ Create a `.env` file with your API keys:
 
 ```bash
 # Required
-OPENAI_API_KEY=sk-...        # For GPT-5 Meta-RL AND Wolfram telemetry
-GOOGLE_API_KEY=...           # For Gemini vision & voice
+OPENAI_API_KEY=              # For GPT-5 Meta-RL AND Wolfram telemetry
+GEMINI_API_KEY=              # For Gemini vision & voice
 
 # Optional
-ANTHROPIC_API_KEY=sk-ant-... # For Claude experts (optional)
+ANTHROPIC_API_KEY=           # For Claude experts (optional)
 ```
 
 **Note:** Wolfram telemetry uses OpenAI's API (via custom GPT), not a separate Wolfram App ID!
