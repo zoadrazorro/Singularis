@@ -686,6 +686,29 @@ class SkyrimAGI:
         self.temporal_tracker = TemporalCoherenceTracker(window_size=20)
         print("    ✓ Temporal coherence tracking initialized")
         print("    ✓ Perception→action→outcome loops will be tracked")
+        
+        # 22. CONTINUUM PHASE 1 INTEGRATION (NEW - Next-Gen Architecture)
+        print("  [22/27] Continuum Phase 1 (Observable mode)...")
+        from ..continuum import ContinuumIntegration
+        
+        self.continuum = ContinuumIntegration(
+            phase=1,  # Observable only - no control changes
+            subsystems=[
+                'perception', 'consciousness', 'emotion', 'motivation',
+                'learning', 'action', 'temporal', 'lumina_ontic',
+                'lumina_structural', 'lumina_participatory', 'gpt5',
+                'double_helix', 'voice', 'video', 'research', 'philosophy',
+                'metacognition', 'main_brain', 'wolfram', 'hybrid_llm'
+            ],
+            config={
+                'manifold_dimensions': 20,  # Start with 20D manifold
+            }
+        )
+        print("    ✓ Continuum Phase 1 initialized")
+        print("    ✓ CoherenceManifold (20D consciousness space)")
+        print("    ✓ GraphConsciousnessField (subsystem graph)")
+        print("    ✓ TemporalSuperpositionEngine (future simulation)")
+        print("    ⚠️ OBSERVATION MODE - No control changes")
 
         # MATRIX NETWORK OF IMPROVEMENT + PTPL (scaffolding)
         try:
@@ -3373,6 +3396,35 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
                             print(f"[METACOG] ✓ Long-term plan added")
                     except Exception as e:
                         print(f"[METACOG] ⚠️ Metacognition advisor failed: {e}")
+                
+                # CONTINUUM PHASE 1: Generate observation report
+                if hasattr(self, 'continuum'):
+                    try:
+                        continuum_report = self.continuum.generate_report()
+                        print("\n" + continuum_report)
+                        
+                        self.main_brain.record_output(
+                            system_name='Continuum Observer (Phase 1)',
+                            content=continuum_report,
+                            metadata=self.continuum.get_stats(),
+                            success=True
+                        )
+                        print(f"[CONTINUUM] ✓ Observation report added to Main Brain")
+                        
+                        # Check if ready for Phase 2
+                        if self.continuum.is_ready_for_phase2():
+                            print(f"[CONTINUUM] 🚀 READY FOR PHASE 2 UPGRADE")
+                            print(f"[CONTINUUM] Advisory match rate > 30%")
+                            print(f"[CONTINUUM] 100+ observations collected")
+                        else:
+                            stats = self.continuum.get_stats()
+                            observations = stats.get('total_observations', 0)
+                            match_rate = stats.get('advisory_match_rate', 0)
+                            print(f"[CONTINUUM] ⚠️ Not ready for Phase 2")
+                            print(f"[CONTINUUM] Observations: {observations}/100")
+                            print(f"[CONTINUUM] Match rate: {match_rate:.1%}/30%")
+                    except Exception as e:
+                        print(f"[CONTINUUM] ⚠️ Report generation failed: {e}")
                 
                 report_path = await self.main_brain.generate_session_markdown()
                 print(f"\n[MAIN BRAIN] 🧠✨ Session report generated!")
@@ -6195,6 +6247,21 @@ Action: {snapshot['action']}""",
                     game_state.location_name,
                     after_state.get('in_combat', False)
                 )
+                
+                # CONTINUUM PHASE 1: Observe this cycle
+                if hasattr(self, 'continuum'):
+                    try:
+                        await self.continuum.observe_cycle(
+                            being_state=self.being_state,
+                            actual_action=str(action),
+                            actual_outcome={
+                                'coherence': after_consciousness.coherence if after_consciousness else 0.5,
+                                'success': True,  # Action executed successfully
+                                'coherence_delta': after_consciousness.coherence_delta(self.current_consciousness) if self.current_consciousness and after_consciousness else 0.0
+                            }
+                        )
+                    except Exception as e:
+                        print(f"[CONTINUUM] Observation failed: {e}")
                 
                 # Record experience in strategic planner
                 success = self._evaluate_action_success(before_state, after_state, action)
