@@ -4,7 +4,7 @@ Skyrim AGI - Complete Integration with Consciousness
 Brings together all components for autonomous Skyrim gameplay:
 1. Perception (screen capture + CLIP)
 2. World model (causal learning, NPC relationships)
-3. Consciousness measurement (Singularis coherence 𝒞)
+3. Consciousness measurement (Singularis coherence C)
 4. Motivation (intrinsic drives + game-specific goals)
 5. Goal formation (autonomous objectives)
 6. Planning & execution (hierarchical actions)
@@ -13,7 +13,7 @@ Brings together all components for autonomous Skyrim gameplay:
 
 This is the complete AGI system playing Skyrim WITH FULL CONSCIOUSNESS.
 
-Key innovation: Learning is guided by consciousness coherence (Δ𝒞),
+Key innovation: Learning is guided by consciousness coherence (ΔC),
 making consciousness the primary judge of action quality.
 
 Design principles:
@@ -348,7 +348,7 @@ class SkyrimAGI:
         from .emergency_rules import EmergencyRules
         self.emergency_rules = EmergencyRules()
         print("[BRIDGE] Consciousness bridge initialized")
-        print("[BRIDGE] This unifies game quality and philosophical coherence 𝒞")
+        print("[BRIDGE] This unifies game quality and philosophical coherence C")
         
         # 6. Quantum Superposition Explorer (4D Fractal RNG)
         print("  [6/11] Quantum superposition (4D fractal RNG)...")
@@ -357,7 +357,7 @@ class SkyrimAGI:
             seed=int(time.time() * 1000) % 2**32
         )
         print("[QUANTUM] 4D Fractal RNG initialized")
-        print("[QUANTUM] Variance: 0.01-0.09% | Fibonacci φ ≈ 1.618")
+        print("[QUANTUM] Variance: 0.01-0.09% | Fibonacci phi ~= 1.618")
         
         # 6. Reinforcement Learning System (with consciousness)
         if self.config.use_rl:
@@ -415,7 +415,7 @@ class SkyrimAGI:
             try:
                 self.curriculum_rag.initialize()
                 stats = self.curriculum_rag.get_stats()
-                print(f"    ✓ Indexed {stats['documents_indexed']} texts across {len(stats['categories'])} categories")
+                print(f"    [OK] Indexed {stats['documents_indexed']} texts across {len(stats['categories'])} categories")
             except Exception as e:
                 print(f"    ⚠️ Curriculum RAG initialization failed: {e}")
                 self.curriculum_rag = None
@@ -429,7 +429,7 @@ class SkyrimAGI:
             cache_size=100,
             enable_compression=True
         )
-        print("    ✓ Context optimization enabled")
+        print("    [OK] Context optimization enabled")
         
         # 10. RL Reasoning Neuron (LLM thinks about RL)
         print("  [10/11] RL reasoning neuron (LLM-enhanced RL)...")
@@ -466,15 +466,15 @@ class SkyrimAGI:
                 decay_rate=0.1
             )
         )
-        print("    ✓ HuiHui emotion system initialized")
+        print("    [OK] HuiHui emotion system initialized")
         
         # 13. Spiritual Awareness System
         print("  [13/14] Spiritual awareness system...")
         from ..consciousness import SpiritualAwarenessSystem
         
         self.spiritual = SpiritualAwarenessSystem()
-        print("    ✓ Contemplative wisdom integrated")
-        print("    ✓ Traditions: Spinoza, Buddhism, Vedanta, Taoism, Stoicism")
+        print("    [OK] Contemplative wisdom integrated")
+        print("    [OK] Traditions: Spinoza, Buddhism, Vedanta, Taoism, Stoicism")
         
         # 14. Realtime Decision Coordinator (GPT-4 Realtime API)
         print("  [14/15] Realtime decision coordinator (GPT-4 Realtime)...")
@@ -484,9 +484,9 @@ class SkyrimAGI:
         if self.config.use_realtime_coordinator:
             try:
                 self.realtime_coordinator = RealtimeCoordinator(self)
-                print("    ✓ GPT-4 Realtime API coordinator initialized")
-                print("    ✓ Streaming decision-making enabled")
-                print("    ✓ Subsystem delegation configured")
+                print("    [OK] GPT-4 Realtime API coordinator initialized")
+                print("    [OK] Streaming decision-making enabled")
+                print("    [OK] Subsystem delegation configured")
             except Exception as e:
                 print(f"    ⚠️ Realtime coordinator initialization failed: {e}")
                 print("    ⚠️ Continuing without realtime coordination")
@@ -502,8 +502,8 @@ class SkyrimAGI:
         if self.config.use_self_reflection:
             try:
                 self.self_reflection = SelfReflectionSystem()
-                print("    ✓ Iterative evolving self-reflection initialized")
-                print("    ✓ GPT-4 Realtime for continuous self-understanding")
+                print("    [OK] Iterative evolving self-reflection initialized")
+                print("    [OK] GPT-4 Realtime for continuous self-understanding")
             except Exception as e:
                 print(f"    ⚠️ Self-reflection initialization failed: {e}")
                 self.self_reflection = None
@@ -517,7 +517,7 @@ class SkyrimAGI:
         self.reward_tuning = None
         if self.config.use_reward_tuning:
             # Will be initialized after Claude client is ready
-            print("    ✓ Reward-guided tuning configured (will initialize with Claude)")
+            print("    [OK] Reward-guided tuning configured (will initialize with Claude)")
         else:
             print("    ⚠️ Reward-guided tuning disabled")
         
@@ -532,8 +532,8 @@ class SkyrimAGI:
                     model="gpt-5",
                     verbose=self.config.gpt5_verbose
                 )
-                print("    ✓ GPT-5 meta-cognitive coordinator initialized")
-                print("    ✓ All subsystems will communicate through GPT-5")
+                print("    [OK] GPT-5 meta-cognitive coordinator initialized")
+                print("    [OK] All subsystems will communicate through GPT-5")
             except Exception as e:
                 print(f"    ⚠️ GPT-5 orchestrator initialization failed: {e}")
                 self.gpt5_orchestrator = None
@@ -560,9 +560,9 @@ class SkyrimAGI:
                     enabled=True,
                     min_priority=min_priority
                 )
-                print(f"    ✓ Voice system initialized with {voice_name} voice")
-                print(f"    ✓ Min priority: {priority_name}")
-                print("    ✓ AGI can now speak its thoughts aloud")
+                print(f"    [OK] Voice system initialized with {voice_name} voice")
+                print(f"    [OK] Min priority: {priority_name}")
+                print("    [OK] AGI can now speak its thoughts aloud")
             except Exception as e:
                 print(f"    ⚠️ Voice system initialization failed: {e}")
                 self.voice_system = None
@@ -581,8 +581,8 @@ class SkyrimAGI:
                     frame_rate=self.config.video_frame_rate,
                     audio_enabled=True
                 )
-                print("    ✓ Video interpreter initialized in COMPREHENSIVE mode")
-                print("    ✓ Real-time video analysis with spoken commentary")
+                print("    [OK] Video interpreter initialized in COMPREHENSIVE mode")
+                print("    [OK] Real-time video analysis with spoken commentary")
             except Exception as e:
                 print(f"    ⚠️ Video interpreter initialization failed: {e}")
                 self.video_interpreter = None
@@ -599,10 +599,10 @@ class SkyrimAGI:
                 self.double_helix = DoubleHelixArchitecture()
                 self.double_helix.initialize_systems()
                 stats = self.double_helix.get_stats()
-                print(f"    ✓ Double helix initialized: {stats['total_nodes']} systems")
-                print(f"    ✓ Analytical strand: {stats['analytical_nodes']} nodes")
-                print(f"    ✓ Intuitive strand: {stats['intuitive_nodes']} nodes")
-                print(f"    ✓ Integration score: {stats['average_integration']:.3f}")
+                print(f"    [OK] Double helix initialized: {stats['total_nodes']} systems")
+                print(f"    [OK] Analytical strand: {stats['analytical_nodes']} nodes")
+                print(f"    [OK] Intuitive strand: {stats['intuitive_nodes']} nodes")
+                print(f"    [OK] Integration score: {stats['average_integration']:.3f}")
             except Exception as e:
                 print(f"    ⚠️ Double helix initialization failed: {e}")
                 self.double_helix = None
@@ -620,8 +620,8 @@ class SkyrimAGI:
                 timeout=300  # 5 minutes for 235B model
             )
             if self.hyperbolic_reasoning.is_available():
-                print("    ✓ Hyperbolic Reasoning (Qwen3-235B) initialized")
-                print("    ✓ Meta-cognitive reasoning enabled")
+                print("    [OK] Hyperbolic Reasoning (Qwen3-235B) initialized")
+                print("    [OK] Meta-cognitive reasoning enabled")
                 
                 # Record in double helix
                 if self.double_helix:
@@ -636,8 +636,8 @@ class SkyrimAGI:
                 timeout=120
             )
             if self.hyperbolic_vision.is_available():
-                print("    ✓ Hyperbolic Vision (NVIDIA Nemotron) initialized")
-                print("    ✓ Visual awareness enabled")
+                print("    [OK] Hyperbolic Vision (NVIDIA Nemotron) initialized")
+                print("    [OK] Visual awareness enabled")
                 
                 # Record in double helix
                 if self.double_helix:
@@ -674,7 +674,7 @@ class SkyrimAGI:
         print("  [RESEARCH] Perplexity research advisor...")
         self.research_advisor = ResearchAdvisor()
         if self.research_advisor.client.is_available():
-            print("    ✓ Perplexity API connected (sonar-medium-online)")
+            print("    [OK] Perplexity API connected (sonar-medium-online)")
         else:
             print("    ⚠️ Perplexity API key not found (PERPLEXITY_API_KEY)")
         
@@ -682,7 +682,7 @@ class SkyrimAGI:
         print("  [METACOG] OpenRouter metacognition advisor...")
         self.metacog_advisor = MetaCognitionAdvisor()
         if self.metacog_advisor.client.is_available():
-            print("    ✓ OpenRouter API connected (gpt-4o + deepseek)")
+            print("    [OK] OpenRouter API connected (gpt-4o + deepseek)")
         else:
             print("    ⚠️ OpenRouter API key not found (OPENROUTER_API_KEY)")
         
@@ -691,8 +691,8 @@ class SkyrimAGI:
         from ..core.temporal_binding import TemporalCoherenceTracker
         
         self.temporal_tracker = TemporalCoherenceTracker(window_size=20)
-        print("    ✓ Temporal coherence tracking initialized")
-        print("    ✓ Perception→action→outcome loops will be tracked")
+        print("    [OK] Temporal coherence tracking initialized")
+        print("    [OK] Perception→action→outcome loops will be tracked")
         
         # 22. CONTINUUM PHASE 1 INTEGRATION (NEW - Next-Gen Architecture)
         print("  [22/27] Continuum Phase 1 (Observable mode)...")
@@ -711,10 +711,10 @@ class SkyrimAGI:
                 'manifold_dimensions': 20,  # Start with 20D manifold
             }
         )
-        print("    ✓ Continuum Phase 1 initialized")
-        print("    ✓ CoherenceManifold (20D consciousness space)")
-        print("    ✓ GraphConsciousnessField (subsystem graph)")
-        print("    ✓ TemporalSuperpositionEngine (future simulation)")
+        print("    [OK] Continuum Phase 1 initialized")
+        print("    [OK] CoherenceManifold (20D consciousness space)")
+        print("    [OK] GraphConsciousnessField (subsystem graph)")
+        print("    [OK] TemporalSuperpositionEngine (future simulation)")
         print("    ⚠️ OBSERVATION MODE - No control changes")
         
         # 23. HaackLang Bridge + SCCE (NEW - Cognitive Calculus Engine)
@@ -742,8 +742,8 @@ class SkyrimAGI:
                 
                 # Load cognitive modules
                 loaded = self.haack_bridge.load_all_modules()
-                print(f"    ✓ HaackLang runtime initialized")
-                print(f"    ✓ Loaded {len(loaded)} cognitive modules:")
+                print(f"    [OK] HaackLang runtime initialized")
+                print(f"    [OK] Loaded {len(loaded)} cognitive modules:")
                 for module_name in loaded:
                     print(f"        - {module_name}.haack")
                 
@@ -759,9 +759,9 @@ class SkyrimAGI:
                 else:
                     self.scce_profile = BALANCED_PROFILE
                 
-                print(f"    ✓ SCCE profile: {self.scce_profile.name}")
-                print("    ✓ Temporal cognitive dynamics enabled")
-                print("    ✓ Fear/trust/stress/curiosity evolution active")
+                print(f"    [OK] SCCE profile: {self.scce_profile.name}")
+                print("    [OK] Temporal cognitive dynamics enabled")
+                print("    [OK] Fear/trust/stress/curiosity evolution active")
                 
                 # Record in double helix
                 if self.double_helix:
@@ -843,8 +843,8 @@ class SkyrimAGI:
         self.enhanced_coherence = EnhancedCoherenceMetrics(
             temporal_tracker=self.temporal_tracker
         )
-        print("    ✓ 4D coherence measurement enabled")
-        print("    ✓ Integration + Temporal + Causal + Predictive")
+        print("    [OK] 4D coherence measurement enabled")
+        print("    [OK] Integration + Temporal + Causal + Predictive")
         
         # 23. Hierarchical Memory System (NEW - Critical)
         print("  [23/27] Hierarchical memory system...")
@@ -856,16 +856,16 @@ class SkyrimAGI:
             min_pattern_samples=3,
             consolidation_interval=60.0
         )
-        print("    ✓ Episodic→semantic consolidation enabled")
-        print("    ✓ Genuine learning from experience")
+        print("    [OK] Episodic→semantic consolidation enabled")
+        print("    [OK] Genuine learning from experience")
         
         # 24. Lumen Integration System (NEW)
         print("  [24/27] Lumen integration system...")
         from ..consciousness.lumen_integration import LumenIntegratedSystem
         
         self.lumen_integration = LumenIntegratedSystem()
-        print("    ✓ Metaluminosity framework integrated")
-        print("    ✓ Onticum + Structurale + Participatum balance tracking")
+        print("    [OK] Metaluminosity framework integrated")
+        print("    [OK] Onticum + Structurale + Participatum balance tracking")
         
         # 25. Async Expert Pools (NEW - Critical)
         print("  [25/27] Async expert pools...")
@@ -876,7 +876,7 @@ class SkyrimAGI:
         self.claude_pool = None
         self.gemini_caller = None
         self.claude_caller = None
-        print("    ✓ Async expert pools configured (will initialize with LLMs)")
+        print("    [OK] Async expert pools configured (will initialize with LLMs)")
         
         # 26. Live Audio Stream (NEW - Real-time Commentary)
         print("  [26/28] Live audio stream...")
@@ -894,9 +894,9 @@ class SkyrimAGI:
                     max_streams_per_minute=12,
                 )
                 self.live_audio = LiveAudioStream(audio_config)
-                print("    ✓ Live audio stream initialized")
-                print("    ✓ Gemini 2.5 Flash Live + OpenAI Realtime")
-                print("    ✓ Real-time thought vocalization enabled")
+                print("    [OK] Live audio stream initialized")
+                print("    [OK] Gemini 2.5 Flash Live + OpenAI Realtime")
+                print("    [OK] Real-time thought vocalization enabled")
             except Exception as e:
                 print(f"    ⚠️ Live audio stream initialization failed: {e}")
                 self.live_audio = None
@@ -918,7 +918,7 @@ class SkyrimAGI:
             'memory': {},
             'lumen': {}
         }
-        print("    ✓ Unified metrics tracking enabled")
+        print("    [OK] Unified metrics tracking enabled")
         
         # 28. Skyrim-specific Motivation System
         print("  [28/28] Skyrim-specific motivation system...")
@@ -966,8 +966,8 @@ class SkyrimAGI:
             critical_health_threshold=25.0
         )
         self.menu_handler = MenuHandler(max_menu_time=3.0)
-        print("    ✓ Motor control layer initialized")
-        print("    ✓ Reflexes, navigation, combat, menu handling ready")
+        print("    [OK] Motor control layer initialized")
+        print("    [OK] Reflexes, navigation, combat, menu handling ready")
         
         # 30. Curriculum RL System (Progressive Learning)
         print("  [30/30] Curriculum RL system (progressive learning)...")
@@ -978,9 +978,9 @@ class SkyrimAGI:
             progress_weight=0.4,
             enable_symbolic_rules=True
         )
-        print("    ✓ Curriculum RL initialized")
-        print("    ✓ Progressive stages: Locomotion → Navigation → Combat")
-        print("    ✓ Blends Δ𝒞 (coherence) + game progress")
+        print("    [OK] Curriculum RL initialized")
+        print("    [OK] Progressive stages: Locomotion → Navigation → Combat")
+        print("    [OK] Blends ΔC (coherence) + game progress")
 
         # External augmentation clients (initialized later)
         self.claude_meta_client = None
@@ -1536,7 +1536,7 @@ class SkyrimAGI:
                     claude_rpm_limit=self.config.claude_rpm_limit,
                 )
                 await self.moe.initialize()
-                print("[PARALLEL] ✓ MoE component ready")
+                print("[PARALLEL] [OK] MoE component ready")
                 await self._connect_moe()
             except Exception as e:
                 print(f"[PARALLEL] ⚠️ MoE initialization failed: {e}")
@@ -1561,13 +1561,13 @@ class SkyrimAGI:
                 
                 self.hybrid_llm = HybridLLMClient(hybrid_config)
                 await self.hybrid_llm.initialize()
-                print("[PARALLEL] ✓ Hybrid component ready")
+                print("[PARALLEL] [OK] Hybrid component ready")
                 await self._connect_hybrid_llm()
                 
                 # Initialize Emotion System LLM
                 try:
                     await self.emotion_integration.initialize_llm()
-                    print("[PARALLEL] ✓ Emotion system LLM ready (HuiHui)")
+                    print("[PARALLEL] [OK] Emotion system LLM ready (HuiHui)")
                 except Exception as e:
                     print(f"[PARALLEL] ⚠️ Emotion LLM initialization failed: {e}")
                     print("[PARALLEL]   Continuing with rule-based emotion system")
@@ -1576,7 +1576,7 @@ class SkyrimAGI:
                 if self.realtime_coordinator:
                     try:
                         await self.realtime_coordinator.connect()
-                        print("[PARALLEL] ✓ Realtime coordinator connected (GPT-4 Realtime API)")
+                        print("[PARALLEL] [OK] Realtime coordinator connected (GPT-4 Realtime API)")
                     except Exception as e:
                         print(f"[PARALLEL] ⚠️ Realtime coordinator connection failed: {e}")
                         print("[PARALLEL]   Continuing without realtime coordination")
@@ -1586,7 +1586,7 @@ class SkyrimAGI:
                 if self.self_reflection:
                     try:
                         await self.self_reflection.connect()
-                        print("[PARALLEL] ✓ Self-reflection system connected (GPT-4 Realtime)")
+                        print("[PARALLEL] [OK] Self-reflection system connected (GPT-4 Realtime)")
                     except Exception as e:
                         print(f"[PARALLEL] ⚠️ Self-reflection connection failed: {e}")
                         self.self_reflection = None
@@ -1596,14 +1596,14 @@ class SkyrimAGI:
                     try:
                         from ..learning.reward_guided_tuning import RewardGuidedTuning
                         self.reward_tuning = RewardGuidedTuning(self.sensorimotor_llm)
-                        print("[PARALLEL] ✓ Reward-guided tuning initialized (Claude Sonnet 4.5)")
+                        print("[PARALLEL] [OK] Reward-guided tuning initialized (Claude Sonnet 4.5)")
                     except Exception as e:
                         print(f"[PARALLEL] ⚠️ Reward tuning initialization failed: {e}")
                         self.reward_tuning = None
                 
                 # Also initialize local LLM references if fallback enabled
                 if self.config.use_local_fallback and self.hybrid_llm.local_reasoning:
-                    print("[PARALLEL] ✓ Local LLM fallback available")
+                    print("[PARALLEL] [OK] Local LLM fallback available")
                     self.huihui_llm = self.hybrid_llm.local_reasoning
                     self.perception_llm = self.hybrid_llm.local_vision
                     self.action_planning_llm = self.hybrid_llm.local_action
@@ -1622,7 +1622,7 @@ class SkyrimAGI:
                     mistral_client = LMStudioClient(mistral_config)
                     mistral_interface = ExpertLLMInterface(mistral_client)
                     self.meta_strategist.llm_interface = mistral_interface
-                    print("[PARALLEL] ✓ Meta-Strategist using Mistral-7B")
+                    print("[PARALLEL] [OK] Meta-Strategist using Mistral-7B")
                     
                     # Connect Huihui to AGI orchestrator as consciousness LLM
                     # This enables full Singularis dialectical reasoning
@@ -1642,7 +1642,7 @@ class SkyrimAGI:
                     # Run health check for local LLMs
                     print("\n[PARALLEL] Running LM Studio health check...")
                     if await state_printer_client.health_check():
-                        print("[PARALLEL] ✓ LM Studio connection verified")
+                        print("[PARALLEL] [OK] LM Studio connection verified")
                     else:
                         print("[PARALLEL] ⚠️ LM Studio health check failed - local models may not work")
                         print("[PARALLEL] Please ensure:")
@@ -1650,9 +1650,9 @@ class SkyrimAGI:
                         print("[PARALLEL]   2. Local server is started (Server tab)")
                         print("[PARALLEL]   3. A model is loaded")
                     
-                    print("[PARALLEL] ✓ Huihui connected to AGI orchestrator (enables dialectical synthesis)")
-                    print("[PARALLEL] ✓ State printer LLM connected (microsoft/phi-4)")
-                    print("[PARALLEL] ✓ Local LLMs connected to components")
+                    print("[PARALLEL] [OK] Huihui connected to AGI orchestrator (enables dialectical synthesis)")
+                    print("[PARALLEL] [OK] State printer LLM connected (microsoft/phi-4)")
+                    print("[PARALLEL] [OK] Local LLMs connected to components")
                     
             except Exception as e:
                 print(f"[PARALLEL] ⚠️ Hybrid initialization failed: {e}")
@@ -1676,12 +1676,12 @@ class SkyrimAGI:
                 
                 self.local_moe = LocalMoEOrchestrator(local_moe_config)
                 await self.local_moe.initialize()
-                print("[PARALLEL] ✓ Local MoE fallback ready (4x Phi-4-mini + Phi-4-mini synthesizer + Mistral fallback)")
+                print("[PARALLEL] [OK] Local MoE fallback ready (4x Phi-4-mini + Phi-4-mini synthesizer + Mistral fallback)")
             except Exception as e:
                 print(f"[PARALLEL] ⚠️ Local MoE initialization failed: {e}")
                 self.local_moe = None
             
-            print(f"\n[PARALLEL] ✓ Parallel mode active")
+            print(f"\n[PARALLEL] [OK] Parallel mode active")
             print(f"[PARALLEL] Consensus weights: MoE={self.config.parallel_consensus_weight_moe}, Hybrid={self.config.parallel_consensus_weight_hybrid}")
             if hasattr(self, 'local_moe') and self.local_moe:
                 print(f"[PARALLEL] Local MoE fallback: ENABLED")
@@ -1704,7 +1704,7 @@ class SkyrimAGI:
                 
                 await self.moe.initialize()
                 
-                print("\n[MoE] ✓ Mixture of Experts system initialized successfully")
+                print("\n[MoE] [OK] Mixture of Experts system initialized successfully")
                 print(f"[MoE] Total experts: {self.config.num_gemini_experts + self.config.num_claude_experts}")
                 print(f"[MoE] Rate limits: Gemini {self.config.gemini_rpm_limit} RPM, Claude {self.config.claude_rpm_limit} RPM")
                 
@@ -1739,7 +1739,7 @@ class SkyrimAGI:
                 self.hybrid_llm = HybridLLMClient(hybrid_config)
                 await self.hybrid_llm.initialize()
                 
-                print("\n[HYBRID] ✓ Hybrid LLM system initialized successfully")
+                print("\n[HYBRID] [OK] Hybrid LLM system initialized successfully")
                 
                 # Connect hybrid system to all components
                 await self._connect_hybrid_llm()
@@ -1758,11 +1758,11 @@ class SkyrimAGI:
         print("LLM ARCHITECTURE READY")
         print("=" * 70)
         if self.hybrid_llm:
-            print("✓ Hybrid system active: Gemini (vision) + Claude Sonnet 4 (reasoning)")
+            print("[OK] Hybrid system active: Gemini (vision) + Claude Sonnet 4 (reasoning)")
             if self.config.use_local_fallback:
-                print("✓ Local fallback enabled")
+                print("[OK] Local fallback enabled")
         if self.moe:
-            print("✓ MoE system active: 2 Gemini + 1 Claude + 1 GPT-4o + 1 Nemotron + 1 Qwen3")
+            print("[OK] MoE system active: 2 Gemini + 1 Claude + 1 GPT-4o + 1 Nemotron + 1 Qwen3")
         print("Async execution for parallel processing")
         print("=" * 70)
         print()
@@ -1793,7 +1793,7 @@ class SkyrimAGI:
             try:
                 await self.live_audio.initialize()
                 await self.live_audio.start()
-                print("✓ Live audio stream active")
+                print("[OK] Live audio stream active")
                 print()
             except Exception as e:
                 print(f"⚠️ Failed to start live audio stream: {e}")
@@ -1817,42 +1817,42 @@ class SkyrimAGI:
         # Connect to perception for vision tasks
         if hasattr(self.perception, 'set_moe'):
             self.perception.set_moe(self.moe)
-            print("[MoE] ✓ Connected to perception system")
+            print("[MoE] [OK] Connected to perception system")
         
         # Connect to strategic planner for reasoning
         if self.strategic_planner and hasattr(self.strategic_planner, 'set_moe'):
             self.strategic_planner.set_moe(self.moe)
             self.strategic_planner.set_parallel_agi(self)
-            print("[MoE] ✓ Connected to strategic planner")
+            print("[MoE] [OK] Connected to strategic planner")
         
         # Connect to meta-strategist
         if hasattr(self.meta_strategist, 'set_moe'):
             self.meta_strategist.set_moe(self.moe)
-            print("[MoE] ✓ Connected to meta-strategist")
+            print("[MoE] [OK] Connected to meta-strategist")
         
         # Connect to RL reasoning neuron
         if hasattr(self.rl_reasoning_neuron, 'set_moe'):
             self.rl_reasoning_neuron.set_moe(self.moe)
-            print("[MoE] ✓ Connected to RL reasoning neuron")
+            print("[MoE] [OK] Connected to RL reasoning neuron")
         
         # Connect to world model
         if hasattr(self.skyrim_world, 'set_moe'):
             self.skyrim_world.set_moe(self.moe)
-            print("[MoE] ✓ Connected to world model")
+            print("[MoE] [OK] Connected to world model")
         
         # Connect to consciousness bridge
         if hasattr(self.consciousness_bridge, 'set_moe'):
             self.consciousness_bridge.set_moe(self.moe)
-            print("[MoE] ✓ Connected to consciousness bridge")
+            print("[MoE] [OK] Connected to consciousness bridge")
         
         # Connect to quest tracker and dialogue
         if hasattr(self.quest_tracker, 'set_moe'):
             self.quest_tracker.set_moe(self.moe)
-            print("[MoE] ✓ Connected to quest tracker")
+            print("[MoE] [OK] Connected to quest tracker")
         
         if hasattr(self.dialogue_intelligence, 'set_moe'):
             self.dialogue_intelligence.set_moe(self.moe)
-            print("[MoE] ✓ Connected to dialogue intelligence")
+            print("[MoE] [OK] Connected to dialogue intelligence")
         
         print("[MoE] Component connection complete\n")
     
@@ -1866,42 +1866,42 @@ class SkyrimAGI:
         # Connect to perception for vision tasks
         if hasattr(self.perception, 'set_hybrid_llm'):
             self.perception.set_hybrid_llm(self.hybrid_llm)
-            print("[HYBRID] ✓ Connected to perception system")
+            print("[HYBRID] [OK] Connected to perception system")
         
         # Connect to strategic planner for reasoning
         if self.strategic_planner and hasattr(self.strategic_planner, 'set_hybrid_llm'):
             self.strategic_planner.set_hybrid_llm(self.hybrid_llm)
             self.strategic_planner.set_parallel_agi(self)
-            print("[HYBRID] ✓ Connected to strategic planner")
+            print("[HYBRID] [OK] Connected to strategic planner")
         
         # Connect to meta-strategist
         if hasattr(self.meta_strategist, 'set_hybrid_llm'):
             self.meta_strategist.set_hybrid_llm(self.hybrid_llm)
-            print("[HYBRID] ✓ Connected to meta-strategist")
+            print("[HYBRID] [OK] Connected to meta-strategist")
         
         # Connect to RL reasoning neuron
         if hasattr(self.rl_reasoning_neuron, 'set_hybrid_llm'):
             self.rl_reasoning_neuron.set_hybrid_llm(self.hybrid_llm)
-            print("[HYBRID] ✓ Connected to RL reasoning neuron")
+            print("[HYBRID] [OK] Connected to RL reasoning neuron")
         
         # Connect to world model
         if hasattr(self.skyrim_world, 'set_hybrid_llm'):
             self.skyrim_world.set_hybrid_llm(self.hybrid_llm)
-            print("[HYBRID] ✓ Connected to world model")
+            print("[HYBRID] [OK] Connected to world model")
         
         # Connect to consciousness bridge
         if hasattr(self.consciousness_bridge, 'set_hybrid_llm'):
             self.consciousness_bridge.set_hybrid_llm(self.hybrid_llm)
-            print("[HYBRID] ✓ Connected to consciousness bridge")
+            print("[HYBRID] [OK] Connected to consciousness bridge")
         
         # Connect to quest tracker and dialogue
         if hasattr(self.quest_tracker, 'set_hybrid_llm'):
             self.quest_tracker.set_hybrid_llm(self.hybrid_llm)
-            print("[HYBRID] ✓ Connected to quest tracker")
+            print("[HYBRID] [OK] Connected to quest tracker")
         
         if hasattr(self.dialogue_intelligence, 'set_hybrid_llm'):
             self.dialogue_intelligence.set_hybrid_llm(self.hybrid_llm)
-            print("[HYBRID] ✓ Connected to dialogue intelligence")
+            print("[HYBRID] [OK] Connected to dialogue intelligence")
         
         print("[HYBRID] Component connection complete\n")
         
@@ -2117,7 +2117,7 @@ class SkyrimAGI:
                 wolfram_gpt_id="gpt-4o",  # Can be replaced with custom Wolfram GPT
                 verbose=True
             )
-            print("[WOLFRAM] ✓ Telemetry analyzer ready")
+            print("[WOLFRAM] [OK] Telemetry analyzer ready")
             print("[WOLFRAM] Will perform advanced calculations on AGI metrics\n")
         except Exception as e:
             print(f"[WOLFRAM] ⚠️ Initialization failed: {e}")
@@ -2303,7 +2303,7 @@ class SkyrimAGI:
         self.haack_bridge.register_python_callback('execute_withdraw', execute_withdraw)
         self.haack_bridge.register_python_callback('execute_panic', execute_panic)
         
-        print(f"    ✓ Registered {8} Python callbacks for HaackLang")
+        print(f"    [OK] Registered {8} Python callbacks for HaackLang")
     
     async def speak_decision(self, action: str, reason: str):
         """Voice system speaks a decision."""
@@ -2826,11 +2826,11 @@ Connect perception → thought → action into flowing experience.""",
         if hasattr(self, 'coherence_history') and self.coherence_history:
             recent_coherence = self.coherence_history[-3:]  # Last 3 measurements
             avg_coherence = sum(recent_coherence) / len(recent_coherence)
-            context_parts.append(f"Recent Coherence (𝒞): {avg_coherence:.3f}")
+            context_parts.append(f"Recent Coherence (C): {avg_coherence:.3f}")
             if len(recent_coherence) >= 2:
                 trend = recent_coherence[-1] - recent_coherence[-2]
                 trend_word = "increasing" if trend > 0 else "decreasing" if trend < 0 else "stable"
-                context_parts.append(f"Coherence Trend: {trend_word} (Δ𝒞={trend:+.3f})")
+                context_parts.append(f"Coherence Trend: {trend_word} (ΔC={trend:+.3f})")
         
         # === AVAILABLE EXPERT PERSPECTIVES ===
         context_parts.append("\n=== AVAILABLE EXPERT PERSPECTIVES ===")
@@ -2937,11 +2937,11 @@ Connect perception → thought → action into flowing experience.""",
                 hybrid_llm=llm_for_rl,
                 moe=moe_for_rl,
             )
-            print(f"[CLOUD-RL] ✓ Memory initialized: {len(self.cloud_rl_memory.experiences)} experiences loaded")
+            print(f"[CLOUD-RL] [OK] Memory initialized: {len(self.cloud_rl_memory.experiences)} experiences loaded")
             
             if self.config.rl_use_rag:
                 if self.cloud_rl_memory.collection:
-                    print("[CLOUD-RL] ✓ RAG context fetching enabled (ChromaDB)")
+                    print("[CLOUD-RL] [OK] RAG context fetching enabled (ChromaDB)")
                 else:
                     print("[CLOUD-RL] ⚠️ RAG unavailable (install chromadb)")
             
@@ -2961,14 +2961,14 @@ Connect perception → thought → action into flowing experience.""",
             # Try to load saved agent
             agent_path = self.config.rl_memory_dir + "/cloud_rl_agent.pkl"
             self.cloud_rl_agent.load(agent_path)
-            print("[CLOUD-RL] ✓ Agent initialized")
+            print("[CLOUD-RL] [OK] Agent initialized")
             
             # Report configuration
             print("\n[CLOUD-RL] Configuration:")
-            print(f"  Cloud LLM reward shaping: {'✓ Enabled' if self.config.rl_cloud_reward_shaping else '✗ Disabled'}")
-            print(f"  MoE evaluation: {'✓ Enabled' if self.config.rl_moe_evaluation and moe_for_rl else '✗ Disabled'}")
-            print(f"  RAG context fetching: {'✓ Enabled' if self.config.rl_use_rag else '✗ Disabled'}")
-            print(f"  Memory persistence: ✓ Enabled (auto-save every {self.config.rl_save_frequency} experiences)")
+            print(f"  Cloud LLM reward shaping: {'[OK] Enabled' if self.config.rl_cloud_reward_shaping else '[X] Disabled'}")
+            print(f"  MoE evaluation: {'[OK] Enabled' if self.config.rl_moe_evaluation and moe_for_rl else '[X] Disabled'}")
+            print(f"  RAG context fetching: {'[OK] Enabled' if self.config.rl_use_rag else '[X] Disabled'}")
+            print(f"  Memory persistence: [OK] Enabled (auto-save every {self.config.rl_save_frequency} experiences)")
             
             # Get and display stats
             stats = self.cloud_rl_memory.get_stats()
@@ -2979,7 +2979,7 @@ Connect perception → thought → action into flowing experience.""",
             print(f"  Avg reward: {stats['avg_reward']:.3f}")
             print(f"  Success rate: {stats['successful_actions']/(stats['successful_actions']+stats['failed_actions']+1)*100:.1f}%")
             
-            print("\n[CLOUD-RL] ✓ Cloud-enhanced RL system ready")
+            print("\n[CLOUD-RL] [OK] Cloud-enhanced RL system ready")
             
         except Exception as e:
             print(f"[CLOUD-RL] ⚠️ Failed to initialize: {e}")
@@ -3005,18 +3005,18 @@ Connect perception → thought → action into flowing experience.""",
             )
             huihui_client = LMStudioClient(huihui_config)
             self.huihui_llm = ExpertLLMInterface(huihui_client)
-            print("[LEGACY] ✓ Main cognition LLM initialized")
+            print("[LEGACY] [OK] Main cognition LLM initialized")
             
             # Initialize base Singularis AGI
             self.agi.config.lm_studio_url = self.config.base_config.lm_studio_url
             self.agi.config.model_name = self.config.huihui_cognition_model
             await self.agi.initialize_llm()
-            print("[LEGACY] ✓ Base Singularis AGI initialized")
+            print("[LEGACY] [OK] Base Singularis AGI initialized")
             
             # Connect Huihui to AGI orchestrator for dialectical reasoning (cycle 15)
             self.agi.consciousness_llm = self.huihui_llm
             self.consciousness_bridge.consciousness_llm = self.huihui_llm
-            print("[LEGACY] ✓ Huihui connected to AGI orchestrator (enables dialectical synthesis)")
+            print("[LEGACY] [OK] Huihui connected to AGI orchestrator (enables dialectical synthesis)")
             
             # Connect to components
             self.rl_reasoning_neuron.llm_interface = self.huihui_llm
@@ -3025,7 +3025,7 @@ Connect perception → thought → action into flowing experience.""",
             self.quest_tracker.set_llm_interface(self.huihui_llm)
             self.dialogue_intelligence.set_llm_interface(self.huihui_llm)
             
-            print("[LEGACY] ✓ Legacy LLM system ready")
+            print("[LEGACY] [OK] Legacy LLM system ready")
             
         except Exception as e:
             print(f"[LEGACY] ⚠️ Failed to initialize: {e}")
@@ -3048,7 +3048,7 @@ Connect perception → thought → action into flowing experience.""",
                 return
 
             self.meta_strategist.add_auxiliary_interface(self.claude_meta_client, self.config.claude_model)
-            print("[CLAUDE] ✓ Auxiliary meta reasoning client ready (runs alongside Huihui)")
+            print("[CLAUDE] [OK] Auxiliary meta reasoning client ready (runs alongside Huihui)")
 
         except Exception as exc:
             print(f"[CLAUDE] ⚠️ Failed to initialize auxiliary meta reasoning: {exc}")
@@ -3074,7 +3074,7 @@ Connect perception → thought → action into flowing experience.""",
                 return
 
             self.perception.set_gemini_analyzer(self.gemini_vision_client)
-            print("[GEMINI] ✓ Vision augmentation ready (complements Qwen/CLIP)")
+            print("[GEMINI] [OK] Vision augmentation ready (complements Qwen/CLIP)")
 
         except Exception as exc:
             print(f"[GEMINI] ⚠️ Failed to initialize vision augmentation: {exc}")
@@ -3252,7 +3252,7 @@ Connect perception → thought → action into flowing experience.""",
                 timeout=30  # Haiku is much faster
             )
             if self.sensorimotor_llm.is_available():
-                print(f"[SENSORIMOTOR] ✓ {self.config.claude_sensorimotor_model} initialized for geospatial reasoning")
+                print(f"[SENSORIMOTOR] [OK] {self.config.claude_sensorimotor_model} initialized for geospatial reasoning")
             else:
                 print(f"[SENSORIMOTOR] ⚠️ {self.config.claude_sensorimotor_model} not available")
                 self.sensorimotor_llm = None
@@ -3264,7 +3264,7 @@ Connect perception → thought → action into flowing experience.""",
             learning_rate=0.1,
             decay_rate=0.01
         )
-        print("[HEBBIAN] ✓ Integration system initialized: 'Neurons that fire together, wire together'")
+        print("[HEBBIAN] [OK] Integration system initialized: 'Neurons that fire together, wire together'")
         
         # Initialize MAIN BRAIN (GPT-4o synthesis)
         from singularis.llm.openai_client import OpenAIClient
@@ -3278,7 +3278,7 @@ Connect perception → thought → action into flowing experience.""",
             self.dashboard_streamer.set_session_id(self.main_brain.session_id)
         
         if self.openai_client.is_available():
-            print(f"[MAIN BRAIN] 🧠 Initialized - Session: {self.main_brain.session_id}")
+            print(f"[MAIN BRAIN] [BRAIN] Initialized - Session: {self.main_brain.session_id}")
             print(f"[MAIN BRAIN] GPT-4o will synthesize all outputs into session report")
         else:
             print("[MAIN BRAIN] ⚠️ OpenAI API key not found - fallback mode only")
@@ -3504,7 +3504,7 @@ Stuck Loops Detected: {temp_stats.get('stuck_loops', 0)}""",
                         content=f"""FINAL UNIFIED STATE:
 Global Coherence: {final_snapshot['global_coherence']:.3f}
 Lumina Balance: {final_snapshot['lumina']['balance']:.3f}
-Consciousness: 𝒞={final_snapshot['consciousness']['coherence_C']:.3f}, Φ̂={final_snapshot['consciousness']['phi_hat']:.3f}
+Consciousness: C={final_snapshot['consciousness']['coherence_C']:.3f}, Phi={final_snapshot['consciousness']['phi_hat']:.3f}
 Spiral Stage: {final_snapshot['spiral']['stage']}
 Emotion: {final_snapshot['emotion']['primary']}
 Temporal Coherence: {final_snapshot['temporal']['temporal_coherence']:.3f}""",
@@ -3512,7 +3512,7 @@ Temporal Coherence: {final_snapshot['temporal']['temporal_coherence']:.3f}""",
                         success=True
                     )
                 
-                print("[TELEMETRY] ✓ All subsystem stats collected")
+                print("[TELEMETRY] [OK] All subsystem stats collected")
                 
                 # Add Wolfram summary to Main Brain before generating report
                 if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
@@ -3532,7 +3532,7 @@ Wolfram provided rigorous mathematical analysis of AGI metrics throughout the se
                             metadata=wolfram_stats,
                             success=True
                         )
-                        print(f"[WOLFRAM] ✓ Summary added to Main Brain report")
+                        print(f"[WOLFRAM] [OK] Summary added to Main Brain report")
                 
                 if hasattr(self, 'metacog_advisor') and self.metacog_advisor.client.is_available():
                     try:
@@ -3549,7 +3549,7 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
                                 metadata={'cycle': self.stats['cycles_completed']},
                                 success=True
                             )
-                            print(f"[METACOG] ✓ Meta-meta-meta report added")
+                            print(f"[METACOG] [OK] Meta-meta-meta report added")
                         
                         longterm = await self.metacog_advisor.deepseek_long_term_plan(snapshot)
                         if longterm:
@@ -3559,7 +3559,7 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
                                 metadata={'cycle': self.stats['cycles_completed']},
                                 success=True
                             )
-                            print(f"[METACOG] ✓ Long-term plan added")
+                            print(f"[METACOG] [OK] Long-term plan added")
                     except Exception as e:
                         print(f"[METACOG] ⚠️ Metacognition advisor failed: {e}")
                 
@@ -3575,11 +3575,11 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
                             metadata=self.continuum.get_stats(),
                             success=True
                         )
-                        print(f"[CONTINUUM] ✓ Observation report added to Main Brain")
+                        print(f"[CONTINUUM] [OK] Observation report added to Main Brain")
                         
                         # Check if ready for Phase 2
                         if self.continuum.is_ready_for_phase2():
-                            print(f"[CONTINUUM] 🚀 READY FOR PHASE 2 UPGRADE")
+                            print(f"[CONTINUUM] [READY] READY FOR PHASE 2 UPGRADE")
                             print(f"[CONTINUUM] Advisory match rate > 30%")
                             print(f"[CONTINUUM] 100+ observations collected")
                         else:
@@ -3593,9 +3593,9 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
                         print(f"[CONTINUUM] ⚠️ Report generation failed: {e}")
                 
                 report_path = await self.main_brain.generate_session_markdown()
-                print(f"\n[MAIN BRAIN] 🧠✨ Session report generated!")
-                print(f"[MAIN BRAIN] 📄 Location: {report_path}")
-                print(f"[MAIN BRAIN] 🎯 Session ID: {self.main_brain.session_id}")
+                print(f"\n[MAIN BRAIN] [BRAIN] Session report generated!")
+                print(f"[MAIN BRAIN] [FILE] Location: {report_path}")
+                print(f"[MAIN BRAIN] [TARGET] Session ID: {self.main_brain.session_id}")
                 
                 # Print Wolfram contribution
                 if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
@@ -3632,7 +3632,7 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
                 # Close Continuum
                 if hasattr(self, 'continuum') and self.continuum:
                     await self.continuum.cleanup()
-                print("[CLEANUP] ✓ All sessions closed")
+                print("[CLEANUP] [OK] All sessions closed")
             except Exception as e:
                 print(f"[CLEANUP] Warning: {e}")
 
@@ -4374,7 +4374,7 @@ Based on this visual and contextual data, provide:
                     )
                     print(f"[REASONING] → Coherence restored to {current_consciousness.coherence:.3f}")
                 
-                print(f"[REASONING] Coherence 𝒞 = {current_consciousness.coherence:.3f}")
+                print(f"[REASONING] Coherence C = {current_consciousness.coherence:.3f}")
                 
                 # Store current consciousness for BeingState update
                 self.current_consciousness = current_consciousness
@@ -4458,7 +4458,7 @@ Based on this visual and contextual data, provide:
                                 )
                                 
                                 if wolfram_result.confidence > 0.5:
-                                    print(f"[WOLFRAM] ✓ Differential analysis complete")
+                                    print(f"[WOLFRAM] [OK] Differential analysis complete")
                                     print(f"[WOLFRAM] Result: {wolfram_result.result[:200]}...")
                                     
                                     # Record to Main Brain
@@ -4564,7 +4564,7 @@ Based on this visual and contextual data, provide:
                         # Increment counter
                         self.stats['random_academic_thoughts'] += 1
                         
-                        print("[THOUGHT] ✓ Stored in cognitive memory")
+                        print("[THOUGHT] [OK] Stored in cognitive memory")
                     else:
                         print("[THOUGHT] No academic knowledge available")
                     
@@ -4584,7 +4584,7 @@ Based on this visual and contextual data, provide:
                     # ═══════════════════════════════════════════════════════════
                     # PARALLEL MULTI-MODAL VISUAL ANALYSIS
                     # ═══════════════════════════════════════════════════════════
-                    print("[SENSORIMOTOR] 🚀 Starting parallel multi-modal visual analysis...")
+                    print("[SENSORIMOTOR] [READY] Starting parallel multi-modal visual analysis...")
                     
                     screenshot = perception.get('screenshot')
                     visual_tasks = []
@@ -4610,10 +4610,10 @@ Also check for combat:
                                     ),
                                     timeout=15.0
                                 )
-                                print(f"[GEMINI-VISUAL] ✓ Complete: {len(result)} chars")
+                                print(f"[GEMINI-VISUAL] [OK] Complete: {len(result)} chars")
                                 return result
                             except Exception as e:
-                                print(f"[GEMINI-VISUAL] ✗ Failed: {e}")
+                                print(f"[GEMINI-VISUAL] [X] Failed: {e}")
                                 return None
                         return None
                     
@@ -4630,10 +4630,10 @@ Also check for combat:
                                 )
                                 if isinstance(result, dict):
                                     result = result.get('content', '')
-                                print(f"[LOCAL-VISUAL] ✓ Complete: {len(result)} chars")
+                                print(f"[LOCAL-VISUAL] [OK] Complete: {len(result)} chars")
                                 return result
                             except Exception as e:
-                                print(f"[LOCAL-VISUAL] ✗ Failed: {e}")
+                                print(f"[LOCAL-VISUAL] [X] Failed: {e}")
                                 return None
                         return None
                     
@@ -4643,10 +4643,10 @@ Also check for combat:
                             try:
                                 result = self.video_interpreter.get_latest_interpretation()
                                 if result:
-                                    print(f"[VIDEO-INTERP] ✓ Latest: {len(result)} chars")
+                                    print(f"[VIDEO-INTERP] [OK] Latest: {len(result)} chars")
                                 return result
                             except Exception as e:
-                                print(f"[VIDEO-INTERP] ✗ Failed: {e}")
+                                print(f"[VIDEO-INTERP] [X] Failed: {e}")
                                 return None
                         return None
                     
@@ -4669,7 +4669,7 @@ Also check for combat:
                         print(f"[VIDEO-INTERP] Exception: {video_interp}")
                         video_interp = None
                     
-                    print(f"[SENSORIMOTOR] ✓ Parallel analysis complete (Gemini: {bool(gemini_visual)}, Local: {bool(local_visual)}, Video: {bool(video_interp)})")
+                    print(f"[SENSORIMOTOR] [OK] Parallel analysis complete (Gemini: {bool(gemini_visual)}, Local: {bool(local_visual)}, Video: {bool(video_interp)})")
                     
                     # Combine visual analyses
                     if gemini_visual or local_visual:
@@ -4688,11 +4688,11 @@ Local Vision Model Analysis:
                         if 'CAMERA_LOOKING_UP' in gemini_visual:
                             print("[CAMERA-REORIENT] Detected looking at sky/ceiling - correcting...")
                             await self.actions.look_down()
-                            print("[CAMERA-REORIENT] ✓ Camera reoriented downward")
+                            print("[CAMERA-REORIENT] [OK] Camera reoriented downward")
                         elif 'CAMERA_LOOKING_DOWN' in gemini_visual:
                             print("[CAMERA-REORIENT] Detected looking at ground/floor - correcting...")
                             await self.actions.look_up()
-                            print("[CAMERA-REORIENT] ✓ Camera reoriented upward")
+                            print("[CAMERA-REORIENT] [OK] Camera reoriented upward")
                     
                     # Compute visual similarity if we have embeddings
                     visual_similarity_info = ""
@@ -4806,7 +4806,7 @@ CLAUDE HAIKU ANALYSIS:
 """
                         )
                         
-                        print("[SENSORIMOTOR] ✓ Stored in RAG memory (with visual learning from Gemini & Local)")
+                        print("[SENSORIMOTOR] [OK] Stored in RAG memory (with visual learning from Gemini & Local)")
                         
                         # Hebbian: Record successful sensorimotor reasoning
                         contribution = 1.0 if (gemini_visual and local_visual) else 0.7
@@ -5262,7 +5262,7 @@ What is the most strategic approach to this situation? Consider:
                         
                         print(f"\n[SINGULARIS] Strategic Insight ({len(strategic_insight)} chars):")
                         print(f"[SINGULARIS] {strategic_insight[:300]}...")
-                        print(f"[SINGULARIS] Coherence Δ𝒞: {coherence_delta:+.3f}")
+                        print(f"[SINGULARIS] Coherence ΔC: {coherence_delta:+.3f}")
                         
                         # Store in memory for future reference
                         self.memory_rag.store_cognitive_memory(
@@ -5563,7 +5563,7 @@ Top Predicates:
                     elif visual_changed:
                         # Visual progress made, allow repeated action (e.g., move_forward exploring)
                         if self.repeated_action_count >= 3:
-                            print(f"[STUCK-DETECTION] ✓ Repeated '{action}' {self.repeated_action_count}x but making visual progress")
+                            print(f"[STUCK-DETECTION] [OK] Repeated '{action}' {self.repeated_action_count}x but making visual progress")
                         self.repeated_action_count = 0  # Reset since progress is being made
                 else:
                     self.repeated_action_count = 0
@@ -6287,16 +6287,16 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                     consciousness_context
                 )
                 
-                print(f"[CONSCIOUSNESS] Coherence 𝒞 = {current_consciousness.coherence:.3f}")
-                print(f"[CONSCIOUSNESS]   ℓₒ (Ontical) = {current_consciousness.coherence_ontical:.3f}")
-                print(f"[CONSCIOUSNESS]   ℓₛ (Structural) = {current_consciousness.coherence_structural:.3f}")
-                print(f"[CONSCIOUSNESS]   ℓₚ (Participatory) = {current_consciousness.coherence_participatory:.3f}")
-                print(f"[CONSCIOUSNESS] Φ̂ (Level) = {current_consciousness.consciousness_level:.3f}")
+                print(f"[CONSCIOUSNESS] Coherence C = {current_consciousness.coherence:.3f}")
+                print(f"[CONSCIOUSNESS]   Lo (Ontical) = {current_consciousness.coherence_ontical:.3f}")
+                print(f"[CONSCIOUSNESS]   Ls (Structural) = {current_consciousness.coherence_structural:.3f}")
+                print(f"[CONSCIOUSNESS]   Lp (Participatory) = {current_consciousness.coherence_participatory:.3f}")
+                print(f"[CONSCIOUSNESS] Phi (Level) = {current_consciousness.consciousness_level:.3f}")
                 
                 if hasattr(self, 'main_brain'):
                     self.main_brain.record_output(
                         system_name='Consciousness Measurement',
-                        content=f"Coherence 𝒞={current_consciousness.coherence:.3f}, Ontical={current_consciousness.coherence_ontical:.3f}, Structural={current_consciousness.coherence_structural:.3f}, Participatory={current_consciousness.coherence_participatory:.3f}, Level Φ̂={current_consciousness.consciousness_level:.3f}",
+                        content=f"Coherence C={current_consciousness.coherence:.3f}, Ontical={current_consciousness.coherence_ontical:.3f}, Structural={current_consciousness.coherence_structural:.3f}, Participatory={current_consciousness.coherence_participatory:.3f}, Level Phi={current_consciousness.consciousness_level:.3f}",
                         metadata={'cycle': cycle_count, 'coherence': current_consciousness.coherence},
                         success=True
                     )
@@ -6327,7 +6327,7 @@ Lumina Balance: {snapshot['lumina']['balance']:.3f}
   ℓₒ (Ontic): {snapshot['lumina']['ontic']:.3f}
   ℓₛ (Structural): {snapshot['lumina']['structural']:.3f}
   ℓₚ (Participatory): {snapshot['lumina']['participatory']:.3f}
-Consciousness: 𝒞={snapshot['consciousness']['coherence_C']:.3f}, Φ̂={snapshot['consciousness']['phi_hat']:.3f}
+Consciousness: C={snapshot['consciousness']['coherence_C']:.3f}, Phi={snapshot['consciousness']['phi_hat']:.3f}
 Emotion: {snapshot['emotion']['primary']} (intensity={snapshot['emotion']['intensity']:.2f})
 Temporal Coherence: {snapshot['temporal']['temporal_coherence']:.3f}
 Goal: {snapshot['goal']}
@@ -6341,7 +6341,7 @@ Action: {snapshot['action']}""",
                 # 3. ASSESS MOTIVATION
                 motivation_context = {
                     'uncertainty': 0.7 if scene_type == SceneType.UNKNOWN else 0.3,
-                    'predicted_delta_coherence': 0.05,  # Exploration generally increases 𝒞
+                    'predicted_delta_coherence': 0.05,  # Exploration generally increases C
                 }
 
                 mot_state = self.agi.motivation.compute_motivation(
@@ -6462,11 +6462,11 @@ Action: {snapshot['action']}""",
                 # Show coherence change
                 if self.current_consciousness:
                     coherence_delta = after_consciousness.coherence_delta(self.current_consciousness)
-                    print(f"[CONSCIOUSNESS] Δ𝒞 = {coherence_delta:+.3f}", end="")
+                    print(f"[CONSCIOUSNESS] ΔC = {coherence_delta:+.3f}", end="")
                     if coherence_delta > 0.02:
-                        print(" (ETHICAL ✓)")
+                        print(" (ETHICAL [OK])")
                     elif coherence_delta < -0.02:
-                        print(" (UNETHICAL ✗)")
+                        print(" (UNETHICAL [X])")
                     else:
                         print(" (NEUTRAL)")
 
@@ -6589,7 +6589,7 @@ Action: {snapshot['action']}""",
                         consciousness_after=after_consciousness  # NEW
                     )
                     
-                    print(f"[RL] Experience stored with consciousness (Δ𝒞 = {after_consciousness.coherence_delta(self.current_consciousness) if self.current_consciousness else 0.0:+.3f})")
+                    print(f"[RL] Experience stored with consciousness (ΔC = {after_consciousness.coherence_delta(self.current_consciousness) if self.current_consciousness else 0.0:+.3f})")
 
                     # Train periodically
                     if cycle_count % self.config.rl_train_freq == 0:
@@ -7132,7 +7132,7 @@ Be concise and actionable."""
                 max_tokens=512  # Reduced for speed
             )
             
-            print(f"[CLAUDE-HAIKU] ✓ Analysis complete ({len(reasoning_text)} chars)")
+            print(f"[CLAUDE-HAIKU] [OK] Analysis complete ({len(reasoning_text)} chars)")
             
             # Store in memory RAG
             self.memory_rag.store_cognitive_memory(
@@ -7157,7 +7157,7 @@ Be concise and actionable."""
                 context={'stored_to_memory': True, 'model': 'haiku'}
             )
             
-            print("[CLAUDE-HAIKU] ✓ Stored to memory")
+            print("[CLAUDE-HAIKU] [OK] Stored to memory")
             
         except Exception as e:
             print(f"[CLAUDE-HAIKU] Error: {e}")
@@ -7393,7 +7393,7 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
             
             # Display rule firing results
             if rule_results['fired_rules']:
-                print(f"[RULES] ✓ Fired {len(rule_results['fired_rules'])} rules: {', '.join(rule_results['fired_rules'])}")
+                print(f"[RULES] [OK] Fired {len(rule_results['fired_rules'])} rules: {', '.join(rule_results['fired_rules'])}")
                 
                 # Show facts
                 if rule_results['facts']:
@@ -7741,7 +7741,7 @@ COHERENCE GAIN: <estimate 0.0-1.0 how much this increases understanding>
                             print(f"[GEMINI-MOE] ⚠️ SKIPPING - Gemini rate-limited ({wait_time:.1f}s)")
                             self.stats['llm_skipped_rate_limit'] = self.stats.get('llm_skipped_rate_limit', 0) + 1
                     else:
-                        print(f"[GEMINI-MOE] ✓ Rate limit OK - Starting {len(self.moe.gemini_experts)} Gemini Flash experts for fast action selection...")
+                        print(f"[GEMINI-MOE] [OK] Rate limit OK - Starting {len(self.moe.gemini_experts)} Gemini Flash experts for fast action selection...")
                         
                         # RECOMMENDATION 3: Leverage Gemini Vision for action filtering
                         # Build prompt with spatial reasoning context
@@ -8009,7 +8009,7 @@ Format: ACTION: <action_name>"""
                     cloud_recommendation = cloud_task.result()
                     if cloud_recommendation:
                         action, reasoning = cloud_recommendation
-                        print(f"[CLOUD-LLM] ✓ Cloud finished first! Using: {action}")
+                        print(f"[CLOUD-LLM] [OK] Cloud finished first! Using: {action}")
                         print(f"[CLOUD-LLM] Reasoning: {reasoning[:200]}...")
                         return action
                 except Exception as e:
@@ -8079,7 +8079,7 @@ Format: ACTION: <action_name>"""
                                             
                                             # Lowered confidence threshold from 0.7 to 0.5 (Fix 13)
                                             if action and action in available_actions and confidence >= 0.5:
-                                                print(f"[GEMINI-MOE] ✓ Won the race! {len(self.moe.gemini_experts)} experts chose: {action} (conf: {confidence:.2f})")
+                                                print(f"[GEMINI-MOE] [OK] Won the race! {len(self.moe.gemini_experts)} experts chose: {action} (conf: {confidence:.2f})")
                                                 
                                                 # Track action source
                                                 self.stats['action_source_moe'] += 1
@@ -8111,7 +8111,7 @@ Format: ACTION: <action_name>"""
                                     moe_recommendation = task.result()
                                     if moe_recommendation:
                                         action, reasoning = moe_recommendation
-                                        print(f"[LOCAL-MOE] ✓ Won the race! Using: {action}")
+                                        print(f"[LOCAL-MOE] [OK] Won the race! Using: {action}")
                                         self.local_moe_failures = 0  # Reset on success
                                         
                                         # Track action source
@@ -8142,7 +8142,7 @@ Format: ACTION: <action_name>"""
                                 elif task == phi4_task:
                                     llm_action = task.result()
                                     if llm_action:
-                                        print(f"[PHI4] ✓ Won the race! Using: {llm_action}")
+                                        print(f"[PHI4] [OK] Won the race! Using: {llm_action}")
                                         self.stats['llm_action_count'] += 1
                                         
                                         # Track action source
@@ -8164,13 +8164,13 @@ Format: ACTION: <action_name>"""
                             
                             # Timeout - cancel pending tasks and use heuristic
                             if pending:
-                                print(f"[PARALLEL] ⏱️ Timeout after 13.5s, using heuristic (cancelled {len(pending)} pending tasks)")
+                                print(f"[PARALLEL] [RATE] Timeout after 13.5s, using heuristic (cancelled {len(pending)} pending tasks)")
                                 self.stats['action_source_timeout'] += 1
                                 self.last_action_source = 'timeout'
                                 for task in pending:
                                     task.cancel()
                         except asyncio.TimeoutError:
-                            print(f"[PARALLEL] ⏱️ Timeout after 13.5s, using heuristic")
+                            print(f"[PARALLEL] [RATE] Timeout after 13.5s, using heuristic")
                             self.stats['action_source_timeout'] += 1
                             self.last_action_source = 'timeout'
                             for task in tasks_to_race:
@@ -8725,7 +8725,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             
             if self.controller and hasattr(self.controller, 'active_layer'):
                 print(f"[CONTROLLER] Active layer: {self.controller.active_layer}")
-                print("[CONTROLLER] ✓ Controller connection OK")
+                print("[CONTROLLER] [OK] Controller connection OK")
             else:
                 print("[CONTROLLER] ⚠️ Controller not properly initialized")
                 
@@ -8735,7 +8735,7 @@ QUICK DECISION - Choose ONE action from available list:"""
                 await self.actions.look_horizontal(5.0)  # Small test movement
                 await asyncio.sleep(0.2)
                 await self.actions.look_horizontal(-5.0)  # Return to center
-                print("[CONTROLLER] ✓ Basic actions working")
+                print("[CONTROLLER] [OK] Basic actions working")
             else:
                 print("[CONTROLLER] Dry run mode - skipping action test")
                 
@@ -8996,7 +8996,7 @@ QUICK DECISION - Choose ONE action from available list:"""
                 if coherence_change < self.stuck_threshold:
                     stuck_info['is_stuck'] = True
                     stuck_info['severity'] = 'medium'
-                    stuck_info['reason'] = f'Repeating {same_action} {self.stuck_detection_window}x, Δ𝒞={coherence_change:.3f}'
+                    stuck_info['reason'] = f'Repeating {same_action} {self.stuck_detection_window}x, ΔC={coherence_change:.3f}'
                     stuck_info['recovery_action'] = 'turn_left' if 'turn' not in same_action else 'move_backward'
                     print(f"[STUCK-MEDIUM] {stuck_info['reason']} → {stuck_info['recovery_action']}")
                     return stuck_info
@@ -9126,18 +9126,18 @@ QUICK DECISION - Choose ONE action from available list:"""
         ])
         
         if source_total > 0:
-            print(f"\n🎯 ACTION SOURCES:")
+            print(f"\n[TARGET] ACTION SOURCES:")
             moe_pct = 100 * self.stats.get('action_source_moe', 0) / source_total
             hybrid_pct = 100 * self.stats.get('action_source_hybrid', 0) / source_total
             phi4_pct = 100 * self.stats.get('action_source_phi4', 0) / source_total
             heur_pct = 100 * self.stats.get('action_source_heuristic', 0) / source_total
             timeout_pct = 100 * self.stats.get('action_source_timeout', 0) / source_total
             
-            print(f"  Cloud MoE:     {self.stats.get('action_source_moe', 0):3d} ({moe_pct:5.1f}%) {'🟢' if moe_pct > 20 else '🟡' if moe_pct > 5 else '🔴'}")
-            print(f"  Hybrid LLM:    {self.stats.get('action_source_hybrid', 0):3d} ({hybrid_pct:5.1f}%) {'🟢' if hybrid_pct > 10 else '🟡' if hybrid_pct > 2 else '🔴'}")
+            print(f"  Cloud MoE:     {self.stats.get('action_source_moe', 0):3d} ({moe_pct:5.1f}%) {'[OK]' if moe_pct > 20 else '[WARN]' if moe_pct > 5 else '[FAIL]'}")
+            print(f"  Hybrid LLM:    {self.stats.get('action_source_hybrid', 0):3d} ({hybrid_pct:5.1f}%) {'[OK]' if hybrid_pct > 10 else '[WARN]' if hybrid_pct > 2 else '[FAIL]'}")
             print(f"  Phi-4 Local:   {self.stats.get('action_source_phi4', 0):3d} ({phi4_pct:5.1f}%)")
-            print(f"  Heuristics:    {self.stats.get('action_source_heuristic', 0):3d} ({heur_pct:5.1f}%) {'🟢' if heur_pct < 30 else '🟡' if heur_pct < 60 else '🔴'}")
-            print(f"  Timeouts:      {self.stats.get('action_source_timeout', 0):3d} ({timeout_pct:5.1f}%) {'🟢' if timeout_pct < 10 else '🟡' if timeout_pct < 30 else '🔴'}")
+            print(f"  Heuristics:    {self.stats.get('action_source_heuristic', 0):3d} ({heur_pct:5.1f}%) {'[OK]' if heur_pct < 30 else '[WARN]' if heur_pct < 60 else '[FAIL]'}")
+            print(f"  Timeouts:      {self.stats.get('action_source_timeout', 0):3d} ({timeout_pct:5.1f}%) {'[OK]' if timeout_pct < 10 else '[WARN]' if timeout_pct < 30 else '[FAIL]'}")
         
         # Rate Limit Status
         if self.moe and hasattr(self.moe, 'is_gemini_rate_limited'):
@@ -9145,16 +9145,16 @@ QUICK DECISION - Choose ONE action from available list:"""
             gemini_rpm = self.moe.gemini_rpm_limit if hasattr(self.moe, 'gemini_rpm_limit') else 0
             claude_rpm = self.moe.claude_rpm_limit if hasattr(self.moe, 'claude_rpm_limit') else 0
             
-            print(f"\n⏱️  RATE LIMIT STATUS:")
-            print(f"  Gemini:  {'🔴 LIMITED' if is_limited else '🟢 AVAILABLE'} ({wait_time:.1f}s wait) | Limit: {gemini_rpm} RPM")
-            print(f"  Claude:  🟢 AVAILABLE | Limit: {claude_rpm} RPM")
+            print(f"\n[RATE]  RATE LIMIT STATUS:")
+            print(f"  Gemini:  {'[FAIL] LIMITED' if is_limited else '[OK] AVAILABLE'} ({wait_time:.1f}s wait) | Limit: {gemini_rpm} RPM")
+            print(f"  Claude:  [OK] AVAILABLE | Limit: {claude_rpm} RPM")
             print(f"  Queued:  {self.stats.get('llm_queued_requests', 0)} | Skipped: {self.stats.get('llm_skipped_rate_limit', 0)}")
         
         # Timing Stats
         if self.stats['planning_times']:
             avg_planning = sum(self.stats['planning_times'][-10:]) / len(self.stats['planning_times'][-10:])
-            print(f"\n⏲️  TIMING (last 10 cycles):")
-            print(f"  Avg Planning:   {avg_planning:.2f}s {'🟢' if avg_planning < 10 else '🟡' if avg_planning < 20 else '🔴'}")
+            print(f"\n[TIME]  TIMING (last 10 cycles):")
+            print(f"  Avg Planning:   {avg_planning:.2f}s {'[OK]' if avg_planning < 10 else '[WARN]' if avg_planning < 20 else '[FAIL]'}")
             
         if self.stats['execution_times']:
             avg_exec = sum(self.stats['execution_times'][-10:]) / len(self.stats['execution_times'][-10:])
@@ -9165,17 +9165,17 @@ QUICK DECISION - Choose ONE action from available list:"""
         if total_actions > 0:
             success_rate = self.stats['action_success_count'] / total_actions
         
-        print(f"\n📊 EFFECTIVENESS:")
-        print(f"  Success Rate:  {success_rate:.1%} {'🟢' if success_rate > 0.3 else '🟡' if success_rate > 0.15 else '🔴'}")
+        print(f"\n[STATS] EFFECTIVENESS:")
+        print(f"  Success Rate:  {success_rate:.1%} {'[OK]' if success_rate > 0.3 else '[WARN]' if success_rate > 0.15 else '[FAIL]'}")
         print(f"  Fast Actions:  {self.stats['fast_action_count']} ({100*self.stats['fast_action_count']/total_actions:.0f}%)")
         
         # Consciousness
         if hasattr(self, 'current_consciousness') and self.current_consciousness:
-            print(f"\n🧠 CONSCIOUSNESS:")
-            print(f"  Coherence 𝒞:    {self.current_consciousness.coherence:.3f}")
-            print(f"  Ontical ℓₒ:    {self.current_consciousness.coherence_ontical:.3f}")
-            print(f"  Structural ℓₛ: {self.current_consciousness.coherence_structural:.3f}")
-            print(f"  Participatory ℓₚ: {self.current_consciousness.coherence_participatory:.3f}")
+            print(f"\n[CONSCIOUSNESS]:")
+            print(f"  Coherence C:    {self.current_consciousness.coherence:.3f}")
+            print(f"  Ontical Lo:    {self.current_consciousness.coherence_ontical:.3f}")
+            print(f"  Structural Ls: {self.current_consciousness.coherence_structural:.3f}")
+            print(f"  Participatory Lp: {self.current_consciousness.coherence_participatory:.3f}")
         
         # State Coordinator (Epistemic Coherence)
         if hasattr(self, 'state_coordinator'):
@@ -9183,9 +9183,9 @@ QUICK DECISION - Choose ONE action from available list:"""
             epistemic_coherence = coord_stats['coherence']
             conflicts = coord_stats['active_conflicts']
             
-            print(f"\n🔄 STATE COORDINATION:")
-            print(f"  Epistemic Coherence: {epistemic_coherence:.3f} {'🟢' if epistemic_coherence > 0.7 else '🟡' if epistemic_coherence > 0.4 else '🔴'}")
-            print(f"  Active Conflicts:    {conflicts} {'🟢' if conflicts == 0 else '🟡' if conflicts < 3 else '🔴'}")
+            print(f"\n[COORD] STATE COORDINATION:")
+            print(f"  Epistemic Coherence: {epistemic_coherence:.3f} {'[OK]' if epistemic_coherence > 0.7 else '[WARN]' if epistemic_coherence > 0.4 else '[FAIL]'}")
+            print(f"  Active Conflicts:    {conflicts} {'[OK]' if conflicts == 0 else '[WARN]' if conflicts < 3 else '[FAIL]'}")
             print(f"  Subsystems Tracked:  {coord_stats['subsystem_count']}")
             print(f"  Total Conflicts:     {coord_stats['conflicts_detected']}")
             print(f"  Resolved:            {coord_stats['conflicts_resolved']}")
@@ -9228,10 +9228,10 @@ QUICK DECISION - Choose ONE action from available list:"""
             recovery_stats = self.stuck_tracker.get_stats()
             success_rate = recovery_stats['success_rate']
             
-            print(f"\n🚧 STUCK RECOVERY:")
+            print(f"\n[RECOVERY] STUCK RECOVERY:")
             print(f"  Total STUCK Detected: {recovery_stats['total_detections']}")
             print(f"  Recovery Attempts:    {recovery_stats['total_recoveries']}")
-            print(f"  Success Rate:         {success_rate:.1%} {'🟢' if success_rate > 0.6 else '🟡' if success_rate > 0.3 else '🔴'}")
+            print(f"  Success Rate:         {success_rate:.1%} {'[OK]' if success_rate > 0.6 else '[WARN]' if success_rate > 0.3 else '[FAIL]'}")
             print(f"  Successful:           {recovery_stats['successful_recoveries']}")
             print(f"  Failed:               {recovery_stats['failed_recoveries']}")
             print(f"  Pending Verification: {recovery_stats['pending_verifications']}")
@@ -9259,7 +9259,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             
             # Camera stuck prevention
             if camera_stuck_breaks > 0:
-                print(f"  Camera Stuck Breaks: {camera_stuck_breaks} {'🟢' if camera_stuck_breaks < 5 else '🟡' if camera_stuck_breaks < 15 else '🔴'}")
+                print(f"  Camera Stuck Breaks: {camera_stuck_breaks} {'[OK]' if camera_stuck_breaks < 5 else '[WARN]' if camera_stuck_breaks < 15 else '[FAIL]'}")
             
             # Get controller stats
             if hasattr(self, 'motor_controller'):
@@ -9497,7 +9497,7 @@ QUICK DECISION - Choose ONE action from available list:"""
         if hasattr(self, 'video_interpreter') and self.video_interpreter:
             try:
                 await self.video_interpreter.close()
-                print("[CLEANUP] ✓ Video interpreter closed")
+                print("[CLEANUP] [OK] Video interpreter closed")
                 closed_count += 1
             except Exception as e:
                 print(f"[CLEANUP] ⚠️ Video interpreter close error: {e}")
@@ -9507,7 +9507,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             try:
                 if hasattr(self.voice_system, 'close'):
                     await self.voice_system.close()
-                    print("[CLEANUP] ✓ Voice system closed")
+                    print("[CLEANUP] [OK] Voice system closed")
                     closed_count += 1
             except Exception as e:
                 print(f"[CLEANUP] ⚠️ Voice system close error: {e}")
@@ -9517,7 +9517,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             try:
                 if hasattr(self.gpt5_orchestrator, 'close'):
                     await self.gpt5_orchestrator.close()
-                    print("[CLEANUP] ✓ GPT-5 orchestrator closed")
+                    print("[CLEANUP] [OK] GPT-5 orchestrator closed")
                     closed_count += 1
             except Exception as e:
                 print(f"[CLEANUP] ⚠️ GPT-5 orchestrator close error: {e}")
@@ -9527,7 +9527,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             try:
                 if hasattr(self.wolfram_analyzer, 'close'):
                     await self.wolfram_analyzer.close()
-                    print("[CLEANUP] ✓ Wolfram analyzer closed")
+                    print("[CLEANUP] [OK] Wolfram analyzer closed")
                     closed_count += 1
             except Exception as e:
                 print(f"[CLEANUP] ⚠️ Wolfram analyzer close error: {e}")
@@ -9548,7 +9548,7 @@ QUICK DECISION - Choose ONE action from available list:"""
                     try:
                         if hasattr(client, 'close'):
                             await client.close()
-                            print(f"[CLEANUP] ✓ {display_name} closed")
+                            print(f"[CLEANUP] [OK] {display_name} closed")
                             closed_count += 1
                     except Exception as e:
                         print(f"[CLEANUP] ⚠️ {display_name} close error: {e}")
@@ -9558,7 +9558,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             try:
                 if hasattr(self.moe, 'close'):
                     await self.moe.close()
-                    print("[CLEANUP] ✓ MoE orchestrator closed")
+                    print("[CLEANUP] [OK] MoE orchestrator closed")
                     closed_count += 1
             except Exception as e:
                 print(f"[CLEANUP] ⚠️ MoE orchestrator close error: {e}")
@@ -9568,7 +9568,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             try:
                 if hasattr(self.gpt5_meta_rl, 'close'):
                     await self.gpt5_meta_rl.close()
-                    print("[CLEANUP] ✓ GPT-5 Meta RL closed")
+                    print("[CLEANUP] [OK] GPT-5 Meta RL closed")
                     closed_count += 1
             except Exception as e:
                 print(f"[CLEANUP] ⚠️ GPT-5 Meta RL close error: {e}")
@@ -9602,7 +9602,7 @@ QUICK DECISION - Choose ONE action from available list:"""
         if self.stats['actions_taken'] > 0:
             success_rate = self.stats['action_success_count'] / self.stats['actions_taken']
         
-        print(f"\n📊 Performance Metrics:")
+        print(f"\n[STATS] Performance Metrics:")
         print(f"  Action success rate: {success_rate:.1%}")
         print(f"  Successful actions: {self.stats['action_success_count']}")
         print(f"  Failed actions: {self.stats['action_failure_count']}")
@@ -9621,7 +9621,7 @@ QUICK DECISION - Choose ONE action from available list:"""
         # Planning method breakdown
         total_planning = self.stats['rl_action_count'] + self.stats['llm_action_count'] + self.stats['heuristic_action_count']
         if total_planning > 0:
-            print(f"\n🧠 Planning Methods:")
+            print(f"\n[BRAIN] Planning Methods:")
             print(f"  RL-based: {self.stats['rl_action_count']} ({100*self.stats['rl_action_count']/total_planning:.1f}%)")
             print(f"  LLM-based: {self.stats['llm_action_count']} ({100*self.stats['llm_action_count']/total_planning:.1f}%)")
             print(f"  Heuristic: {self.stats['heuristic_action_count']} ({100*self.stats['heuristic_action_count']/total_planning:.1f}%)")
@@ -9636,7 +9636,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             self.stats.get('action_source_timeout', 0),
         ])
         if total_actions > 0:
-            print(f"\n🎯 Action Sources (who provided the action):")
+            print(f"\n[TARGET] Action Sources (who provided the action):")
             print(f"  Gemini MoE: {self.stats.get('action_source_moe', 0)} ({100*self.stats.get('action_source_moe', 0)/total_actions:.1f}%)")
             print(f"  Hybrid LLM: {self.stats.get('action_source_hybrid', 0)} ({100*self.stats.get('action_source_hybrid', 0)/total_actions:.1f}%)")
             print(f"  Phi-4 Planner: {self.stats.get('action_source_phi4', 0)} ({100*self.stats.get('action_source_phi4', 0)/total_actions:.1f}%)")
@@ -9666,7 +9666,7 @@ QUICK DECISION - Choose ONE action from available list:"""
         # Timing metrics
         if self.stats['planning_times']:
             avg_planning = sum(self.stats['planning_times']) / len(self.stats['planning_times'])
-            print(f"\n⏱️  Timing:")
+            print(f"\n[RATE]  Timing:")
             print(f"  Avg planning time: {avg_planning:.3f}s")
         if self.stats['execution_times']:
             avg_execution = sum(self.stats['execution_times']) / len(self.stats['execution_times'])
@@ -9681,7 +9681,7 @@ QUICK DECISION - Choose ONE action from available list:"""
             print(f"\n🎨 Action Diversity Analysis:")
             print(f"  Unique actions used: {unique_actions}")
             print(f"  Total actions taken: {total_actions_taken}")
-            print(f"  Diversity score: {diversity_score:.3f} {'🟢' if diversity_score > 0.3 else '🟡' if diversity_score > 0.15 else '🔴'}")
+            print(f"  Diversity score: {diversity_score:.3f} {'[OK]' if diversity_score > 0.3 else '[WARN]' if diversity_score > 0.15 else '[FAIL]'}")
             
             # Show top 5 most used actions
             top_actions = sorted(self.action_type_counts.items(), key=lambda x: x[1], reverse=True)[:5]
@@ -9767,23 +9767,23 @@ QUICK DECISION - Choose ONE action from available list:"""
         
         # Consciousness bridge stats (NEW)
         consciousness_stats = self.consciousness_bridge.get_stats()
-        print(f"\n🧠 Consciousness Bridge (Singularis Integration):")
+        print(f"\n[BRAIN] Consciousness Bridge (Singularis Integration):")
         print(f"  Total measurements: {consciousness_stats['total_measurements']}")
-        print(f"  Avg coherence 𝒞: {consciousness_stats['avg_coherence']:.3f}")
-        print(f"  Avg consciousness Φ̂: {consciousness_stats['avg_consciousness']:.3f}")
+        print(f"  Avg coherence C: {consciousness_stats['avg_coherence']:.3f}")
+        print(f"  Avg consciousness Phi: {consciousness_stats['avg_consciousness']:.3f}")
         print(f"  Coherence trend: {consciousness_stats['trend']}")
         if 'coherence_by_lumina' in consciousness_stats and consciousness_stats['coherence_by_lumina']:
             lumina = consciousness_stats['coherence_by_lumina']
             print(f"  Three Lumina:")
-            print(f"    ℓₒ (Ontical): {lumina['ontical']:.3f}")
-            print(f"    ℓₛ (Structural): {lumina['structural']:.3f}")
-            print(f"    ℓₚ (Participatory): {lumina['participatory']:.3f}")
+            print(f"    Lo (Ontical): {lumina['ontical']:.3f}")
+            print(f"    Ls (Structural): {lumina['structural']:.3f}")
+            print(f"    Lp (Participatory): {lumina['participatory']:.3f}")
         
         # Show consciousness vs game quality correlation
         if 'consciousness_coherence_history' in self.stats and self.stats['consciousness_coherence_history']:
             avg_consciousness_coherence = sum(self.stats['consciousness_coherence_history']) / len(self.stats['consciousness_coherence_history'])
             avg_game_quality = sum(self.stats['game_state_quality_history']) / len(self.stats['game_state_quality_history']) if self.stats['game_state_quality_history'] else 0
-            print(f"\n  Consciousness 𝒞: {avg_consciousness_coherence:.3f}")
+            print(f"\n  Consciousness C: {avg_consciousness_coherence:.3f}")
             print(f"  Game Quality: {avg_game_quality:.3f}")
             print(f"  Combined Value: {0.6 * avg_consciousness_coherence + 0.4 * avg_game_quality:.3f}")
             print(f"  (60% consciousness + 40% game = unified evaluation)")

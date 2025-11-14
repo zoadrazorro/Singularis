@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Interactive Instruction System for Skyrim AGI
 

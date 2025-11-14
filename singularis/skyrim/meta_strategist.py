@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Meta-Strategist: LLM-based autonomous instruction generation
 

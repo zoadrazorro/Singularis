@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Singularis Beta v2.4 - Cloud Runtime with HaackLang + SCCE
+Singularis Beta v2.4 - FULL SYSTEM - All APIs Enabled
 
-This is the complete unified AGI system with:
+This is the COMPLETE unified AGI system with ALL features enabled:
 - BeingState: ONE unified state vector
 - CoherenceEngine: ONE optimization function
 - C_global: ONE target all subsystems optimize
 - HaackLang: Polyrhythmic cognitive execution
 - SCCE: Temporal cognitive dynamics
-- Cloud-only: No local LLMs (Gemini + Claude + GPT)
+- ALL Cloud APIs: GPT-5 + Gemini + Claude + Perplexity + OpenRouter + Hyperbolic
+- ALL Systems: Voice, Video, Research, MetaCognition, Double Helix, Main Brain
+- Continuum: Predictive consciousness (if available)
 
 Philosophy → Mathematics → Cognition → Code → Execution
 
@@ -16,17 +19,28 @@ Run with:
     python run_beta_v2.4_cloud.py --duration 3600 --profile balanced
 
 Author: Singularis Team
-Version: 2.4.0-beta
+Version: 2.4.0-beta-full
 Date: 2025-11-14
 """
 
 import asyncio
 import argparse
 import sys
+import io
 import os
 from pathlib import Path
 from datetime import datetime
 from typing import Optional
+
+# Fix Windows console encoding for unicode
+if sys.platform == 'win32':
+    try:
+        if not isinstance(sys.stdout, io.TextIOWrapper) or sys.stdout.encoding != 'utf-8':
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+        if not isinstance(sys.stderr, io.TextIOWrapper) or sys.stderr.encoding != 'utf-8':
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+    except (AttributeError, io.UnsupportedOperation):
+        pass
 
 # Add project root to path
 project_root = Path(__file__).parent
@@ -40,29 +54,36 @@ load_dotenv()
 def print_banner():
     """Print the Singularis banner."""
     banner = """
-╔══════════════════════════════════════════════════════════════════╗
-║                                                                  ║
-║   ███████╗██╗███╗   ██╗ ██████╗ ██╗   ██╗██╗      █████╗ ██████╗ ██╗███████╗   ║
-║   ██╔════╝██║████╗  ██║██╔════╝ ██║   ██║██║     ██╔══██╗██╔══██╗██║██╔════╝   ║
-║   ███████╗██║██╔██╗ ██║██║  ███╗██║   ██║██║     ███████║██████╔╝██║███████╗   ║
-║   ╚════██║██║██║╚██╗██║██║   ██║██║   ██║██║     ██╔══██║██╔══██╗██║╚════██║   ║
-║   ███████║██║██║ ╚████║╚██████╔╝╚██████╔╝███████╗██║  ██║██║  ██║██║███████║   ║
-║   ╚══════╝╚═╝╚═╝  ╚═══╝ ╚═════╝  ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚══════╝   ║
-║                                                                  ║
-║                         BETA v2.4 CLOUD                          ║
-║              "One Being, Striving for Coherence"                 ║
-║         HaackLang + SCCE • Cloud-Only • Research                 ║
-║                                                                  ║
-╚══════════════════════════════════════════════════════════════════╝
+================================================================================
+                                                                  
+   🧠 SINGULARIS BETA v2.4 - FULL SYSTEM 🚀
+   "One Being, Striving for Coherence"
+   ALL APIs + ALL Systems + HaackLang + SCCE
+                                                                  
+================================================================================
 
     Architecture:  BeingState + CoherenceEngine + HaackLang + SCCE
     Philosophy:    Spinoza → IIT → Lumen → Buddhism
     Mathematics:   C: B → [0,1], max E[C(B(t+1))]
     Cognition:     Polyrhythmic Tracks + Temporal Dynamics
     Integration:   50+ Subsystems → 1 Unified Being
-    Cloud:         Gemini 2.5 Flash + Claude 3.5 Haiku + GPT-5
-    Research:      Perplexity AI (Skyrim best practices)
-    MetaCognition: OpenRouter (GPT-4o + DeepSeek planning)
+    
+    ✅ ALL Cloud APIs Enabled:
+       • GPT-5 (Central Orchestrator)
+       • Gemini 2.5 Flash (Vision + Video)
+       • Claude 3.5 Haiku/Sonnet (Reasoning)
+       • Perplexity AI (Research Advisor)
+       • OpenRouter (MetaCognition)
+       • Hyperbolic (Qwen3-235B)
+    
+    ✅ ALL Systems Active:
+       • Voice System (Gemini TTS)
+       • Video Interpreter (Real-time)
+       • Research Advisor
+       • MetaCognition Advisor
+       • Double Helix (15 subsystems)
+       • Main Brain (Session tracking)
+       • Continuum (Predictive)
     
 """
     print(banner)
@@ -71,16 +92,17 @@ def print_banner():
 def check_environment():
     """Check that required environment variables are set."""
     required_vars = {
-        'OPENAI_API_KEY': 'OpenAI API (required for GPT-5 orchestrator)',
-        'GEMINI_API_KEY': 'Google Gemini API (required for vision)',
+        'OPENAI_API_KEY': 'OpenAI API (GPT-5 orchestrator)',
+        'GEMINI_API_KEY': 'Google Gemini API (Vision + Video + Voice)',
+        'ANTHROPIC_API_KEY': 'Anthropic Claude API (Reasoning)',
     }
     
     optional_vars = {
-        'ANTHROPIC_API_KEY': 'Anthropic Claude API (optional)',
-        'PERPLEXITY_API_KEY': 'Perplexity AI (optional - for research advisor)',
-        'OPENROUTER_API_KEY': 'OpenRouter (optional - for metacognition)',
-        'GITHUB_TOKEN': 'GitHub Token (optional - fallback for OpenRouter)',
-        'HYPERBOLIC_API_KEY': 'Hyperbolic API (optional - for Qwen3-235B)',
+        'PERPLEXITY_API_KEY': 'Perplexity AI (Research Advisor)',
+        'OPENROUTER_API_KEY': 'OpenRouter (MetaCognition Advisor)',
+        'GITHUB_TOKEN': 'GitHub Token (OpenRouter fallback)',
+        'HYPERBOLIC_API_KEY': 'Hyperbolic API (Qwen3-235B)',
+        'DEEPSEEK_API_KEY': 'DeepSeek API (Alternative reasoning)',
     }
     
     missing_required = []
@@ -121,12 +143,13 @@ def load_config(args) -> 'SkyrimConfig':
     from singularis.skyrim.skyrim_agi import SkyrimConfig
     
     print("[CONFIG] Loading configuration...")
-    print("[CONFIG] Mode: CLOUD-ONLY with HaackLang + SCCE")
+    print("[CONFIG] Mode: FULL SYSTEM - ALL APIS + ALL SYSTEMS")
+    print("[CONFIG] ✅ Enabling ALL features...")
     
     config = SkyrimConfig()
     
     # ========================================
-    # HaackLang + SCCE Configuration (NEW)
+    # HaackLang + SCCE Configuration
     # ========================================
     config.use_haacklang = True
     config.haack_beat_interval = 0.1  # 10 Hz
@@ -135,18 +158,49 @@ def load_config(args) -> 'SkyrimConfig':
     config.scce_frequency = 1  # Every cycle
     
     # ========================================
-    # Cloud-Only: Disable Local LLMs
+    # ALL Cloud APIs Enabled
     # ========================================
-    config.use_local_fallback = False  # No local LLMs
+    config.use_local_fallback = False  # Cloud-only (no local LLMs)
     config.enable_legacy_llms = False  # No legacy models
     
-    # Force cloud models
-    config.use_hybrid_llm = True  # Gemini + Claude
-    config.use_gemini_vision = True
-    config.use_claude_reasoning = True
+    # Enable ALL cloud models
+    config.use_hybrid_llm = True  # Gemini + Claude hybrid
+    config.use_gemini_vision = True  # Gemini for vision
+    config.use_claude_reasoning = True  # Claude for reasoning
+    config.use_gpt5_orchestrator = True  # GPT-5 orchestrator
     
-    # Parallel mode: Run MoE and Hybrid together
-    config.use_parallel_mode = True
+    # Enable parallel processing
+    config.use_parallel_mode = True  # MoE + Hybrid together
+    
+    # ========================================
+    # ALL Systems Enabled
+    # ========================================
+    config.enable_voice = True  # Voice system (Gemini TTS)
+    config.enable_video_interpreter = True  # Video interpreter
+    config.use_double_helix = True  # Double helix integration
+    config.use_main_brain = True  # Main brain session tracking
+    
+    # Research and MetaCognition
+    config.use_research_advisor = True if os.getenv('PERPLEXITY_API_KEY') else False
+    config.use_metacog_advisor = True if (os.getenv('OPENROUTER_API_KEY') or os.getenv('GITHUB_TOKEN')) else False
+    
+    # Continuum (if available)
+    config.use_continuum = True  # Predictive consciousness
+    
+    # Expert pools - use MORE experts for better quality
+    config.num_gemini_experts = 2  # 2 Gemini experts
+    config.num_claude_experts = 2  # 2 Claude experts
+    
+    # Voice settings
+    config.voice_type = "NOVA"  # Best quality voice
+    config.voice_min_priority = "MEDIUM"  # Speak medium+ priority
+    
+    # Video settings
+    config.video_interpretation_mode = "COMPREHENSIVE"  # Full analysis
+    config.video_frame_rate = 0.5  # 1 frame per 2 seconds
+    
+    # GPT-5 orchestrator settings
+    config.gpt5_verbose = args.verbose  # Verbose orchestration logging
     
     # ========================================
     # Command-line Overrides
@@ -178,22 +232,37 @@ def load_config(args) -> 'SkyrimConfig':
         config.num_claude_experts = 1
         config.scce_frequency = 5  # Only every 5th cycle
     
-    print(f"\n  [HaackLang] Enabled: True")
-    print(f"  [HaackLang] Beat interval: {config.haack_beat_interval}s (10 Hz)")
-    print(f"  [HaackLang] Verbose: {config.haack_verbose}")
-    print(f"  [SCCE] Profile: {config.scce_profile}")
-    print(f"  [SCCE] Frequency: Every {config.scce_frequency} cycle(s)")
-    print(f"\n  [Cloud] Gemini Vision: Enabled")
-    print(f"  [Cloud] Claude Reasoning: Enabled")
-    print(f"  [Cloud] Local LLMs: DISABLED")
-    print(f"\n  Cycle interval: {config.cycle_interval}s")
-    print(f"  Voice enabled: {config.enable_voice}")
-    print(f"  Video enabled: {config.enable_video_interpreter}")
-    print(f"  GPT-5 orchestrator: {config.use_gpt5_orchestrator}")
-    print(f"  Double Helix: {config.use_double_helix}")
-    print(f"  Verbose mode: {config.gpt5_verbose}")
-    print(f"  Research Advisor: {'Enabled' if os.getenv('PERPLEXITY_API_KEY') else 'Disabled (no API key)'}")
-    print(f"  MetaCognition: {'Enabled' if (os.getenv('OPENROUTER_API_KEY') or os.getenv('GITHUB_TOKEN')) else 'Disabled (no API key)'}")
+    print(f"\n  🎵 [HaackLang] Enabled: True")
+    print(f"  🎵 [HaackLang] Beat interval: {config.haack_beat_interval}s (10 Hz)")
+    print(f"  🎵 [HaackLang] Verbose: {config.haack_verbose}")
+    print(f"  🧬 [SCCE] Profile: {config.scce_profile}")
+    print(f"  🧬 [SCCE] Frequency: Every {config.scce_frequency} cycle(s)")
+    
+    print(f"\n  ☁️  [Cloud APIs]")
+    print(f"     • GPT-5: ✅ (Orchestrator)")
+    print(f"     • Gemini: ✅ (Vision + Video + Voice)")
+    print(f"     • Claude: ✅ (Reasoning)")
+    print(f"     • Perplexity: {'✅' if config.use_research_advisor else '❌ (no API key)'}")
+    print(f"     • OpenRouter: {'✅' if config.use_metacog_advisor else '❌ (no API key)'}")
+    print(f"     • Hyperbolic: {'✅' if os.getenv('HYPERBOLIC_API_KEY') else '❌ (no API key)'}")
+    
+    print(f"\n  🎯 [Systems]")
+    print(f"     • Voice: {'✅' if config.enable_voice else '❌'}")
+    print(f"     • Video: {'✅' if config.enable_video_interpreter else '❌'}")
+    print(f"     • GPT-5 Orchestrator: ✅")
+    print(f"     • Double Helix: {'✅' if config.use_double_helix else '❌'}")
+    print(f"     • Main Brain: {'✅' if config.use_main_brain else '❌'}")
+    print(f"     • Research Advisor: {'✅' if config.use_research_advisor else '❌'}")
+    print(f"     • MetaCognition: {'✅' if config.use_metacog_advisor else '❌'}")
+    print(f"     • Continuum: {'✅' if config.use_continuum else '❌'}")
+    
+    print(f"\n  ⚙️  [Settings]")
+    print(f"     • Cycle interval: {config.cycle_interval}s")
+    print(f"     • Gemini experts: {config.num_gemini_experts}")
+    print(f"     • Claude experts: {config.num_claude_experts}")
+    print(f"     • Voice type: {config.voice_type}")
+    print(f"     • Video mode: {config.video_interpretation_mode}")
+    print(f"     • Verbose: {config.gpt5_verbose}")
     
     print("\n[CONFIG] [OK] Configuration loaded\n")
     return config
@@ -204,12 +273,13 @@ async def run_async_mode(duration: int, config: 'SkyrimConfig'):
     from singularis.skyrim.skyrim_agi import SkyrimAGI
     
     print("=" * 70)
-    print("ASYNC MODE - Full Parallel Processing")
+    print("🚀 FULL SYSTEM MODE - All APIs + All Systems Enabled")
     print("=" * 70)
     print(f"Duration: {duration} seconds ({duration // 60} minutes)")
     print(f"Mode: Asynchronous (perception || reasoning || action)")
-    print(f"Cognition: HaackLang + SCCE")
-    print(f"Profile: {config.scce_profile}")
+    print(f"Cognition: HaackLang + SCCE (Profile: {config.scce_profile})")
+    print(f"APIs: GPT-5 + Gemini + Claude + Perplexity + OpenRouter")
+    print(f"Systems: Voice + Video + Research + MetaCognition + Continuum")
     print("=" * 70 + "\n")
     
     # Initialize AGI
@@ -276,8 +346,8 @@ async def run_async_mode(duration: int, config: 'SkyrimConfig'):
     # Start autonomous play
     print("[START] Beginning autonomous gameplay...\n")
     print("=" * 70)
-    print("THE ONE BEING IS NOW STRIVING FOR COHERENCE")
-    print("WITH POLYRHYTHMIC COGNITION")
+    print("🧠 THE ONE BEING IS NOW STRIVING FOR COHERENCE 🧠")
+    print("WITH POLYRHYTHMIC COGNITION + ALL SYSTEMS ONLINE")
     print("=" * 70 + "\n")
     
     try:

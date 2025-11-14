@@ -179,7 +179,7 @@ class EmotionalValenceComputer:
         }
 
         print("[VALENCE] Emotional Valence Computer initialized")
-        print(f"[VALENCE] Adequacy threshold (θ): {adequacy_threshold}")
+        print(f"[VALENCE] Adequacy threshold (theta): {adequacy_threshold}")
 
     def compute_valence(
         self,

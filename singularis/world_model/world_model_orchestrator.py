@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 World Model Orchestrator - Integrates Causal, Visual, and Physical Reasoning
 

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Consciousness Integration Verification Script
 
@@ -11,9 +12,21 @@ Verifies that the consciousness integration is complete and functional:
 
 import asyncio
 import sys
+import io
 from pathlib import Path
 from typing import Dict, Any
 from unittest.mock import Mock, AsyncMock
+
+# Fix Windows console encoding for unicode characters
+if sys.platform == 'win32':
+    try:
+        # Only wrap if not already wrapped
+        if not isinstance(sys.stdout, io.TextIOWrapper) or sys.stdout.encoding != 'utf-8':
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+        if not isinstance(sys.stderr, io.TextIOWrapper) or sys.stderr.encoding != 'utf-8':
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace', line_buffering=True)
+    except (AttributeError, io.UnsupportedOperation):
+        pass  # stdout/stderr doesn't support wrapping
 
 # Add to path
 sys.path.insert(0, str(Path(__file__).parent))
