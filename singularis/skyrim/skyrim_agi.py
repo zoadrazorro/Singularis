@@ -4131,6 +4131,9 @@ Based on this visual and contextual data, provide:
                 
                 print(f"[REASONING] Coherence 𝒞 = {current_consciousness.coherence:.3f}")
                 
+                # Store current consciousness for BeingState update
+                self.current_consciousness = current_consciousness
+                
                 # Track coherence alignment: BeingState C_global vs subsystem measurements (every 5 cycles)
                 if self.gpt5_orchestrator and cycle_count % 5 == 0:
                     try:
