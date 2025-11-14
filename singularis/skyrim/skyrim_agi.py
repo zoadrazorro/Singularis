@@ -6502,7 +6502,7 @@ Action: {snapshot['action']}""",
                 # CONTINUUM PHASE 1: Observe this cycle
                 if hasattr(self, 'continuum'):
                     try:
-                        await self.continuum.observe_cycle(
+                        observation = await self.continuum.observe_cycle(
                             being_state=self.being_state,
                             actual_action=str(action),
                             actual_outcome={
@@ -6511,8 +6511,12 @@ Action: {snapshot['action']}""",
                                 'coherence_delta': after_consciousness.coherence_delta(self.current_consciousness) if self.current_consciousness and after_consciousness else 0.0
                             }
                         )
+                        if observation is None:
+                            print(f"[CONTINUUM] ⚠️ Observation skipped (BeingState: C={self.being_state.coherence_C:.3f}, cycle={self.being_state.cycle_number})")
                     except Exception as e:
-                        print(f"[CONTINUUM] Observation failed: {e}")
+                        print(f"[CONTINUUM] ❌ Observation failed: {e}")
+                        import traceback
+                        traceback.print_exc()
                 
                 # Record experience in strategic planner
                 success = self._evaluate_action_success(before_state, after_state, action)

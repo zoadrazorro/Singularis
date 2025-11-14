@@ -10,6 +10,7 @@ This is the COMPLETE unified AGI system with ALL features enabled:
 - HaackLang: Polyrhythmic cognitive execution
 - SCCE: Temporal cognitive dynamics
 - ALL Cloud APIs: GPT-5 + Gemini + Claude + Perplexity + OpenRouter + Hyperbolic
+- ALL Local LLMs: Qwen3-VL + Phi-4 + LM Studio models
 - ALL Systems: Voice, Video, Research, MetaCognition, Double Helix, Main Brain
 - Continuum: Predictive consciousness (if available)
 
@@ -70,11 +71,17 @@ def print_banner():
     
     ✅ ALL Cloud APIs Enabled:
        • GPT-5 (Central Orchestrator)
-       • Gemini 2.5 Flash (Vision + Video)
+       • GPT Vision (GPT-4o Vision)
+       • Gemini 2.5 Flash (Video + Voice)
        • Claude 3.5 Haiku/Sonnet (Reasoning)
        • Perplexity AI (Research Advisor)
        • OpenRouter (MetaCognition)
-       • Hyperbolic (Qwen3-235B)
+       • Hyperbolic (Qwen3-235B Cloud)
+    
+    ✅ Local LLM Support:
+       • Qwen3-VL (Vision fallback)
+       • Phi-4 (Fast reasoning)
+       • LM Studio (Custom models)
     
     ✅ ALL Systems Active:
        • Voice System (Gemini TTS)
@@ -92,8 +99,8 @@ def print_banner():
 def check_environment():
     """Check that required environment variables are set."""
     required_vars = {
-        'OPENAI_API_KEY': 'OpenAI API (GPT-5 orchestrator)',
-        'GEMINI_API_KEY': 'Google Gemini API (Vision + Video + Voice)',
+        'OPENAI_API_KEY': 'OpenAI API (GPT-5 orchestrator + GPT Vision)',
+        'GEMINI_API_KEY': 'Google Gemini API (Video + Voice)',
         'ANTHROPIC_API_KEY': 'Anthropic Claude API (Reasoning)',
     }
     
@@ -101,8 +108,9 @@ def check_environment():
         'PERPLEXITY_API_KEY': 'Perplexity AI (Research Advisor)',
         'OPENROUTER_API_KEY': 'OpenRouter (MetaCognition Advisor)',
         'GITHUB_TOKEN': 'GitHub Token (OpenRouter fallback)',
-        'HYPERBOLIC_API_KEY': 'Hyperbolic API (Qwen3-235B)',
+        'HYPERBOLIC_API_KEY': 'Hyperbolic API (Qwen3-235B Cloud)',
         'DEEPSEEK_API_KEY': 'DeepSeek API (Alternative reasoning)',
+        'LMSTUDIO_BASE_URL': 'LM Studio (Local models - default: http://localhost:1234)',
     }
     
     missing_required = []
@@ -160,12 +168,27 @@ def load_config(args) -> 'SkyrimConfig':
     # ========================================
     # ALL Cloud APIs Enabled
     # ========================================
-    config.use_local_fallback = False  # Cloud-only (no local LLMs)
+    config.use_local_fallback = True  # Enable local LLM fallback
     config.enable_legacy_llms = False  # No legacy models
+    
+    # ========================================
+    # Local LLM Support
+    # ========================================
+    config.use_local_qwen = True  # Qwen3-VL for vision fallback
+    config.use_local_phi = True  # Phi-4 for fast reasoning
+    config.use_lmstudio = True  # LM Studio for custom models
+    config.lmstudio_base_url = os.getenv('LMSTUDIO_BASE_URL', 'http://localhost:1234')
+    
+    # ========================================
+    # Hyperbolic Cloud LLM
+    # ========================================
+    config.use_hyperbolic = True if os.getenv('HYPERBOLIC_API_KEY') else False
+    config.hyperbolic_model = 'Qwen/Qwen3-235B-Instruct'  # Qwen3-235B on Hyperbolic
     
     # Enable ALL cloud models
     config.use_hybrid_llm = True  # Gemini + Claude hybrid
-    config.use_gemini_vision = True  # Gemini for vision
+    config.use_gemini_vision = False  # Use GPT Vision instead
+    config.use_gpt_vision = True  # GPT-4o/GPT-4 Turbo for vision
     config.use_claude_reasoning = True  # Claude for reasoning
     config.use_gpt5_orchestrator = True  # GPT-5 orchestrator
     
@@ -188,7 +211,8 @@ def load_config(args) -> 'SkyrimConfig':
     config.use_continuum = True  # Predictive consciousness
     
     # Expert pools - use MORE experts for better quality
-    config.num_gemini_experts = 2  # 2 Gemini experts
+    config.num_gpt_vision_experts = 2  # 2 GPT Vision experts (GPT-4o)
+    config.num_gemini_experts = 1  # 1 Gemini expert (video/voice only)
     config.num_claude_experts = 2  # 2 Claude experts
     
     # Voice settings
@@ -228,9 +252,11 @@ def load_config(args) -> 'SkyrimConfig':
         print("  [CONSERVATIVE MODE] Reducing API calls...")
         config.cycle_interval = 5.0
         config.gemini_rpm_limit = 10
+        config.num_gpt_vision_experts = 1
         config.num_gemini_experts = 1
         config.num_claude_experts = 1
         config.scce_frequency = 5  # Only every 5th cycle
+        config.use_local_fallback = True  # Enable local fallback in conservative mode
     
     print(f"\n  🎵 [HaackLang] Enabled: True")
     print(f"  🎵 [HaackLang] Beat interval: {config.haack_beat_interval}s (10 Hz)")
@@ -240,11 +266,17 @@ def load_config(args) -> 'SkyrimConfig':
     
     print(f"\n  ☁️  [Cloud APIs]")
     print(f"     • GPT-5: ✅ (Orchestrator)")
-    print(f"     • Gemini: ✅ (Vision + Video + Voice)")
+    print(f"     • GPT Vision: ✅ (GPT-4o Vision)")
+    print(f"     • Gemini: ✅ (Video + Voice)")
     print(f"     • Claude: ✅ (Reasoning)")
     print(f"     • Perplexity: {'✅' if config.use_research_advisor else '❌ (no API key)'}")
     print(f"     • OpenRouter: {'✅' if config.use_metacog_advisor else '❌ (no API key)'}")
-    print(f"     • Hyperbolic: {'✅' if os.getenv('HYPERBOLIC_API_KEY') else '❌ (no API key)'}")
+    print(f"     • Hyperbolic: {'✅ Qwen3-235B' if config.use_hyperbolic else '❌ (no API key)'}")
+    
+    print(f"\n  💻 [Local LLMs]")
+    print(f"     • Qwen3-VL: {'✅' if config.use_local_qwen else '❌'}")
+    print(f"     • Phi-4: {'✅' if config.use_local_phi else '❌'}")
+    print(f"     • LM Studio: {'✅' if config.use_lmstudio else '❌'} ({config.lmstudio_base_url})")
     
     print(f"\n  🎯 [Systems]")
     print(f"     • Voice: {'✅' if config.enable_voice else '❌'}")
@@ -258,8 +290,10 @@ def load_config(args) -> 'SkyrimConfig':
     
     print(f"\n  ⚙️  [Settings]")
     print(f"     • Cycle interval: {config.cycle_interval}s")
-    print(f"     • Gemini experts: {config.num_gemini_experts}")
+    print(f"     • GPT Vision experts: {config.num_gpt_vision_experts}")
+    print(f"     • Gemini experts: {config.num_gemini_experts} (video/voice)")
     print(f"     • Claude experts: {config.num_claude_experts}")
+    print(f"     • Local fallback: {'✅' if config.use_local_fallback else '❌'}")
     print(f"     • Voice type: {config.voice_type}")
     print(f"     • Video mode: {config.video_interpretation_mode}")
     print(f"     • Verbose: {config.gpt5_verbose}")
@@ -278,7 +312,7 @@ async def run_async_mode(duration: int, config: 'SkyrimConfig'):
     print(f"Duration: {duration} seconds ({duration // 60} minutes)")
     print(f"Mode: Asynchronous (perception || reasoning || action)")
     print(f"Cognition: HaackLang + SCCE (Profile: {config.scce_profile})")
-    print(f"APIs: GPT-5 + Gemini + Claude + Perplexity + OpenRouter")
+    print(f"APIs: GPT-5 + GPT Vision + Gemini + Claude + Hyperbolic + Local LLMs")
     print(f"Systems: Voice + Video + Research + MetaCognition + Continuum")
     print("=" * 70 + "\n")
     

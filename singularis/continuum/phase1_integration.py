@@ -210,12 +210,13 @@ class Phase1Observer:
             actual_action: Action Neo actually took
             actual_outcome: Outcome of Neo's action (for learning)
         """
-        # Validate BeingState is not empty
-        if being_state.coherence_C == 0.0 and being_state.cycle_number == 0:
+        # Validate BeingState is initialized
+        if being_state.cycle_number == 0:
             # BeingState not initialized yet, skip observation
+            print(f"[PHASE1] Skipping - BeingState not initialized (cycle 0)")
             return None
         
-        print(f"\n[PHASE1] Observing cycle {self.total_observations + 1}")
+        print(f"\n[PHASE1] Observing cycle {self.total_observations + 1} (Neo cycle {being_state.cycle_number})")
         
         try:
             # 1. Update field from BeingState
