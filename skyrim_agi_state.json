@@ -1,35 +1,23 @@
 {
-  "session_id": "skyrim_agi_20251113_185805_d3e879a0",
-  "cycle": 3,
-  "uptime": 66.84314131736755,
-  "last_update": "2025-11-13T18:59:11.958984",
-  "current_action": "explore",
-  "last_action": "explore",
-  "action_source": "phi4",
+  "session_id": "skyrim_agi_20251113_201500_20a5975b",
+  "cycle": 1,
+  "uptime": 56.12705039978027,
+  "last_update": "2025-11-13T20:15:57.058330",
+  "current_action": "look_around",
+  "last_action": "look_around",
+  "action_source": "unknown",
   "recent_actions": [
     {
-      "name": "sneak",
-      "timestamp": 1763078305.531054,
+      "name": "look_around",
+      "timestamp": 1763082930.3469844,
       "cycle": 0,
-      "source": "phi4"
+      "source": "unknown"
     },
     {
-      "name": "move_forward",
-      "timestamp": 1763078319.5568633,
+      "name": "look_around",
+      "timestamp": 1763082957.0583205,
       "cycle": 1,
-      "source": "phi4"
-    },
-    {
-      "name": "explore",
-      "timestamp": 1763078335.4860299,
-      "cycle": 2,
-      "source": "phi4"
-    },
-    {
-      "name": "explore",
-      "timestamp": 1763078351.9589791,
-      "cycle": 3,
-      "source": "phi4"
+      "source": "unknown"
     }
   ],
   "perception": {
@@ -37,23 +25,23 @@
     "objects_detected": [
       [
         "dragon",
-        0.06756874173879623
-      ],
-      [
-        "mage",
-        0.06734060496091843
+        0.06779465824365616
       ],
       [
         "sword",
-        0.06714321672916412
+        0.06715664267539978
+      ],
+      [
+        "warrior",
+        0.0670509934425354
       ],
       [
         "armor",
-        0.0669628232717514
+        0.0669100359082222
       ],
       [
-        "potion",
-        0.06694135069847107
+        "guard",
+        0.06689964234828949
       ]
     ],
     "enemies_nearby": false,
@@ -62,126 +50,85 @@
   },
   "game_state": {
     "health": 20.0,
-    "magicka": 5.0,
+    "magicka": 34.29554863028906,
     "stamina": 5.0,
     "in_combat": true,
     "in_menu": false,
     "location": "Skyrim"
   },
   "consciousness": {
-    "coherence": 0.4382,
-    "phi": 0.5287,
-    "nodes_active": 22,
+    "coherence": 0.22,
+    "phi": 0.08,
+    "nodes_active": 18,
     "trend": "stable",
     "history": [
       {
-        "timestamp": 1763078305.531054,
+        "timestamp": 1763082930.3469844,
         "cycle": 0,
-        "coherence": 0.3782,
-        "phi": 0.2345
+        "coherence": 0.22,
+        "phi": 0.12
       },
       {
-        "timestamp": 1763078319.5568633,
+        "timestamp": 1763082957.0583205,
         "cycle": 1,
-        "coherence": 0.3742,
-        "phi": 0.2134
-      },
-      {
-        "timestamp": 1763078335.4860299,
-        "cycle": 2,
-        "coherence": 0.42,
-        "phi": 0.47
-      },
-      {
-        "timestamp": 1763078351.9589791,
-        "cycle": 3,
-        "coherence": 0.4382,
-        "phi": 0.5287
+        "coherence": 0.22,
+        "phi": 0.08
       }
     ]
   },
   "llm_status": {
     "mode": "none",
-    "cloud_active": 2,
-    "local_active": 1,
-    "total_calls": 2,
+    "cloud_active": 1,
+    "local_active": 0,
+    "total_calls": 0,
     "last_call_time": 0,
     "active_models": [
       "Gemini 2.0 Flash",
-      "Claude Sonnet 4.5",
-      "Gemini 1",
-      "Gemini 2",
-      "Claude Sonnet",
-      "GPT-4o",
-      "Nemotron",
-      "Qwen3",
-      "Huihui-VL",
-      "Qwen3-VL",
-      "Phi-4"
+      "Claude Sonnet 4.5"
     ]
   },
   "performance": {
     "fps": 60,
-    "planning_time": 4.426802396774292,
-    "execution_time": 1.3689517974853516,
+    "planning_time": 0.0010492801666259766,
+    "execution_time": 2.985607385635376,
     "vision_time": 0,
     "total_cycle_time": 0,
     "history": [
       {
-        "timestamp": 1763078305.531054,
+        "timestamp": 1763082930.3469844,
         "cycle": 0,
         "fps": 60,
-        "planning_time": 4.637322187423706,
+        "planning_time": 0.0014395713806152344,
         "execution_time": 0.0,
         "vision_time": 0,
         "total_cycle_time": 0
       },
       {
-        "timestamp": 1763078319.5568633,
+        "timestamp": 1763082957.0583205,
         "cycle": 1,
         "fps": 60,
-        "planning_time": 3.8527047634124756,
-        "execution_time": 0.00023746490478515625,
-        "vision_time": 0,
-        "total_cycle_time": 0
-      },
-      {
-        "timestamp": 1763078335.4860299,
-        "cycle": 2,
-        "fps": 60,
-        "planning_time": 4.235349814097087,
-        "execution_time": 0.8022756576538086,
-        "vision_time": 0,
-        "total_cycle_time": 0
-      },
-      {
-        "timestamp": 1763078351.9589791,
-        "cycle": 3,
-        "fps": 60,
-        "planning_time": 4.426802396774292,
-        "execution_time": 1.3689517974853516,
+        "planning_time": 0.0010492801666259766,
+        "execution_time": 2.985607385635376,
         "vision_time": 0,
         "total_cycle_time": 0
       }
     ]
   },
   "diversity": {
-    "score": 0.75,
-    "unique_actions": 3,
-    "total_actions": 4,
-    "variety_rate": 0.75,
+    "score": 0.5,
+    "unique_actions": 1,
+    "total_actions": 2,
+    "variety_rate": 0.5,
     "action_distribution": {
-      "explore": 2,
-      "sneak": 1,
-      "move_forward": 1
+      "look_around": 2
     }
   },
   "stats": {
     "success_rate": 1.0,
-    "rl_actions": 3,
-    "llm_actions": 2,
-    "heuristic_actions": 2,
-    "total_actions": 4
+    "rl_actions": 0,
+    "llm_actions": 0,
+    "heuristic_actions": 0,
+    "total_actions": 2
   },
   "world_model": {
     "beliefs": {},

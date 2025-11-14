@@ -175,6 +175,10 @@ async def run_async_mode(duration: int, config: 'SkyrimConfig'):
     print("[INIT] Initializing Singularis AGI...\n")
     agi = SkyrimAGI(config)
     
+    # Initialize LLM systems (includes Wolfram telemetry)
+    print("[INIT] Initializing LLM systems and Wolfram telemetry...\n")
+    await agi.initialize_llm()
+    
     # Verify BeingState and CoherenceEngine are initialized
     if not hasattr(agi, 'being_state'):
         print("[ERROR] BeingState not initialized!")
@@ -183,6 +187,9 @@ async def run_async_mode(duration: int, config: 'SkyrimConfig'):
     if not hasattr(agi, 'coherence_engine'):
         print("[ERROR] CoherenceEngine not initialized!")
         return
+    
+    if not hasattr(agi, 'wolfram_analyzer'):
+        print("[WARNING] Wolfram analyzer not initialized (will skip telemetry)")
     
     print("[VERIFY] ✓ BeingState initialized")
     print("[VERIFY] ✓ CoherenceEngine initialized")

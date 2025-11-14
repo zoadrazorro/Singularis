@@ -303,8 +303,8 @@ class SkyrimAGI:
 
         # 4. THE ONE THING - BeingState + CoherenceEngine
         print("  [4/20] THE UNIFIED BEING - BeingState + CoherenceEngine...")
-        from ...core.being_state import BeingState
-        from ...core.coherence_engine import CoherenceEngine
+        from singularis.core.being_state import BeingState
+        from singularis.core.coherence_engine import CoherenceEngine
         
         self.being_state = BeingState()
         self.coherence_engine = CoherenceEngine(verbose=True)
@@ -4824,7 +4824,15 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                             }
                         }
                         
-                        await self.hierarchical_memory.add_episode(episode)
+                        self.hierarchical_memory.store_episode(
+                            scene_type=episode.get('scene_type', 'unknown'),
+                            action=episode.get('action', 'unknown'),
+                            outcome=episode.get('outcome', 'unknown'),
+                            outcome_success=episode.get('success', False),
+                            coherence_delta=episode.get('coherence_delta', 0.0),
+                            context=episode.get('context', {}),
+                            metadata=episode.get('metadata', {})
+                        )
                         
                         # Check for new semantic patterns every 10 cycles
                         if cycle_count % 10 == 0:
