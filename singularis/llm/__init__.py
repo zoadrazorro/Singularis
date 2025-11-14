@@ -28,6 +28,8 @@ from .gpt5_orchestrator import (
     GPT5Response,
 )
 from .hyperbolic_client import HyperbolicClient
+from .openrouter_client import OpenRouterClient
+from .perplexity_client import PerplexityClient
 
 __all__ = [
     "LMStudioClient",
@@ -52,4 +54,6 @@ __all__ = [
     "SystemMessage",
     "GPT5Response",
     "HyperbolicClient",
+    "OpenRouterClient",
+    "PerplexityClient",
 ]

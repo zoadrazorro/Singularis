@@ -1,9 +1,11 @@
-"""OpenRouter API client (chat completions).
+"""Perplexity API client (chat completions with web research).
 
-Env vars:
-- OPENROUTER_API_KEY (required)
-- OPENROUTER_SITE_URL (optional HTTP-Referer)
-- OPENROUTER_SITE_NAME (optional X-Title)
+Env:
+- PERPLEXITY_API_KEY (required)
+
+Docs:
+- Endpoint: https://api.perplexity.ai/chat/completions
+- Models (examples): 'sonar-small-online', 'sonar-medium-online'
 """
 from __future__ import annotations
 
@@ -13,20 +15,19 @@ from typing import Any, Dict, List, Optional
 import aiohttp
 
 
-class OpenRouterClient:
+class PerplexityClient:
     def __init__(
         self,
         api_key: Optional[str] = None,
-        base_url: str = "https://openrouter.ai/api/v1",
+        base_url: str = "https://api.perplexity.ai",
         timeout: int = 120,
+        default_model: str = "sonar-medium-online",
     ) -> None:
-        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY") or os.getenv("GITHUB_TOKEN")
+        self.api_key = api_key or os.getenv("PERPLEXITY_API_KEY")
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.default_model = default_model
         self._session: Optional[aiohttp.ClientSession] = None
-        self.site_url = os.getenv("OPENROUTER_SITE_URL")
-        self.site_name = os.getenv("OPENROUTER_SITE_NAME")
-        self.using_github_fallback = bool(not os.getenv("OPENROUTER_API_KEY") and os.getenv("GITHUB_TOKEN"))
 
     def is_available(self) -> bool:
         return bool(self.api_key)
@@ -43,13 +44,13 @@ class OpenRouterClient:
     async def chat(
         self,
         messages: List[Dict[str, str]],
-        model: str,
-        temperature: float = 0.7,
-        max_tokens: int = 1024,
+        model: Optional[str] = None,
+        temperature: float = 0.3,
+        max_tokens: int = 800,
         extra: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         if not self.is_available():
-            raise RuntimeError("OpenRouter API key not configured (OPENROUTER_API_KEY)")
+            raise RuntimeError("Perplexity API key not configured (PERPLEXITY_API_KEY)")
 
         session = await self._ensure()
         url = f"{self.base_url}/chat/completions"
@@ -57,13 +58,8 @@ class OpenRouterClient:
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
         }
-        if self.site_url:
-            headers["HTTP-Referer"] = self.site_url
-        if self.site_name:
-            headers["X-Title"] = self.site_name
-
         payload: Dict[str, Any] = {
-            "model": model,
+            "model": model or self.default_model,
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
@@ -83,10 +79,10 @@ class OpenRouterClient:
     async def generate_text(
         self,
         prompt: str,
-        model: str,
         system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: int = 1024,
+        model: Optional[str] = None,
+        temperature: float = 0.3,
+        max_tokens: int = 800,
     ) -> str:
         messages: List[Dict[str, str]] = []
         if system_prompt:

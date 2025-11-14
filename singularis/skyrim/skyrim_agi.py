@@ -65,6 +65,8 @@ from .gameplay_analytics import GameplayAnalytics
 from .meta_learning import MetaLearner
 
 from .philosophyagent import get_random_philosophical_context
+from .research_advisor import ResearchAdvisor
+from .metacognition_advisor import MetaCognitionAdvisor
 
 # Base AGI components
 from ..agi_orchestrator import AGIOrchestrator, AGIConfig
@@ -82,6 +84,8 @@ from ..llm import (
     ExpertRole,
     HyperbolicClient,
 )
+from ..llm.openrouter_client import OpenRouterClient
+from ..llm.perplexity_client import PerplexityClient
 
 
 @dataclass
@@ -658,6 +662,22 @@ class SkyrimAGI:
         except Exception as e:
             print(f"  [OMEGA] Initialization failed: {e}")
             self.omega = None
+        
+        # Research Advisor (Perplexity)
+        print("  [RESEARCH] Perplexity research advisor...")
+        self.research_advisor = ResearchAdvisor()
+        if self.research_advisor.client.is_available():
+            print("    ✓ Perplexity API connected (sonar-medium-online)")
+        else:
+            print("    ⚠️ Perplexity API key not found (PERPLEXITY_API_KEY)")
+        
+        # MetaCognition Advisor (OpenRouter)
+        print("  [METACOG] OpenRouter metacognition advisor...")
+        self.metacog_advisor = MetaCognitionAdvisor()
+        if self.metacog_advisor.client.is_available():
+            print("    ✓ OpenRouter API connected (gpt-4o + deepseek)")
+        else:
+            print("    ⚠️ OpenRouter API key not found (OPENROUTER_API_KEY)")
         
         # 21. Temporal Binding System (NEW - Critical)
         print("  [21/27] Temporal binding system...")
@@ -2989,6 +3009,35 @@ Wolfram provided rigorous mathematical analysis of AGI metrics throughout the se
                             success=True
                         )
                         print(f"[WOLFRAM] ✓ Summary added to Main Brain report")
+                
+                if hasattr(self, 'metacog_advisor') and self.metacog_advisor.client.is_available():
+                    try:
+                        snapshot = f"""Cycle: {self.stats['cycles_completed']}
+Actions: {self.stats['actions_taken']}
+Coherence: {self.current_consciousness.coherence if self.current_consciousness else 0.0:.3f}
+Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_scene_type') else 'unknown'}"""
+                        
+                        metameta = await self.metacog_advisor.metameta_report(snapshot)
+                        if metameta:
+                            self.main_brain.record_output(
+                                system_name='Meta-Meta-Meta-Cognition (GPT-4o)',
+                                content=metameta,
+                                metadata={'cycle': self.stats['cycles_completed']},
+                                success=True
+                            )
+                            print(f"[METACOG] ✓ Meta-meta-meta report added")
+                        
+                        longterm = await self.metacog_advisor.deepseek_long_term_plan(snapshot)
+                        if longterm:
+                            self.main_brain.record_output(
+                                system_name='Long-Term Planning (DeepSeek)',
+                                content=longterm,
+                                metadata={'cycle': self.stats['cycles_completed']},
+                                success=True
+                            )
+                            print(f"[METACOG] ✓ Long-term plan added")
+                    except Exception as e:
+                        print(f"[METACOG] ⚠️ Metacognition advisor failed: {e}")
                 
                 report_path = await self.main_brain.generate_session_markdown()
                 print(f"\n[MAIN BRAIN] 🧠✨ Session report generated!")
@@ -5577,6 +5626,17 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                     'screenshot': perception.get('screenshot'),
                     'vision_summary': perception.get('gemini_analysis')
                 }
+                
+                if hasattr(self, 'research_advisor') and (cycle_count % 30 == 0):
+                    try:
+                        refreshed = await self.research_advisor.refresh_if_due(scene=scene_type.value)
+                        if refreshed:
+                            print("[RESEARCH] Perplexity research updated")
+                        research_ctx = self.research_advisor.get_context()
+                        if research_ctx:
+                            consciousness_context.update(research_ctx)
+                    except Exception:
+                        pass
                 try:
                     if (cycle_count % 10 == 0) or (scene_type == SceneType.EXPLORATION):
                         phil = await get_random_philosophical_context(hybrid_llm=getattr(self, 'hybrid_llm', None))
@@ -5594,6 +5654,14 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 print(f"[CONSCIOUSNESS]   ℓₛ (Structural) = {current_consciousness.coherence_structural:.3f}")
                 print(f"[CONSCIOUSNESS]   ℓₚ (Participatory) = {current_consciousness.coherence_participatory:.3f}")
                 print(f"[CONSCIOUSNESS] Φ̂ (Level) = {current_consciousness.consciousness_level:.3f}")
+                
+                if hasattr(self, 'main_brain'):
+                    self.main_brain.record_output(
+                        system_name='Consciousness Measurement',
+                        content=f"Coherence 𝒞={current_consciousness.coherence:.3f}, Ontical={current_consciousness.coherence_ontical:.3f}, Structural={current_consciousness.coherence_structural:.3f}, Participatory={current_consciousness.coherence_participatory:.3f}, Level Φ̂={current_consciousness.consciousness_level:.3f}",
+                        metadata={'cycle': cycle_count, 'coherence': current_consciousness.coherence},
+                        success=True
+                    )
                 
                 # Store for tracking
                 self.last_consciousness = self.current_consciousness
