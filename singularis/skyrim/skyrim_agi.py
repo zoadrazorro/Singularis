@@ -1828,6 +1828,112 @@ class SkyrimAGI:
             await self.video_interpreter.start_streaming()
             print("[VIDEO] Streaming started\n")
     
+    def _update_being_state_comprehensive(self, cycle_count: int, game_state, perception, current_consciousness, mot_state, action):
+        """Update BeingState with all subsystem outputs - THE ONE UNIFIED STATE."""
+        if not hasattr(self, 'being_state'):
+            return
+        
+        # Temporal
+        self.being_state.cycle_number = cycle_count
+        self.being_state.timestamp = time.time()
+        
+        # Game/World/Body
+        self.being_state.game_state = game_state.to_dict() if hasattr(game_state, 'to_dict') else game_state
+        self.being_state.current_perception = perception
+        self.being_state.last_action = str(action) if action else None
+        
+        # Consciousness
+        if current_consciousness:
+            self.being_state.coherence_C = current_consciousness.coherence
+            self.being_state.phi_hat = current_consciousness.consciousness_level
+            self.being_state.lumina.ontic = current_consciousness.coherence_ontical
+            self.being_state.lumina.structural = current_consciousness.coherence_structural
+            self.being_state.lumina.participatory = current_consciousness.coherence_participatory
+        
+        # Emotion
+        if hasattr(self, 'emotion_integration') and self.emotion_integration:
+            try:
+                emotion_state = self.emotion_integration.emotion_state
+                if emotion_state:
+                    self.being_state.primary_emotion = emotion_state.primary_emotion.value if hasattr(emotion_state.primary_emotion, 'value') else str(emotion_state.primary_emotion)
+                    self.being_state.emotion_intensity = emotion_state.intensity
+                    self.being_state.emotion_state = {'primary': self.being_state.primary_emotion, 'intensity': self.being_state.emotion_intensity}
+            except:
+                pass
+        
+        # Motivation
+        if mot_state:
+            self.being_state.cognitive_graph_state = {
+                'curiosity': mot_state.curiosity,
+                'competence': mot_state.competence,
+                'coherence': mot_state.coherence,
+                'autonomy': mot_state.autonomy
+            }
+        
+        # RL State
+        if hasattr(self, 'rl_learner') and self.rl_learner:
+            self.being_state.rl_state = {
+                'epsilon': self.rl_learner.epsilon,
+                'total_experiences': len(self.rl_learner.memory) if hasattr(self.rl_learner, 'memory') else 0
+            }
+        
+        # Temporal Binding
+        if hasattr(self, 'temporal_tracker') and self.temporal_tracker:
+            try:
+                stats = self.temporal_tracker.get_statistics()
+                self.being_state.temporal_coherence = stats.get('temporal_coherence', 0.0)
+                self.being_state.unclosed_bindings = stats.get('unclosed_bindings', 0)
+                self.being_state.stuck_loop_count = self.temporal_tracker.stuck_loop_count
+            except:
+                pass
+        
+        # GPT-5 Orchestrator
+        if hasattr(self, 'gpt5_orchestrator') and self.gpt5_orchestrator:
+            try:
+                gpt5_stats = self.gpt5_orchestrator.get_stats()
+                self.being_state.expert_activity['gpt5'] = gpt5_stats
+                self.being_state.active_experts = list(self.gpt5_orchestrator.registered_systems.keys())
+            except:
+                pass
+        
+        # Wolfram
+        if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
+            try:
+                wolfram_stats = self.wolfram_analyzer.get_stats()
+                self.being_state.wolfram_calculations = wolfram_stats.get('total_calculations', 0)
+            except:
+                pass
+        
+        # Voice
+        if hasattr(self, 'voice_system') and self.voice_system:
+            try:
+                voice_stats = self.voice_system.get_stats()
+                self.being_state.voice_state = voice_stats
+            except:
+                pass
+        
+        # Lumen Integration
+        if hasattr(self, 'lumen_integration') and self.lumen_integration:
+            try:
+                balance = self.lumen_integration.measure_balance()
+                self.being_state.lumina.ontic = balance.get('onticum', 0.0)
+                self.being_state.lumina.structural = balance.get('structurale', 0.0)
+                self.being_state.lumina.participatory = balance.get('participatum', 0.0)
+            except:
+                pass
+        
+        # Spiral Dynamics (if available)
+        if hasattr(self, 'spiral_stage'):
+            self.being_state.spiral_stage = self.spiral_stage
+        
+        # Goal
+        if hasattr(self, 'current_goal'):
+            self.being_state.current_goal = self.current_goal
+        
+        # Session ID
+        if hasattr(self, 'main_brain') and self.main_brain:
+            self.being_state.session_id = self.main_brain.session_id
+    
     async def _register_systems_with_gpt5(self):
         """Register all subsystems with GPT-5 orchestrator."""
         if not self.gpt5_orchestrator:
@@ -1837,29 +1943,78 @@ class SkyrimAGI:
         from ..llm import SystemType
         
         # Register all major subsystems
+        # PERCEPTION LAYER
         self.gpt5_orchestrator.register_system("perception", SystemType.PERCEPTION)
         self.gpt5_orchestrator.register_system("sensorimotor", SystemType.PERCEPTION)
-        self.gpt5_orchestrator.register_system("action_planning", SystemType.ACTION)
-        self.gpt5_orchestrator.register_system("action_execution", SystemType.ACTION)
-        self.gpt5_orchestrator.register_system("world_model", SystemType.COGNITION)
-        self.gpt5_orchestrator.register_system("consciousness_bridge", SystemType.CONSCIOUSNESS)
-        self.gpt5_orchestrator.register_system("emotion_system", SystemType.EMOTION)
-        self.gpt5_orchestrator.register_system("rl_system", SystemType.LEARNING)
-        self.gpt5_orchestrator.register_system("reward_tuning", SystemType.LEARNING)
-        self.gpt5_orchestrator.register_system("strategic_planner", SystemType.COGNITION)
-        self.gpt5_orchestrator.register_system("meta_strategist", SystemType.COGNITION)
-        
-        if self.voice_system:
-            self.gpt5_orchestrator.register_system("voice_system", SystemType.VOICE)
-        
+        self.gpt5_orchestrator.register_system("enhanced_vision", SystemType.PERCEPTION)
         if self.video_interpreter:
             self.gpt5_orchestrator.register_system("video_interpreter", SystemType.VIDEO)
+        if hasattr(self, 'hyperbolic_vision') and self.hyperbolic_vision:
+            self.gpt5_orchestrator.register_system("hyperbolic_vision", SystemType.PERCEPTION)
         
+        # ACTION LAYER
+        self.gpt5_orchestrator.register_system("action_planning", SystemType.ACTION)
+        self.gpt5_orchestrator.register_system("action_execution", SystemType.ACTION)
+        self.gpt5_orchestrator.register_system("motor_controller", SystemType.ACTION)
+        self.gpt5_orchestrator.register_system("reflex_controller", SystemType.ACTION)
+        self.gpt5_orchestrator.register_system("combat_controller", SystemType.ACTION)
+        if self.realtime_coordinator:
+            self.gpt5_orchestrator.register_system("realtime_coordinator", SystemType.ACTION)
+        
+        # COGNITION LAYER
+        self.gpt5_orchestrator.register_system("world_model", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("strategic_planner", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("meta_strategist", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("rl_reasoning_neuron", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("combat_tactics", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("smart_navigator", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("dialogue_intelligence", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("quest_tracker", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("inventory_manager", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("crafting_system", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("character_progression", SystemType.COGNITION)
+        if hasattr(self, 'hyperbolic_reasoning') and self.hyperbolic_reasoning:
+            self.gpt5_orchestrator.register_system("hyperbolic_reasoning", SystemType.COGNITION)
+        
+        # CONSCIOUSNESS LAYER
+        self.gpt5_orchestrator.register_system("consciousness_bridge", SystemType.CONSCIOUSNESS)
+        self.gpt5_orchestrator.register_system("being_state", SystemType.CONSCIOUSNESS)
+        self.gpt5_orchestrator.register_system("coherence_engine", SystemType.CONSCIOUSNESS)
+        self.gpt5_orchestrator.register_system("system_consciousness_monitor", SystemType.CONSCIOUSNESS)
+        self.gpt5_orchestrator.register_system("enhanced_coherence", SystemType.CONSCIOUSNESS)
+        self.gpt5_orchestrator.register_system("lumen_integration", SystemType.CONSCIOUSNESS)
+        self.gpt5_orchestrator.register_system("spiritual_awareness", SystemType.CONSCIOUSNESS)
         if self.self_reflection:
             self.gpt5_orchestrator.register_system("self_reflection", SystemType.CONSCIOUSNESS)
         
-        if self.realtime_coordinator:
-            self.gpt5_orchestrator.register_system("realtime_coordinator", SystemType.ACTION)
+        # EMOTION LAYER
+        self.gpt5_orchestrator.register_system("emotion_system", SystemType.EMOTION)
+        self.gpt5_orchestrator.register_system("emotional_valence", SystemType.EMOTION)
+        
+        # LEARNING LAYER
+        self.gpt5_orchestrator.register_system("rl_system", SystemType.LEARNING)
+        self.gpt5_orchestrator.register_system("cloud_rl_agent", SystemType.LEARNING)
+        self.gpt5_orchestrator.register_system("reward_tuning", SystemType.LEARNING)
+        self.gpt5_orchestrator.register_system("adaptive_memory", SystemType.LEARNING)
+        self.gpt5_orchestrator.register_system("hierarchical_memory", SystemType.LEARNING)
+        self.gpt5_orchestrator.register_system("temporal_binding", SystemType.LEARNING)
+        self.gpt5_orchestrator.register_system("menu_learner", SystemType.LEARNING)
+        self.gpt5_orchestrator.register_system("meta_learner", SystemType.LEARNING)
+        
+        # INTEGRATION LAYER
+        if self.voice_system:
+            self.gpt5_orchestrator.register_system("voice_system", SystemType.VOICE)
+        if self.double_helix:
+            self.gpt5_orchestrator.register_system("double_helix", SystemType.COGNITION)
+        if hasattr(self, 'omega') and self.omega:
+            self.gpt5_orchestrator.register_system("omega_hyperhelix", SystemType.COGNITION)
+        
+        # RESEARCH & PHILOSOPHY LAYER (NEW)
+        if hasattr(self, 'research_advisor'):
+            self.gpt5_orchestrator.register_system("research_advisor", SystemType.COGNITION)
+        if hasattr(self, 'metacog_advisor'):
+            self.gpt5_orchestrator.register_system("metacognition_advisor", SystemType.COGNITION)
+        self.gpt5_orchestrator.register_system("philosophy_agent", SystemType.CONSCIOUSNESS)
         
         print(f"[GPT-5] Registered {len(self.gpt5_orchestrator.registered_systems)} subsystems")
         print("[GPT-5] Meta-cognitive coordination ready\n")
@@ -2990,6 +3145,186 @@ Connect perception → thought → action into flowing experience.""",
             print("GENERATING SESSION REPORT")
             print(f"{'=' * 60}")
             try:
+                # Collect comprehensive telemetry from ALL subsystems
+                print("[TELEMETRY] Collecting stats from all subsystems...")
+                
+                # PERCEPTION LAYER
+                if hasattr(self, 'perception'):
+                    perc_stats = {
+                        'total_frames': self.stats.get('cycles_completed', 0),
+                        'scene_classifications': self.stats.get('cycles_completed', 0)
+                    }
+                    self.main_brain.record_output(
+                        system_name='Perception System',
+                        content=f"Total frames processed: {perc_stats['total_frames']}",
+                        metadata=perc_stats,
+                        success=True
+                    )
+                
+                # CONSCIOUSNESS LAYER
+                if hasattr(self, 'consciousness_bridge'):
+                    cons_stats = self.consciousness_bridge.get_stats()
+                    self.main_brain.record_output(
+                        system_name='Consciousness Bridge',
+                        content=f"""Consciousness Statistics:
+- Total Measurements: {cons_stats['total_measurements']}
+- Avg Coherence: {cons_stats['avg_coherence']:.3f}
+- Avg Consciousness Level: {cons_stats['avg_consciousness']:.3f}
+- Trend: {cons_stats['trend']}
+- Lumina Balance: Ontical={cons_stats['coherence_by_lumina'].get('ontical', 0):.3f}, Structural={cons_stats['coherence_by_lumina'].get('structural', 0):.3f}, Participatory={cons_stats['coherence_by_lumina'].get('participatory', 0):.3f}""",
+                        metadata=cons_stats,
+                        success=True
+                    )
+                
+                # TEMPORAL BINDING
+                if hasattr(self, 'temporal_tracker'):
+                    temp_stats = self.temporal_tracker.get_statistics()
+                    self.main_brain.record_output(
+                        system_name='Temporal Binding',
+                        content=f"""Temporal Coherence: {temp_stats.get('temporal_coherence', 0):.3f}
+Unclosed Bindings: {temp_stats.get('unclosed_bindings', 0)}
+Stuck Loops Detected: {temp_stats.get('stuck_loops', 0)}""",
+                        metadata=temp_stats,
+                        success=True
+                    )
+                
+                # ENHANCED COHERENCE
+                if hasattr(self, 'enhanced_coherence'):
+                    enh_stats = self.enhanced_coherence.get_statistics()
+                    self.main_brain.record_output(
+                        system_name='Enhanced Coherence (4D)',
+                        content=f"""4D Coherence Measurement:
+- Integration: {enh_stats.get('integration_coherence', 0):.3f}
+- Temporal: {enh_stats.get('temporal_coherence', 0):.3f}
+- Causal: {enh_stats.get('causal_coherence', 0):.3f}
+- Predictive: {enh_stats.get('predictive_coherence', 0):.3f}""",
+                        metadata=enh_stats,
+                        success=True
+                    )
+                
+                # LUMEN INTEGRATION
+                if hasattr(self, 'lumen_integration'):
+                    lumen_stats = self.lumen_integration.get_statistics()
+                    self.main_brain.record_output(
+                        system_name='Lumen Integration',
+                        content=f"""Lumen Balance Statistics:
+- Avg Balance Score: {lumen_stats.get('avg_balance', 0):.3f}
+- Imbalances Detected: {lumen_stats.get('imbalances_detected', 0)}""",
+                        metadata=lumen_stats,
+                        success=True
+                    )
+                
+                # HIERARCHICAL MEMORY
+                if hasattr(self, 'hierarchical_memory'):
+                    mem_stats = self.hierarchical_memory.get_statistics()
+                    self.main_brain.record_output(
+                        system_name='Hierarchical Memory',
+                        content=f"""Memory Statistics:
+- Episodic Memories: {mem_stats.get('episodic_count', 0)}
+- Semantic Patterns: {mem_stats.get('semantic_count', 0)}
+- Consolidations: {mem_stats.get('consolidations', 0)}""",
+                        metadata=mem_stats,
+                        success=True
+                    )
+                
+                # GPT-5 ORCHESTRATOR
+                if hasattr(self, 'gpt5_orchestrator') and self.gpt5_orchestrator:
+                    gpt5_stats = self.gpt5_orchestrator.get_stats()
+                    self.main_brain.record_output(
+                        system_name='GPT-5 Orchestrator',
+                        content=f"""GPT-5 Meta-Cognitive Coordination:
+- Total Messages: {gpt5_stats.get('total_messages', 0)}
+- Total Responses: {gpt5_stats.get('total_responses', 0)}
+- Registered Systems: {len(self.gpt5_orchestrator.registered_systems)}""",
+                        metadata=gpt5_stats,
+                        success=True
+                    )
+                
+                # DOUBLE HELIX
+                if hasattr(self, 'double_helix') and self.double_helix:
+                    helix_stats = self.double_helix.get_stats()
+                    self.main_brain.record_output(
+                        system_name='Double Helix Architecture',
+                        content=f"""Double Helix Integration:
+- Total Nodes: {helix_stats.get('total_nodes', 0)}
+- Analytical Nodes: {helix_stats.get('analytical_nodes', 0)}
+- Intuitive Nodes: {helix_stats.get('intuitive_nodes', 0)}
+- Avg Integration: {helix_stats.get('average_integration', 0):.3f}""",
+                        metadata=helix_stats,
+                        success=True
+                    )
+                
+                # VOICE SYSTEM
+                if hasattr(self, 'voice_system') and self.voice_system:
+                    voice_stats = self.voice_system.get_stats()
+                    self.main_brain.record_output(
+                        system_name='Voice System',
+                        content=f"""Voice Vocalization:
+- Total Vocalizations: {voice_stats.get('total_vocalizations', 0)}
+- By Priority: {voice_stats.get('by_priority', {})}""",
+                        metadata=voice_stats,
+                        success=True
+                    )
+                
+                # VIDEO INTERPRETER
+                if hasattr(self, 'video_interpreter') and self.video_interpreter:
+                    video_stats = self.video_interpreter.get_stats()
+                    self.main_brain.record_output(
+                        system_name='Video Interpreter',
+                        content=f"""Video Analysis:
+- Total Interpretations: {video_stats.get('total_interpretations', 0)}
+- Frames Analyzed: {video_stats.get('frames_analyzed', 0)}""",
+                        metadata=video_stats,
+                        success=True
+                    )
+                
+                # HYBRID LLM
+                if hasattr(self, 'hybrid_llm') and self.hybrid_llm:
+                    hybrid_stats = self.hybrid_llm.get_stats()
+                    self.main_brain.record_output(
+                        system_name='Hybrid LLM (Gemini + Claude)',
+                        content=f"""Hybrid LLM Usage:
+- Total Calls: {hybrid_stats.get('total_calls', 0)}
+- Gemini Calls: {hybrid_stats.get('gemini_calls', 0)}
+- Claude Calls: {hybrid_stats.get('claude_calls', 0)}
+- Fallback Activations: {hybrid_stats.get('fallback_activations', 0)}""",
+                        metadata=hybrid_stats,
+                        success=True
+                    )
+                
+                # CLOUD RL
+                if hasattr(self, 'cloud_rl_agent') and self.cloud_rl_agent:
+                    try:
+                        rl_stats = self.cloud_rl_agent.get_stats()
+                        self.main_brain.record_output(
+                            system_name='Cloud RL Agent',
+                            content=f"""Cloud-Enhanced RL:
+- Total Experiences: {rl_stats.get('total_experiences', 0)}
+- Avg Reward: {rl_stats.get('avg_reward', 0):.3f}""",
+                            metadata=rl_stats,
+                            success=True
+                        )
+                    except:
+                        pass
+                
+                # UNIFIED BEING STATE (Final Snapshot)
+                if hasattr(self, 'being_state'):
+                    final_snapshot = self.being_state.export_snapshot()
+                    self.main_brain.record_output(
+                        system_name='Unified BeingState (Final)',
+                        content=f"""FINAL UNIFIED STATE:
+Global Coherence: {final_snapshot['global_coherence']:.3f}
+Lumina Balance: {final_snapshot['lumina']['balance']:.3f}
+Consciousness: 𝒞={final_snapshot['consciousness']['coherence_C']:.3f}, Φ̂={final_snapshot['consciousness']['phi_hat']:.3f}
+Spiral Stage: {final_snapshot['spiral']['stage']}
+Emotion: {final_snapshot['emotion']['primary']}
+Temporal Coherence: {final_snapshot['temporal']['temporal_coherence']:.3f}""",
+                        metadata=final_snapshot,
+                        success=True
+                    )
+                
+                print("[TELEMETRY] ✓ All subsystem stats collected")
+                
                 # Add Wolfram summary to Main Brain before generating report
                 if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
                     wolfram_stats = self.wolfram_analyzer.get_stats()
@@ -5666,6 +6001,39 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 # Store for tracking
                 self.last_consciousness = self.current_consciousness
                 self.current_consciousness = current_consciousness
+                
+                # Update unified BeingState with all subsystem outputs
+                self._update_being_state_comprehensive(
+                    cycle_count=cycle_count,
+                    game_state=game_state,
+                    perception=perception,
+                    current_consciousness=current_consciousness,
+                    mot_state=None,
+                    action=None
+                )
+                
+                # Export BeingState snapshot to Main Brain every 20 cycles
+                if hasattr(self, 'main_brain') and (cycle_count % 20 == 0):
+                    try:
+                        snapshot = self.being_state.export_snapshot()
+                        self.main_brain.record_output(
+                            system_name='Unified BeingState',
+                            content=f"""UNIFIED STATE SNAPSHOT (Cycle {cycle_count})
+Global Coherence: {snapshot['global_coherence']:.3f}
+Lumina Balance: {snapshot['lumina']['balance']:.3f}
+  ℓₒ (Ontic): {snapshot['lumina']['ontic']:.3f}
+  ℓₛ (Structural): {snapshot['lumina']['structural']:.3f}
+  ℓₚ (Participatory): {snapshot['lumina']['participatory']:.3f}
+Consciousness: 𝒞={snapshot['consciousness']['coherence_C']:.3f}, Φ̂={snapshot['consciousness']['phi_hat']:.3f}
+Emotion: {snapshot['emotion']['primary']} (intensity={snapshot['emotion']['intensity']:.2f})
+Temporal Coherence: {snapshot['temporal']['temporal_coherence']:.3f}
+Goal: {snapshot['goal']}
+Action: {snapshot['action']}""",
+                            metadata=snapshot,
+                            success=True
+                        )
+                    except Exception:
+                        pass
 
                 # 3. ASSESS MOTIVATION
                 motivation_context = {
@@ -5710,6 +6078,16 @@ Applicable Rules: {len(logic_analysis_brief['applicable_rules'])}"""
                 )
 
                 print(f"\n-> Action: {action}")
+                
+                # Update BeingState with motivation and planned action
+                self._update_being_state_comprehensive(
+                    cycle_count=cycle_count,
+                    game_state=game_state,
+                    perception=perception,
+                    current_consciousness=current_consciousness,
+                    mot_state=mot_state,
+                    action=action
+                )
 
                 # 6. EXECUTE ACTION
                 before_state = game_state.to_dict()
