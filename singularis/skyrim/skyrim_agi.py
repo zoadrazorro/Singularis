@@ -3463,6 +3463,9 @@ Scene: {self.perception.last_scene_type.value if hasattr(self.perception, 'last_
                 # Close Wolfram analyzer
                 if hasattr(self, 'wolfram_analyzer') and self.wolfram_analyzer:
                     await self.wolfram_analyzer.close()
+                # Close Continuum
+                if hasattr(self, 'continuum') and self.continuum:
+                    await self.continuum.cleanup()
                 print("[CLEANUP] ✓ All sessions closed")
             except Exception as e:
                 print(f"[CLEANUP] Warning: {e}")

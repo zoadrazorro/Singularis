@@ -299,6 +299,12 @@ class Phase1Observer:
             'temporal_stats': self.temporal_engine.get_stats()
         }
     
+    async def cleanup(self):
+        """Cleanup resources (async sessions, etc.)."""
+        # No async resources to cleanup in Phase 1
+        # (TemporalSuperpositionEngine doesn't use aiohttp)
+        pass
+    
     def generate_report(self) -> str:
         """Generate Phase 1 observation report."""
         stats = self.get_stats()

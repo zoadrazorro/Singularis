@@ -140,6 +140,11 @@ class ContinuumIntegration:
         match_rate = stats.get('advisory_match_rate', 0)
         
         return observations >= 100 and match_rate > 0.3
+    
+    async def cleanup(self):
+        """Cleanup resources."""
+        if self.phase == 1 and hasattr(self, 'observer'):
+            await self.observer.cleanup()
 
 
 def integrate_continuum_into_neo(skyrim_agi_instance):
