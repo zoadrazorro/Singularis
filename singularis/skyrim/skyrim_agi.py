@@ -240,6 +240,21 @@ class SkyrimConfig:
     scce_profile: str = "balanced"  # SCCE personality (balanced, anxious, stoic, curious, aggressive, cautious)
     scce_frequency: int = 1  # Run SCCE cognition_step every N cycles (1 = every cycle)
     
+    # Infinity Engine Phase 2 (NEW - Adaptive Rhythmic Cognition)
+    use_infinity_engine: bool = True  # Enable Infinity Engine Phase 2A/2B
+    infinity_verbose: bool = False  # Verbose Infinity Engine logging
+    # Phase 2A settings
+    coherence_v2_threshold: float = 0.4  # Minimum coherence before intervention
+    meta_context_enabled: bool = True  # Enable hierarchical temporal contexts
+    # Phase 2B settings
+    polyrhythmic_learning_enabled: bool = True  # Enable adaptive track periods
+    rhythm_learning_rate: float = 0.01  # How fast rhythms adapt
+    harmonic_attraction: float = 0.1  # Strength of harmonic synchronization
+    memory_v2_enabled: bool = True  # Enable temporal-rhythmic memory
+    memory_v2_capacity: int = 1000  # Episodic memory capacity
+    memory_consolidation_threshold: int = 3  # Reinforcements before consolidation
+    memory_decay_rate: float = 0.001  # Forgetting rate per cycle
+    
     # Legacy external augmentation (deprecated in favor of hybrid)
     enable_claude_meta: bool = False
     enable_gemini_vision: bool = False
@@ -774,6 +789,137 @@ class SkyrimAGI:
                 self.haack_bridge = None
         else:
             print("    ⚠️ HaackLang/SCCE disabled (set use_haacklang=True to enable)")
+        
+        # 24. Infinity Engine Phase 2 (NEW - Adaptive Rhythmic Cognition)
+        print("  [24/28] Infinity Engine Phase 2A/2B...")
+        from ..infinity import (
+            CoherenceEngineV2,
+            MetaContextSystem,
+            Context,
+            ContextLevel,
+            PolyrhythmicLearner,
+            AdaptationStrategy,
+            MemoryEngineV2,
+            create_exploration_profile,
+            create_survival_profile,
+            create_learning_profile,
+        )
+        
+        self.coherence_v2 = None
+        self.meta_context = None
+        self.rhythm_learner = None
+        self.memory_v2 = None
+        
+        if self.config.use_infinity_engine:
+            try:
+                # Phase 2A: Coherence Engine V2
+                self.coherence_v2 = CoherenceEngineV2(
+                    contradiction_threshold=0.7,
+                    tension_threshold=0.6,
+                    coherence_minimum=self.config.coherence_v2_threshold,
+                    verbose=self.config.infinity_verbose
+                )
+                print("    [OK] Coherence Engine V2 initialized (Meta-Logic)")
+                
+                # Phase 2A: Meta-Context System
+                if self.config.meta_context_enabled:
+                    self.meta_context = MetaContextSystem(
+                        verbose=self.config.infinity_verbose
+                    )
+                    
+                    # Add predefined context profiles
+                    exploration_profile = create_exploration_profile()
+                    survival_profile = create_survival_profile()
+                    learning_profile = create_learning_profile()
+                    
+                    # Create contexts from profiles
+                    exploration_ctx = Context(
+                        name='exploration',
+                        level=ContextLevel.MACRO,
+                        track_amplifications=exploration_profile.track_periods,
+                        coherence_threshold=0.5
+                    )
+                    survival_ctx = Context(
+                        name='survival',
+                        level=ContextLevel.MACRO,
+                        track_amplifications={'perception': 1.5, 'fast_response': 1.8},
+                        track_suppressions={'reflection': 0.3, 'creativity': 0.2},
+                        coherence_threshold=0.5
+                    )
+                    learning_ctx = Context(
+                        name='learning',
+                        level=ContextLevel.MACRO,
+                        track_amplifications={'reflection': 1.5, 'memory_consolidation': 1.4},
+                        plasticity_factor=1.5
+                    )
+                    
+                    # Start in exploration context
+                    self.meta_context.push_context(exploration_ctx)
+                    
+                    print("    [OK] Meta-Context System initialized")
+                    print("    [OK] Contexts: exploration, survival, learning")
+                else:
+                    print("    ⚠️ Meta-Context disabled")
+                
+                # Phase 2B: Polyrhythmic Learning
+                if self.config.polyrhythmic_learning_enabled:
+                    self.rhythm_learner = PolyrhythmicLearner(
+                        strategy=AdaptationStrategy.REWARD_BASED,
+                        global_learning_rate=self.config.rhythm_learning_rate,
+                        harmonic_attraction=self.config.harmonic_attraction,
+                        verbose=self.config.infinity_verbose
+                    )
+                    
+                    # Register cognitive tracks
+                    self.rhythm_learner.register_track('perception', initial_period=100, min_period=20, max_period=500)
+                    self.rhythm_learner.register_track('reflection', initial_period=200, min_period=50, max_period=1000)
+                    self.rhythm_learner.register_track('strategic', initial_period=500, min_period=100, max_period=2000)
+                    self.rhythm_learner.register_track('fast_response', initial_period=50, min_period=10, max_period=200)
+                    
+                    # Add harmonic constraints
+                    self.rhythm_learner.add_harmonic_constraint('perception', 'reflection', 0.5)
+                    self.rhythm_learner.add_harmonic_constraint('fast_response', 'perception', 0.5)
+                    
+                    # Add rhythm profiles
+                    self.rhythm_learner.add_rhythm_profile(exploration_profile)
+                    self.rhythm_learner.add_rhythm_profile(survival_profile)
+                    self.rhythm_learner.add_rhythm_profile(learning_profile)
+                    
+                    print("    [OK] Polyrhythmic Learning initialized")
+                    print("    [OK] 4 adaptive tracks with harmonic constraints")
+                else:
+                    print("    ⚠️ Polyrhythmic Learning disabled")
+                
+                # Phase 2B: Memory Engine V2
+                if self.config.memory_v2_enabled:
+                    self.memory_v2 = MemoryEngineV2(
+                        episodic_capacity=self.config.memory_v2_capacity,
+                        semantic_capacity=500,
+                        decay_rate=self.config.memory_decay_rate,
+                        consolidation_threshold=self.config.memory_consolidation_threshold,
+                        verbose=self.config.infinity_verbose
+                    )
+                    print("    [OK] Memory Engine V2 initialized (Temporal-Rhythmic)")
+                    print(f"    [OK] Capacity: {self.config.memory_v2_capacity} episodic, 500 semantic")
+                else:
+                    print("    ⚠️ Memory Engine V2 disabled")
+                
+                print("    [OK] Infinity Engine Phase 2A/2B ready")
+                print("    [OK] Adaptive rhythmic cognition enabled")
+                
+                # Record in double helix if available
+                if self.double_helix:
+                    self.double_helix.record_activation("infinity_engine", True, 1.0)
+                
+            except Exception as e:
+                print(f"    ⚠️ Infinity Engine initialization failed: {e}")
+                print(f"    ⚠️ Continuing without adaptive rhythmic cognition")
+                self.coherence_v2 = None
+                self.meta_context = None
+                self.rhythm_learner = None
+                self.memory_v2 = None
+        else:
+            print("    ⚠️ Infinity Engine disabled (set use_infinity_engine=True to enable)")
 
         # MATRIX NETWORK OF IMPROVEMENT + PTPL (scaffolding)
         try:
@@ -4194,6 +4340,135 @@ Based on this visual and contextual data, provide:
                     except Exception as e:
                         if cycle_count % 20 == 0:
                             print(f"[SCCE] Error: {e}")
+                
+                # ═══════════════════════════════════════════════════════════
+                # INFINITY ENGINE - Adaptive Rhythmic Cognition
+                # ═══════════════════════════════════════════════════════════
+                if self.config.use_infinity_engine and cycle_count % 2 == 0:  # Run every 2 cycles
+                    try:
+                        # Get current track states from HaackLang if available
+                        track_states = {}
+                        if self.haack_bridge and self.rhythm_learner:
+                            scheduler = self.haack_bridge.runtime.scheduler
+                            for track in scheduler.tracks:
+                                # Get current phase (normalized to 0-2π)
+                                phase = (scheduler.global_beat % track.period) / track.period * 2 * 3.14159
+                                # Get current period (may have been adapted)
+                                period = self.rhythm_learner.get_current_period(track.name)
+                                if period is None:
+                                    period = track.period
+                                track_states[track.name] = (phase, period)
+                        
+                        # Update meta-contexts
+                        if self.meta_context:
+                            # Build mock cognitive state for context updates
+                            mock_state = type('obj', (object,), {
+                                'truth_values': {},
+                                'game_state': game_state
+                            })()
+                            
+                            # Add danger level for context switching
+                            if self.haack_bridge:
+                                danger_tv = self.haack_bridge.get_truthvalue('danger')
+                                if danger_tv:
+                                    mock_state.truth_values['danger'] = danger_tv
+                            
+                            self.meta_context.update_contexts(mock_state)
+                            
+                            # Check for context-specific rhythm adaptation
+                            current_context = self.meta_context.get_active_context()
+                            if self.rhythm_learner and current_context:
+                                # Adapt rhythms to current context
+                                if current_context.name in ['exploration', 'survival', 'learning']:
+                                    self.rhythm_learner.set_active_profile(current_context.name)
+                        
+                        # Encode memory with rhythm signature
+                        if self.memory_v2 and track_states:
+                            memory_id = f"cycle_{cycle_count}"
+                            content = {
+                                'cycle': cycle_count,
+                                'scene_type': scene_type.value if hasattr(scene_type, 'value') else str(scene_type),
+                                'location': game_state.location_name if game_state else 'unknown',
+                                'health': game_state.health if game_state else 100,
+                                'in_combat': game_state.in_combat if game_state else False
+                            }
+                            
+                            context_name = self.meta_context.get_active_context().name if self.meta_context else 'exploration'
+                            
+                            self.memory_v2.encode_episodic(
+                                memory_id=memory_id,
+                                content=content,
+                                track_states=track_states,
+                                context=context_name
+                            )
+                        
+                        # Evaluate coherence V2
+                        if self.coherence_v2:
+                            # Build mock cognitive state for coherence evaluation
+                            mock_cog_state = type('obj', (object,), {
+                                'truth_values': {},
+                                'tracks': [],
+                                'goals': [],
+                                'emotions': {}
+                            })()
+                            
+                            # Add truth values from HaackLang
+                            if self.haack_bridge:
+                                for tv_name in ['danger', 'fear', 'trust', 'stress']:
+                                    tv = self.haack_bridge.get_truthvalue(tv_name)
+                                    if tv:
+                                        mock_cog_state.truth_values[tv_name] = tv
+                            
+                            # Evaluate
+                            report = self.coherence_v2.evaluate_coherence(mock_cog_state)
+                            
+                            # Apply corrections if needed
+                            if report.needs_adjustment(self.coherence_v2.thresholds):
+                                adjustments = self.coherence_v2.apply_corrections(report)
+                                
+                                # Log interventions
+                                if cycle_count % 10 == 0 and adjustments.adjustments:
+                                    print(f"[INFINITY] Coherence V2 intervention: {len(adjustments.adjustments)} adjustments")
+                                    for adj in adjustments.adjustments[:2]:
+                                        print(f"[INFINITY]   {adj.intervention_type.value}: {adj.target}")
+                        
+                        # Adapt rhythms based on reward
+                        if self.rhythm_learner and hasattr(self, 'current_consciousness'):
+                            # Use consciousness coherence as reward signal
+                            reward = self.current_consciousness.coherence if self.current_consciousness else 0.5
+                            
+                            # Adapt perception track
+                            self.rhythm_learner.adapt_from_reward('perception', reward)
+                            
+                            # Compute harmonic coherence
+                            harmonic_coh = self.rhythm_learner.compute_harmonic_coherence()
+                            
+                            # Log every 20 cycles
+                            if cycle_count % 20 == 0:
+                                periods = self.rhythm_learner.get_all_periods()
+                                print(f"[INFINITY] Harmonic coherence: {harmonic_coh:.3f}")
+                                print(f"[INFINITY] Periods: {periods}")
+                        
+                        # Apply memory forgetting
+                        if self.memory_v2 and cycle_count % 50 == 0:
+                            self.memory_v2.apply_forgetting()
+                        
+                        # Consolidate memories periodically
+                        if self.memory_v2 and cycle_count % 100 == 0:
+                            # Try to consolidate exploration memories
+                            pattern = self.memory_v2.consolidate_episodic_to_semantic(
+                                pattern_type='gameplay_pattern'
+                            )
+                            if pattern:
+                                print(f"[INFINITY] Consolidated pattern: {pattern.pattern_id}")
+                        
+                        # Record in double helix
+                        if self.double_helix:
+                            self.double_helix.record_activation("infinity_engine", True, 1.0)
+                        
+                    except Exception as e:
+                        if cycle_count % 20 == 0:
+                            print(f"[INFINITY] Error: {e}")
                 
                 # Update BeingState from all subsystems (every cycle)
                 if hasattr(self, 'being_state'):
