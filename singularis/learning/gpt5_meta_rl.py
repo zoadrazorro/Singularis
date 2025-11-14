@@ -131,7 +131,7 @@ class GPT5MetaRL:
         if self.verbose:
             print("[GPT5-META-RL] Multidynamic Mathematical Ontological Meta-RL initialized")
             print(f"[GPT5-META-RL] Model: {self.model}")
-            print(f"[GPT5-META-RL] Spiral Dynamics: {self.spiral.system_context.current_stage.value.upper()} {self.spiral.system_context.current_stage.color_code}")
+            print(f"[GPT5-META-RL] Spiral Dynamics: {self.spiral.system_context.current_stage.value.upper()}")
     
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session."""

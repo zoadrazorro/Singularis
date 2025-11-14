@@ -38,7 +38,7 @@ async def test_mind_system():
             confidence=0.95,
             evidence=["Best practice", "Catches bugs"]
         )
-        print("✓ Self mental state updated")
+        print("[OK] Self mental state updated")
         
         mind.theory_of_mind.infer_other_state(
             agent="TestNPC",
@@ -47,13 +47,13 @@ async def test_mind_system():
             confidence=0.8,
             evidence=["Friendly dialogue", "Quest giver"]
         )
-        print("✓ Other agent mental state inferred")
+        print("[OK] Other agent mental state inferred")
         
         perspective = mind.theory_of_mind.take_perspective("TestNPC")
-        print(f"✓ Perspective taken: {len(perspective)} mental states")
+        print(f"[OK] Perspective taken: {len(perspective)} mental states")
         
         prediction = mind.theory_of_mind.predict_behavior("TestNPC", {})
-        print(f"✓ Behavior predicted: {prediction[:50]}...")
+        print(f"[OK] Behavior predicted: {prediction[:50]}...")
         
         # Test Heuristic Analyzer
         print("\n[TEST] Heuristic Differential Analyzer...")
@@ -63,19 +63,19 @@ async def test_mind_system():
             action="run tests",
             initial_success_rate=0.9
         )
-        print("✓ Heuristic pattern added")
+        print("[OK] Heuristic pattern added")
         
         pattern = mind.heuristic_analyzer.match_pattern({
             'test': True,
             'mode': 'active'
         })
-        print(f"✓ Pattern matched: {pattern.pattern_id if pattern else 'None'}")
+        print(f"[OK] Pattern matched: {pattern.pattern_id if pattern else 'None'}")
         
         differential = mind.heuristic_analyzer.analyze_differential({
             'value': 100,
             'status': 'testing'
         })
-        print(f"✓ Differential analyzed: {differential['magnitude']} magnitude")
+        print(f"[OK] Differential analyzed: {differential['magnitude']} magnitude")
         
         # Test Multi-Node
         print("\n[TEST] Multi-Node Cross-Parallelism...")
@@ -84,27 +84,27 @@ async def test_mind_system():
             domain="testing",
             initial_beliefs={'tests_pass': 0.9}
         )
-        print("✓ Cognitive node created")
+        print("[OK] Cognitive node created")
         
         mind.multi_node.connect_nodes("test_node", "world_model_node", 0.8)
-        print("✓ Nodes connected")
+        print("[OK] Nodes connected")
         
         mind.multi_node.activate_node("test_node", 0.95)
         mind.multi_node.propagate_activation(iterations=3)
-        print(f"✓ Activation propagated: {len(mind.multi_node.global_activation)} nodes active")
+        print(f"[OK] Activation propagated: {len(mind.multi_node.global_activation)} nodes active")
         
         insights = mind.multi_node.get_cross_domain_insights()
-        print(f"✓ Cross-domain insights: {len(insights)} found")
+        print(f"[OK] Cross-domain insights: {len(insights)} found")
         
         # Test Coherence Analyzer
         print("\n[TEST] Cognitive Coherence Analyzer...")
         mind.coherence_analyzer.add_belief("Tests should pass", 0.95)
         mind.coherence_analyzer.add_belief("Tests might fail", 0.3)
         mind.coherence_analyzer.add_contradiction("Tests should pass", "Tests might fail")
-        print("✓ Beliefs and contradictions added")
+        print("[OK] Beliefs and contradictions added")
         
         coherence = mind.coherence_analyzer.check_coherence()
-        print(f"✓ Coherence checked: {coherence.coherence_score:.2%} ({coherence.valence.value})")
+        print(f"[OK] Coherence checked: {coherence.coherence_score:.2%} ({coherence.valence.value})")
         print(f"  Dissonances: {len(coherence.dissonances)}")
         print(f"  Recommendations: {len(coherence.recommendations)}")
         
@@ -115,7 +115,7 @@ async def test_mind_system():
             'status': 'running',
             'active_domains': ['testing', 'world_model']
         })
-        print(f"✓ Situation processed")
+        print(f"[OK] Situation processed")
         print(f"  Recommended action: {result.get('recommended_action', 'None')}")
         print(f"  Coherence: {result['coherence_score']:.2%}")
         print(f"  Active nodes: {len(result['active_nodes'])}")
@@ -148,7 +148,7 @@ async def test_spiral_dynamics():
         
         # Initialize
         spiral = SpiralDynamicsIntegrator(verbose=True)
-        print("✓ Spiral Dynamics initialized")
+        print("[OK] Spiral Dynamics initialized")
         
         # Test stage assessment
         print("\n[TEST] Stage Assessment...")
@@ -156,13 +156,13 @@ async def test_spiral_dynamics():
             'health': 15,
             'in_danger': True
         })
-        print(f"✓ Survival situation assessed: {stage.value} {stage.color_code}")
+        print(f"[OK] Survival situation assessed: {stage.value} ")
         
         stage = spiral.assess_situation_stage({
             'in_combat': True,
             'enemies_nearby': 2
         })
-        print(f"✓ Combat situation assessed: {stage.value} {stage.color_code}")
+        print(f"[OK] Combat situation assessed: {stage.value} ")
         
         # Test expert selection
         print("\n[TEST] Expert Selection...")
@@ -170,7 +170,7 @@ async def test_spiral_dynamics():
             required_stage=SpiralStage.GREEN,
             available_experts=['gemini_reasoning', 'claude_sensorimotor', 'qwen3_reasoning']
         )
-        print(f"✓ Expert selected: {expert}")
+        print(f"[OK] Expert selected: {expert}")
         
         # Test knowledge tagging
         print("\n[TEST] Knowledge Tagging...")
@@ -179,7 +179,7 @@ async def test_spiral_dynamics():
             domain="combat",
             context={'in_combat': True}
         )
-        print(f"✓ Knowledge tagged: {knowledge.stage.value} {knowledge.stage.color_code}")
+        print(f"[OK] Knowledge tagged: {knowledge.stage.value} ")
         print(f"  Transferability to YELLOW: {knowledge.transferability[SpiralStage.YELLOW]:.2f}")
         
         # Test knowledge transfer
@@ -189,7 +189,7 @@ async def test_spiral_dynamics():
             target_stage=SpiralStage.GREEN,
             domain="combat"
         )
-        print(f"✓ Knowledge transfer: {len(transferable)} items transferable")
+        print(f"[OK] Knowledge transfer: {len(transferable)} items transferable")
         
         # Test stage evolution
         print("\n[TEST] Stage Evolution...")
@@ -198,7 +198,7 @@ async def test_spiral_dynamics():
             'exploration': 0.82,
             'social': 0.88
         })
-        print(f"✓ Evolution check: {'Evolved!' if evolved else 'Not yet'}")
+        print(f"[OK] Evolution check: {'Evolved!' if evolved else 'Not yet'}")
         
         # Test prompt adaptation
         print("\n[TEST] Stage-Appropriate Prompts...")
@@ -206,7 +206,7 @@ async def test_spiral_dynamics():
             "Analyze the situation",
             SpiralStage.YELLOW
         )
-        print(f"✓ Prompt adapted for YELLOW stage")
+        print(f"[OK] Prompt adapted for YELLOW stage")
         
         # Test multi-stage synthesis
         print("\n[TEST] Multi-Stage Synthesis...")
@@ -215,17 +215,17 @@ async def test_spiral_dynamics():
             'claude_reasoning': "Follow protocol",
             'gemini_reasoning': "Analyze system"
         })
-        print(f"✓ Multi-stage synthesis: {len(synthesis)} chars")
+        print(f"[OK] Multi-stage synthesis: {len(synthesis)} chars")
         
         # Print stats
         print("\n[TEST] Spiral Dynamics Statistics...")
         spiral.print_stats()
         
-        print("\n✅ SPIRAL DYNAMICS: ALL TESTS PASSED")
+        print("\n[PASS] SPIRAL DYNAMICS: ALL TESTS PASSED")
         return True
         
     except Exception as e:
-        print(f"\n❌ SPIRAL DYNAMICS TEST FAILED: {e}")
+        print(f"\n[FAIL] SPIRAL DYNAMICS TEST FAILED: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -248,13 +248,13 @@ async def test_gpt5_meta_rl():
                 model="gpt-5",
                 verbose=True
             )
-            print("✓ GPT-5 Meta-RL initialized")
-            print(f"✓ Spiral Dynamics integrated: {meta_rl.spiral.system_context.current_stage.value}")
+            print("[OK] GPT-5 Meta-RL initialized")
+            print(f"[OK] Spiral Dynamics integrated: {meta_rl.spiral.system_context.current_stage.value}")
             
             # Test stats
             print("\n[TEST] Statistics...")
             stats = meta_rl.get_stats()
-            print(f"✓ Stats retrieved:")
+            print(f"[OK] Stats retrieved:")
             print(f"  Meta-analyses: {stats['total_meta_analyses']}")
             print(f"  Knowledge transfers: {stats['total_knowledge_transfers']}")
             print(f"  Spiral stage: {stats['spiral_dynamics']['current_stage']}")
@@ -264,18 +264,18 @@ async def test_gpt5_meta_rl():
             assert hasattr(meta_rl, 'spiral'), "Missing spiral attribute"
             assert hasattr(meta_rl, 'dynamic_models'), "Missing dynamic_models"
             assert hasattr(meta_rl, 'meta_insights'), "Missing meta_insights"
-            print("✓ All required attributes present")
+            print("[OK] All required attributes present")
             
-            print("\n✅ GPT-5 META-RL: STRUCTURE TESTS PASSED")
+            print("\n[PASS] GPT-5 META-RL: STRUCTURE TESTS PASSED")
             print("   (API tests skipped - require valid API key)")
             return True
             
         except ImportError as ie:
-            print(f"⚠️  Import issue (expected if dependencies missing): {ie}")
+            print(f"[WARN]  Import issue (expected if dependencies missing): {ie}")
             return True  # Don't fail on import issues
             
     except Exception as e:
-        print(f"\n❌ GPT-5 META-RL TEST FAILED: {e}")
+        print(f"\n[FAIL] GPT-5 META-RL TEST FAILED: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -296,12 +296,12 @@ async def test_wolfram_telemetry():
             wolfram_gpt_id="gpt-4o",
             verbose=True
         )
-        print("✓ Wolfram Telemetry initialized")
+        print("[OK] Wolfram Telemetry initialized")
         
         # Test stats
         print("\n[TEST] Statistics...")
         stats = analyzer.get_stats()
-        print(f"✓ Stats retrieved:")
+        print(f"[OK] Stats retrieved:")
         print(f"  Total calculations: {stats['total_calculations']}")
         print(f"  Avg computation time: {stats['avg_computation_time']:.2f}s")
         
@@ -309,14 +309,14 @@ async def test_wolfram_telemetry():
         print("\n[TEST] Structure Verification...")
         assert hasattr(analyzer, 'calculation_history'), "Missing calculation_history"
         assert hasattr(analyzer, 'total_calculations'), "Missing total_calculations"
-        print("✓ All required attributes present")
+        print("[OK] All required attributes present")
         
-        print("\n✅ WOLFRAM TELEMETRY: STRUCTURE TESTS PASSED")
+        print("\n[PASS] WOLFRAM TELEMETRY: STRUCTURE TESTS PASSED")
         print("   (API tests skipped - require valid API key)")
         return True
         
     except Exception as e:
-        print(f"\n❌ WOLFRAM TELEMETRY TEST FAILED: {e}")
+        print(f"\n[FAIL] WOLFRAM TELEMETRY TEST FAILED: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -347,8 +347,8 @@ async def test_integration():
         mind_result = await mind.process_situation(situation)
         spiral_stage = spiral.assess_situation_stage(situation)
         
-        print(f"✓ Mind processed: coherence={mind_result['coherence_score']:.2%}")
-        print(f"✓ Spiral assessed: stage={spiral_stage.value} {spiral_stage.color_code}")
+        print(f"[OK] Mind processed: coherence={mind_result['coherence_score']:.2%}")
+        print(f"[OK] Spiral assessed: stage={spiral_stage.value} ")
         
         print("\n[TEST] Mind + GPT-5 Meta-RL Integration...")
         meta_rl = GPT5MetaRL(api_key="test", verbose=False)
@@ -356,22 +356,22 @@ async def test_integration():
         # Verify spiral is integrated
         assert hasattr(meta_rl, 'spiral'), "Meta-RL missing Spiral integration"
         assert meta_rl.spiral.system_context.current_stage is not None
-        print(f"✓ Meta-RL has Spiral: stage={meta_rl.spiral.system_context.current_stage.value}")
+        print(f"[OK] Meta-RL has Spiral: stage={meta_rl.spiral.system_context.current_stage.value}")
         
         print("\n[TEST] Cross-System Data Flow...")
         # Mind -> Spiral
         mind_domains = list(mind_result['active_nodes'])
-        print(f"✓ Mind active nodes: {len(mind_domains)}")
+        print(f"[OK] Mind active nodes: {len(mind_domains)}")
         
         # Spiral -> Meta-RL
         spiral_stage = meta_rl.spiral.system_context.current_stage
-        print(f"✓ Meta-RL spiral stage: {spiral_stage.value}")
+        print(f"[OK] Meta-RL spiral stage: {spiral_stage.value}")
         
-        print("\n✅ INTEGRATION: ALL TESTS PASSED")
+        print("\n[PASS] INTEGRATION: ALL TESTS PASSED")
         return True
         
     except Exception as e:
-        print(f"\n❌ INTEGRATION TEST FAILED: {e}")
+        print(f"\n[FAIL] INTEGRATION TEST FAILED: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -400,16 +400,16 @@ async def main():
     print("="*80)
     
     for system, passed in results.items():
-        status = "✅ PASS" if passed else "❌ FAIL"
+        status = "[PASS]" if passed else "[FAIL]"
         print(f"{status} - {system.upper()}")
     
     all_passed = all(results.values())
     
     print("\n" + "="*80)
     if all_passed:
-        print("🎉 ALL SYSTEMS VERIFIED - READY FOR DEPLOYMENT")
+        print("[SUCCESS] ALL SYSTEMS VERIFIED - READY FOR DEPLOYMENT")
     else:
-        print("⚠️  SOME TESTS FAILED - REVIEW ERRORS ABOVE")
+        print("[WARNING] SOME TESTS FAILED - REVIEW ERRORS ABOVE")
     print("="*80 + "\n")
     
     return all_passed
@@ -418,3 +418,4 @@ async def main():
 if __name__ == "__main__":
     success = asyncio.run(main())
     sys.exit(0 if success else 1)
+

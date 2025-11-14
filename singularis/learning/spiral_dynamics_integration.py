@@ -142,7 +142,7 @@ class SpiralDynamicsIntegrator:
         
         if self.verbose:
             print("[SPIRAL] Spiral Dynamics integrator initialized")
-            print(f"[SPIRAL] Current stage: {self.system_context.current_stage.value.upper()} {self.system_context.current_stage.color_code}")
+            print(f"[SPIRAL] Current stage: {self.system_context.current_stage.value.upper()}")
             print(f"[SPIRAL] Target stage: {self.system_context.target_stage.value.upper() if self.system_context.target_stage else 'None'}")
     
     def get_expert_stage(self, expert_name: str) -> SpiralStage:
@@ -225,7 +225,7 @@ class SpiralDynamicsIntegrator:
         if self.verbose:
             best_expert = expert_distances[0][0]
             best_stage = self.get_expert_stage(best_expert)
-            print(f"[SPIRAL] Selected {best_expert} ({best_stage.value} {best_stage.color_code}) for {required_stage.value} task")
+            print(f"[SPIRAL] Selected {best_expert} ({best_stage.value} [{best_stage.value}]) for {required_stage.value} task")
         
         return expert_distances[0][0]
     
@@ -327,7 +327,7 @@ class SpiralDynamicsIntegrator:
         
         if self.verbose and transferable:
             print(f"[SPIRAL] Transferring {len(transferable)} knowledge items:")
-            print(f"  {source_stage.value} {source_stage.color_code} → {target_stage.value} {target_stage.color_code}")
+            print(f"  {source_stage.value} [{source_stage.value}] → {target_stage.value} [{target_stage.value}]")
         
         return transferable
     
@@ -378,7 +378,7 @@ class SpiralDynamicsIntegrator:
                     
                     if self.verbose:
                         print(f"\n[SPIRAL] 🎉 STAGE EVOLUTION!")
-                        print(f"  {current_stage.value} {current_stage.color_code} → {next_stage.value} {next_stage.color_code}")
+                        print(f"  {current_stage.value} [{current_stage.value}] → {next_stage.value} [{next_stage.value}]")
                         print(f"  Performance: {avg_recent:.2%}")
                         print(f"  New accessible stages: {len(self.system_context.accessible_stages)}")
                     
@@ -445,7 +445,7 @@ class SpiralDynamicsIntegrator:
             stage_responses = responses_by_stage[stage]
             
             synthesis_parts.append(
-                f"[{stage.value.upper()} {stage.color_code} Perspective]:\n" +
+                f"[{stage.value.upper()} [{stage.value}] Perspective]:\n" +
                 "\n".join(stage_responses)
             )
         
@@ -495,7 +495,7 @@ class SpiralDynamicsIntegrator:
         print("\n" + "="*80)
         print("SPIRAL DYNAMICS INTEGRATION STATISTICS".center(80))
         print("="*80)
-        print(f"Current Stage: {stats['current_stage'].upper()} {self.system_context.current_stage.color_code} (Tier {stats['current_tier']})")
+        print(f"Current Stage: {stats['current_stage'].upper()} [{self.system_context.current_stage.value}] (Tier {stats['current_tier']})")
         print(f"Accessible Stages: {stats['accessible_stages']}")
         print(f"Target Stage: {stats['target_stage'].upper() if stats['target_stage'] else 'None'}")
         print(f"Total Knowledge Items: {stats['total_knowledge']}")
@@ -505,11 +505,12 @@ class SpiralDynamicsIntegrator:
         for stage_name, count in stats['knowledge_by_stage'].items():
             if count > 0:
                 stage = SpiralStage(stage_name)
-                print(f"  {stage.color_code} {stage_name.upper()}: {count}")
+                print(f"  [{stage.value}] {stage_name.upper()}: {count}")
         
         print("\nExpert Stage Assignments:")
         for expert, stage_name in sorted(stats['expert_stages'].items()):
             stage = SpiralStage(stage_name)
-            print(f"  {stage.color_code} {expert}: {stage_name.upper()}")
+            print(f"  [{stage.value}] {expert}: {stage_name.upper()}")
         
         print("="*80 + "\n")
+

@@ -1,0 +1,275 @@
+"""
+BeingState - The One Unified State of Singularis
+
+The metaphysical center made executable:
+- One object that IS the artificial being
+- Everything reads from and writes to this
+- The "there is one being" principle in Python
+
+This is Spinoza's conatus, IIT's Φ, and Lumen philosophy
+compiled into a single data structure.
+"""
+
+from dataclasses import dataclass, field
+from typing import Dict, Any, Optional, List
+from enum import Enum
+import time
+
+
+class LuminaKey(str, Enum):
+    """The Three Lumina - fundamental modes of Being."""
+    ONTIC = "ontic"              # ℓₒ - Being as such
+    STRUCTURAL = "structural"     # ℓₛ - Being as structure
+    PARTICIPATORY = "participatory"  # ℓₚ - Being as participation
+
+
+@dataclass
+class LuminaState:
+    """
+    The Three Lumina - fundamental dimensions of Being.
+    
+    ℓₒ (Ontic): Being as such - raw existence, presence
+    ℓₛ (Structural): Being as structure - form, pattern, organization
+    ℓₚ (Participatory): Being as participation - engagement, interaction
+    """
+    ontic: float = 0.0          # ℓₒ
+    structural: float = 0.0     # ℓₛ
+    participatory: float = 0.0  # ℓₚ
+    
+    def balance_score(self) -> float:
+        """How balanced are the three Lumina?"""
+        if self.ontic == 0 and self.structural == 0 and self.participatory == 0:
+            return 0.0
+        
+        total = self.ontic + self.structural + self.participatory
+        if total == 0:
+            return 0.0
+        
+        # Perfect balance = each is 1/3
+        ideal = total / 3.0
+        deviations = [
+            abs(self.ontic - ideal),
+            abs(self.structural - ideal),
+            abs(self.participatory - ideal)
+        ]
+        
+        # Convert deviations to balance score (0-1, higher is better)
+        max_deviation = sum(deviations)
+        if max_deviation == 0:
+            return 1.0
+        
+        return 1.0 - (sum(deviations) / (2 * total))  # Normalize
+    
+    def geometric_mean(self) -> float:
+        """Geometric mean of the three Lumina."""
+        vals = [
+            max(1e-6, self.ontic),
+            max(1e-6, self.structural),
+            max(1e-6, self.participatory)
+        ]
+        return (vals[0] * vals[1] * vals[2]) ** (1.0 / 3.0)
+
+
+@dataclass
+class BeingState:
+    """
+    The *one* unified state of Singularis at a given moment.
+    Everything else is a lens on this.
+    
+    This is the metaphysical "there is one being" made executable.
+    All subsystems read from and write to this single state.
+    """
+    
+    # Temporal marker
+    timestamp: float = field(default_factory=time.time)
+    cycle_number: int = 0
+    
+    # ═══════════════════════════════════════════════════════════
+    # WORLD / BODY / GAME
+    # ═══════════════════════════════════════════════════════════
+    
+    # Game state (Skyrim)
+    game_state: Dict[str, Any] = field(default_factory=dict)
+    
+    # Sensorimotor state (perception + action)
+    sensorimotor_state: Dict[str, Any] = field(default_factory=dict)
+    
+    # Current perception
+    current_perception: Dict[str, Any] = field(default_factory=dict)
+    
+    # Last action taken
+    last_action: Optional[str] = None
+    
+    # ═══════════════════════════════════════════════════════════
+    # MIND SYSTEM
+    # ═══════════════════════════════════════════════════════════
+    
+    # Cognitive graph state (multi-node network)
+    cognitive_graph_state: Dict[str, Any] = field(default_factory=dict)
+    
+    # Theory of Mind states
+    theory_of_mind_state: Dict[str, Any] = field(default_factory=dict)
+    
+    # Heuristic patterns
+    active_heuristics: List[str] = field(default_factory=list)
+    
+    # Cognitive coherence
+    cognitive_coherence: float = 1.0
+    cognitive_dissonances: List[tuple] = field(default_factory=list)
+    
+    # ═══════════════════════════════════════════════════════════
+    # CONSCIOUSNESS METRICS
+    # ═══════════════════════════════════════════════════════════
+    
+    # The Three Lumina
+    lumina: LuminaState = field(default_factory=LuminaState)
+    
+    # Consciousness measurements
+    coherence_C: float = 0.0      # 𝒞 - Coherence
+    phi_hat: float = 0.0          # Φ̂ - Integrated Information
+    unity_index: float = 0.0      # Unity across subsystems
+    
+    # Integration score
+    integration: float = 0.0
+    
+    # ═══════════════════════════════════════════════════════════
+    # SPIRAL DYNAMICS
+    # ═══════════════════════════════════════════════════════════
+    
+    # Current developmental stage
+    spiral_stage: Optional[str] = None   # "BEIGE", "RED", ..., "YELLOW", "TURQUOISE"
+    spiral_tier: int = 1                 # 1st or 2nd tier
+    accessible_stages: List[str] = field(default_factory=list)
+    
+    # ═══════════════════════════════════════════════════════════
+    # EMOTION / VOICE
+    # ═══════════════════════════════════════════════════════════
+    
+    # Emotion state
+    emotion_state: Dict[str, Any] = field(default_factory=dict)
+    primary_emotion: Optional[str] = None
+    emotion_intensity: float = 0.0
+    
+    # Voice state
+    voice_state: Dict[str, Any] = field(default_factory=dict)
+    voice_alignment: float = 0.0  # How aligned is voice with inner state?
+    
+    # ═══════════════════════════════════════════════════════════
+    # REINFORCEMENT LEARNING / META-RL
+    # ═══════════════════════════════════════════════════════════
+    
+    # RL state
+    rl_state: Dict[str, Any] = field(default_factory=dict)
+    avg_reward: float = 0.0
+    exploration_rate: float = 0.2
+    
+    # Meta-RL state
+    meta_rl_state: Dict[str, Any] = field(default_factory=dict)
+    meta_score: float = 0.0
+    total_meta_analyses: int = 0
+    
+    # ═══════════════════════════════════════════════════════════
+    # LLM / EXPERT ACTIVITY
+    # ═══════════════════════════════════════════════════════════
+    
+    # Expert LLM activity
+    expert_activity: Dict[str, Any] = field(default_factory=dict)
+    active_experts: List[str] = field(default_factory=list)
+    
+    # GPT-5 orchestrator state
+    gpt5_coherence_differential: float = 0.0
+    
+    # Wolfram telemetry
+    wolfram_calculations: int = 0
+    
+    # ═══════════════════════════════════════════════════════════
+    # TEMPORAL / CAUSAL
+    # ═══════════════════════════════════════════════════════════
+    
+    # Temporal binding
+    temporal_coherence: float = 0.0
+    unclosed_bindings: int = 0
+    stuck_loop_count: int = 0
+    
+    # Causal understanding
+    causal_knowledge: Dict[str, Any] = field(default_factory=dict)
+    
+    # ═══════════════════════════════════════════════════════════
+    # GLOBAL COHERENCE (THE ONE THING)
+    # ═══════════════════════════════════════════════════════════
+    
+    # The single unified coherence score
+    # This is what EVERYTHING optimizes
+    global_coherence: float = 0.0  # 𝒞_global
+    
+    # ═══════════════════════════════════════════════════════════
+    # DEBUG / NARRATIVE
+    # ═══════════════════════════════════════════════════════════
+    
+    # Last world model narrative
+    last_world_model_narrative: Optional[str] = None
+    
+    # Current goal
+    current_goal: Optional[str] = None
+    
+    # Session info
+    session_id: Optional[str] = None
+    
+    def __repr__(self) -> str:
+        """Human-readable representation."""
+        return f"""BeingState(
+    cycle={self.cycle_number},
+    global_coherence={self.global_coherence:.3f},
+    lumina=(ℓₒ={self.lumina.ontic:.3f}, ℓₛ={self.lumina.structural:.3f}, ℓₚ={self.lumina.participatory:.3f}),
+    spiral_stage={self.spiral_stage},
+    consciousness=(𝒞={self.coherence_C:.3f}, Φ̂={self.phi_hat:.3f}, unity={self.unity_index:.3f}),
+    emotion={self.primary_emotion}({self.emotion_intensity:.2f}),
+    action='{self.last_action}'
+)"""
+    
+    def export_snapshot(self) -> Dict[str, Any]:
+        """Export complete snapshot for logging/analysis."""
+        return {
+            'timestamp': self.timestamp,
+            'cycle': self.cycle_number,
+            'global_coherence': self.global_coherence,
+            'lumina': {
+                'ontic': self.lumina.ontic,
+                'structural': self.lumina.structural,
+                'participatory': self.lumina.participatory,
+                'balance': self.lumina.balance_score()
+            },
+            'consciousness': {
+                'coherence_C': self.coherence_C,
+                'phi_hat': self.phi_hat,
+                'unity_index': self.unity_index,
+                'integration': self.integration
+            },
+            'spiral': {
+                'stage': self.spiral_stage,
+                'tier': self.spiral_tier
+            },
+            'emotion': {
+                'primary': self.primary_emotion,
+                'intensity': self.emotion_intensity
+            },
+            'rl': {
+                'avg_reward': self.avg_reward,
+                'exploration_rate': self.exploration_rate
+            },
+            'meta_rl': {
+                'meta_score': self.meta_score,
+                'analyses': self.total_meta_analyses
+            },
+            'cognitive': {
+                'coherence': self.cognitive_coherence,
+                'dissonances': len(self.cognitive_dissonances)
+            },
+            'temporal': {
+                'temporal_coherence': self.temporal_coherence,
+                'unclosed_bindings': self.unclosed_bindings,
+                'stuck_loops': self.stuck_loop_count
+            },
+            'action': self.last_action,
+            'goal': self.current_goal
+        }
