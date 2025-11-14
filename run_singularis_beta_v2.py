@@ -63,7 +63,7 @@ def check_environment():
     """Check that required environment variables are set."""
     required_vars = {
         'OPENAI_API_KEY': 'OpenAI API (required for GPT-5 Meta-RL & Wolfram telemetry)',
-        'GOOGLE_API_KEY': 'Google Gemini API (required for vision)',
+        'GEMINI_API_KEY': 'Google Gemini API (required for vision)',
     }
     
     optional_vars = {
