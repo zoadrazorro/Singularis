@@ -1,17 +1,17 @@
 {
-  "cycle": 405,
-  "elapsed": 2193.2666969299316,
+  "cycle": 24,
+  "elapsed": 123.13041687011719,
   "stats": {
-    "total_actions": 404,
-    "successful_actions": 404,
+    "total_actions": 24,
+    "successful_actions": 24,
     "rejected_actions": 0,
     "conflicts_prevented": 0,
-    "gpt5_coordinations": 404,
+    "gpt5_coordinations": 24,
     "temporal_closure_rate": 1.0
   },
   "being_state": {
-    "timestamp": 1763154444.5874732,
-    "cycle": 405,
+    "timestamp": 1763157241.021357,
+    "cycle": 24,
     "global_coherence": 0.85,
     "lumina": {
       "ontic": 0.0,
@@ -54,10 +54,10 @@
     "goal": null,
     "subsystems": {
       "sensorimotor": {
-        "status": "UNKNOWN",
+        "status": "ACTIVE",
         "analysis": "",
         "visual_similarity": 0.0,
-        "age": 999
+        "age": 7.186518669128418
       },
       "action_plan": {
         "current": null,

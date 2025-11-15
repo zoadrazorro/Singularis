@@ -220,6 +220,11 @@ class BetaV3System:
                 use_gpt5_orchestrator=self.config.enable_gpt5,
                 gpt5_verbose=self.config.verbose,
                 
+                # Enable advanced systems
+                use_realtime_coordinator=True,  # GPT-4 Realtime coordinator
+                use_self_reflection=True,       # Self-reflection system
+                use_reward_tuning=True,         # Reward-guided heuristic tuning
+                
                 # Reduce cycle interval for better responsiveness
                 cycle_interval=3.0,  # 3 seconds per cycle (Phase 1 rate limit fix)
             )
