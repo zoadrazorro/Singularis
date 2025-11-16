@@ -72,13 +72,16 @@ Personal life tracking and intelligence:
 - Integrates: Fitbit, home cameras, Messenger bot, Meta Glasses, Google Calendar, Todoist, Notion, Home Assistant
 
 ### 2. **Skyrim AGI** 🎮
-Autonomous game-playing intelligence:
-- Takes screenshots and analyzes game state
-- Decides actions using hybrid reasoning (fast heuristics + GPT-4.1 Nano)
+Autonomous game-playing intelligence with **complete 4-layer world understanding**:
+- **GWM (Game World Model)**: Structured tactical features from game engine
+- **IWM (Image World Model)**: Visual latents and prediction from screenshots
+- **MWM (Mental World Model)**: Multi-modal fusion with learned affect
+- **PersonModel**: Complete agent with personality, values, goals, social relationships
+- Decides actions using personality-driven scoring (traits + values + constraints)
 - Controls game via virtual gamepad
 - Learns from outcomes using temporal binding
 
-**Current State**: Both systems work independently. Life Ops is production-ready for personal use. Skyrim AGI works in test scenarios.
+**Current State**: Complete world understanding architecture implemented and tested. Life Ops is production-ready for personal use. Skyrim AGI has full perception-to-action pipeline with personality system.
 
 ## Core Features
 
@@ -148,6 +151,18 @@ Autonomous game-playing intelligence:
    - Run without game for testing
    - Mock AGI for development
    - Comprehensive test suite (56+ tests)
+
+6. **Complete World Understanding** 🌍🧠 ✨ **NEW**
+   - **4-Layer Architecture**: GWM → IWM → MWM → PersonModel
+   - **GWM**: Tactical game state (threat, enemies, cover)
+   - **IWM**: Visual latents and prediction (what will I see?)
+   - **MWM**: Multi-modal fusion with learned affect (how do I feel?)
+   - **PersonModel**: Complete agent with personality, values, goals
+   - **Personality System**: 6 templates (loyal companion, bandit, guard, etc.)
+   - **Action Scoring**: Traits + Values + Goals + Constraints
+   - **Mental Simulation**: Predict future mental states given actions
+   - **Training Ready**: Logs (GWM, IWM, action, reward) for offline learning
+   - **See**: `WORLD_MODELS_README.md` for complete documentation
 
 ---
 

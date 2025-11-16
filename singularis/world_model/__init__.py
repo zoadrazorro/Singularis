@@ -19,6 +19,22 @@ from .vision_module import VisionModule
 from .physics_engine import PhysicsEngine
 from .world_model_orchestrator import WorldModelOrchestrator, WorldState
 
+# IWM (Image World Model) - Phase 1-3
+from .iwm_models import (
+    IWM,
+    IWMConfig,
+    IWMEncoder,
+    IWMPredictor,
+    IWMLatent,
+    create_iwm_model
+)
+from .iwm_client import (
+    IWMClient,
+    IWMLatentResult,
+    IWMPredictionResult,
+    IWMRolloutResult
+)
+
 __all__ = [
     'CausalGraph',
     'CausalNode',
@@ -28,4 +44,15 @@ __all__ = [
     'PhysicsEngine',
     'WorldModelOrchestrator',
     'WorldState',
+    # IWM
+    'IWM',
+    'IWMConfig',
+    'IWMEncoder',
+    'IWMPredictor',
+    'IWMLatent',
+    'create_iwm_model',
+    'IWMClient',
+    'IWMLatentResult',
+    'IWMPredictionResult',
+    'IWMRolloutResult',
 ]

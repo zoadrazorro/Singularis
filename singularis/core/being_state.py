@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List
 from enum import Enum
 import time
+import numpy as np
 
 
 class LuminaKey(str, Enum):
@@ -261,6 +262,55 @@ class BeingState:
     session_id: Optional[str] = None
     
     # ═══════════════════════════════════════════════════════════
+    # IWM VISION WORLD MODEL (Phase 1-3)
+    # ═══════════════════════════════════════════════════════════
+    
+    # Core IWM latents (Phase 1)
+    vision_core_latent: Optional[np.ndarray] = None  # [D=768] global latent from Core IWM
+    vision_core_latent_prev: Optional[np.ndarray] = None  # Previous frame latent
+    vision_prediction_surprise: float = 0.0  # ||predicted - actual|| 
+    vision_core_timestamp: float = 0.0
+    
+    # Dual-stream IWM latents (Phase 2 - future)
+    vision_semantic: Optional[np.ndarray] = None  # Invariant stream for LLM
+    vision_equivariant: Optional[np.ndarray] = None  # Equivariant stream for control
+    vision_semantic_timestamp: float = 0.0
+    vision_equivariant_timestamp: float = 0.0
+    
+    # World model metrics
+    vision_mrr: float = 0.0  # Mean reciprocal rank (world model confidence)
+    vision_abstraction_index: float = 0.0  # Invariant ↔ equivariant spectrum
+    
+    # ═══════════════════════════════════════════════════════════
+    # GWM GAME WORLD MODEL (Structured game state)
+    # ═══════════════════════════════════════════════════════════
+    
+    # Tactical features from GWM
+    game_world: Optional[Dict[str, Any]] = None  # GameWorldFeatures dict
+    gwm_threat_level: float = 0.0  # 0-1: overall danger
+    gwm_num_enemies: int = 0
+    gwm_nearest_enemy_distance: float = 999.0
+    gwm_best_cover_distance: float = 999.0
+    gwm_stealth_safety: float = 1.0
+    gwm_loot_available: bool = False
+    gwm_timestamp: float = 0.0
+    
+    # ═══════════════════════════════════════════════════════════
+    # MWM MENTAL WORLD MODEL (Agent's internal state of mind)
+    # ═══════════════════════════════════════════════════════════
+    
+    # MWM state (fuses GWM + IWM + self-state)
+    mwm: Optional[Dict[str, Any]] = None  # MentalWorldModelState as dict
+    
+    # Quick-access MWM fields (from decoded slices)
+    mwm_threat_perception: float = 0.0  # Agent's perceived threat (may differ from GWM)
+    mwm_curiosity: float = 0.0  # Drive to explore
+    mwm_value_estimate: float = 0.0  # Expected long-term value
+    mwm_surprise: float = 0.0  # Prediction error
+    mwm_confidence: float = 0.5  # Self-assessed confidence
+    mwm_timestamp: float = 0.0
+    
+    # ═══════════════════════════════════════════════════════════
     # PHASE 3.1: SUBSYSTEM OUTPUTS (Single Source of Truth)
     # ═══════════════════════════════════════════════════════════
     
@@ -354,6 +404,31 @@ class BeingState:
                 'temporal_coherence': self.temporal_coherence,
                 'unclosed_bindings': self.unclosed_bindings,
                 'stuck_loops': self.stuck_loop_count
+            },
+            'vision_world_model': {
+                'has_core_latent': self.vision_core_latent is not None,
+                'prediction_surprise': self.vision_prediction_surprise,
+                'mrr': self.vision_mrr,
+                'abstraction_index': self.vision_abstraction_index,
+                'core_age': time.time() - self.vision_core_timestamp if self.vision_core_timestamp > 0 else 999
+            },
+            'game_world_model': {
+                'has_features': self.game_world is not None,
+                'threat_level': self.gwm_threat_level,
+                'num_enemies': self.gwm_num_enemies,
+                'nearest_enemy_distance': self.gwm_nearest_enemy_distance,
+                'stealth_safety': self.gwm_stealth_safety,
+                'loot_available': self.gwm_loot_available,
+                'gwm_age': time.time() - self.gwm_timestamp if self.gwm_timestamp > 0 else 999
+            },
+            'mental_world_model': {
+                'has_state': self.mwm is not None,
+                'threat_perception': self.mwm_threat_perception,
+                'curiosity': self.mwm_curiosity,
+                'value_estimate': self.mwm_value_estimate,
+                'surprise': self.mwm_surprise,
+                'confidence': self.mwm_confidence,
+                'mwm_age': time.time() - self.mwm_timestamp if self.mwm_timestamp > 0 else 999
             },
             'action': self.last_action,
             'goal': self.current_goal,
