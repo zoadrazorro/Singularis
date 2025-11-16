@@ -28,13 +28,13 @@ GWM_SERVICE_PORT = 8002
 USE_IWM = True
 IWM_SERVICE_HOST = "localhost"
 IWM_SERVICE_PORT = 8001
-IWM_DEVICE = "cuda:0"  # Your AMD 7900 XT
+IWM_DEVICE = "dml"  # DirectML device (for DX12 GPUs like AMD 7900 XT)
 IWM_MODEL = "vit-b-16"  # Pre-trained, runs locally
 IWM_LATENT_DIM = 768
 
 # MWM: Mental World Model (Local PyTorch)
 USE_MWM = True
-MWM_DEVICE = "cuda:0"  # Same GPU
+MWM_DEVICE = "dml"  # DirectML device
 MWM_LATENT_DIM = 256
 
 # PersonModel: Complete Agent (Local Scoring)
