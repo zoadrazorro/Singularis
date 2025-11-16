@@ -39,7 +39,7 @@ class CoherencePredictor:
     def predict(self, state: BeingState) -> float:
         """
         Predict coherence of future state.
-        Uses simple heuristic initially, learns from experience.
+        Uses simple heuristic initially, learns from experience via exponential moving average.
         """
         if not self.history:
             # Initial heuristic: weighted average of current metrics
@@ -49,10 +49,27 @@ class CoherencePredictor:
                 (state.lumina.ontic + state.lumina.structural + state.lumina.participatory) / 3 * 0.3
             )
         
-        # TODO: Train ML model from history
-        # For now, use exponential moving average
+        # Use exponential moving average with decay for adaptive prediction
+        # More recent experiences have higher weight
         recent_coherences = [h['coherence'] for h in self.history[-100:]]
-        return np.mean(recent_coherences) if recent_coherences else 0.5
+        if not recent_coherences:
+            return 0.5
+        
+        # Exponential moving average with alpha=0.3 (30% weight to new data)
+        ema = recent_coherences[0]
+        alpha = 0.3
+        for coherence in recent_coherences[1:]:
+            ema = alpha * coherence + (1 - alpha) * ema
+        
+        # Blend EMA with current state heuristic for stability
+        current_heuristic = (
+            state.coherence_C * 0.4 +
+            state.temporal_coherence * 0.3 +
+            (state.lumina.ontic + state.lumina.structural + state.lumina.participatory) / 3 * 0.3
+        )
+        
+        # 70% learned, 30% heuristic
+        return 0.7 * ema + 0.3 * current_heuristic
     
     def update(self, state: BeingState, actual_coherence: float):
         """Update predictor with actual outcome."""

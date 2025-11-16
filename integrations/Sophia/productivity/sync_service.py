@@ -212,23 +212,136 @@ async def perform_sync() -> SyncResult:
 
 async def sync_google_calendar() -> int:
     """Sync Google Calendar events."""
-    # TODO: Implement Google Calendar sync
-    # For now, return placeholder
-    return 0
+    if not google_calendar:
+        logger.warning("[SYNC] Google Calendar adapter not initialized")
+        return 0
+    
+    try:
+        # Get events from last 7 days to next 30 days
+        from datetime import datetime, timedelta
+        time_min = datetime.now() - timedelta(days=7)
+        time_max = datetime.now() + timedelta(days=30)
+        
+        events = await google_calendar.get_events(time_min, time_max)
+        
+        # Sync to LifeTimeline
+        synced = 0
+        for event in events:
+            # Check if already synced
+            cache_key = f"gcal_{event['id']}"
+            if not sync_cache.needs_sync(cache_key, event.get('updated')):
+                continue
+            
+            # Map to LifeTimeline event
+            event_type = 'MEETING' if event.get('attendees') else 'WORK_SESSION'
+            await timeline.add_event(
+                user_id=config['user_id'],
+                timestamp=event['start'],
+                source='google_calendar',
+                event_type=event_type,
+                features={
+                    'title': event.get('summary', 'Untitled'),
+                    'description': event.get('description', ''),
+                    'duration': (event['end'] - event['start']).total_seconds() / 60,
+                    'attendees': len(event.get('attendees', []))
+                }
+            )
+            
+            sync_cache.mark_synced(cache_key, event.get('updated'))
+            synced += 1
+        
+        return synced
+        
+    except Exception as e:
+        logger.error(f"[SYNC] Google Calendar sync error: {e}")
+        raise
 
 
 async def sync_todoist() -> int:
     """Sync Todoist tasks."""
-    # TODO: Implement Todoist sync
-    # For now, return placeholder
-    return 0
+    if not todoist:
+        logger.warning("[SYNC] Todoist adapter not initialized")
+        return 0
+    
+    try:
+        # Get all active tasks
+        tasks = await todoist.get_tasks()
+        
+        # Sync to LifeTimeline
+        synced = 0
+        for task in tasks:
+            # Check if already synced
+            cache_key = f"todoist_{task['id']}"
+            if not sync_cache.needs_sync(cache_key, task.get('updated_at')):
+                continue
+            
+            # Map to LifeTimeline event
+            event_type = 'TASK_COMPLETED' if task.get('completed') else 'TASK_CREATED'
+            await timeline.add_event(
+                user_id=config['user_id'],
+                timestamp=task.get('completed_at') or task.get('created_at'),
+                source='todoist',
+                event_type=event_type,
+                features={
+                    'title': task.get('content', 'Untitled'),
+                    'priority': task.get('priority', 1),
+                    'project': task.get('project_id', ''),
+                    'labels': task.get('labels', [])
+                }
+            )
+            
+            sync_cache.mark_synced(cache_key, task.get('updated_at'))
+            synced += 1
+        
+        return synced
+        
+    except Exception as e:
+        logger.error(f"[SYNC] Todoist sync error: {e}")
+        raise
 
 
 async def sync_notion() -> int:
     """Sync Notion pages."""
-    # TODO: Implement Notion sync
-    # For now, return placeholder
-    return 0
+    if not notion:
+        logger.warning("[SYNC] Notion adapter not initialized")
+        return 0
+    
+    try:
+        # Get recently updated pages
+        from datetime import datetime, timedelta
+        since = datetime.now() - timedelta(days=7)
+        pages = await notion.get_pages(updated_since=since)
+        
+        # Sync to LifeTimeline
+        synced = 0
+        for page in pages:
+            # Check if already synced
+            cache_key = f"notion_{page['id']}"
+            if not sync_cache.needs_sync(cache_key, page.get('last_edited_time')):
+                continue
+            
+            # Map to LifeTimeline event
+            event_type = 'NOTE_CREATED' if page.get('created_time') == page.get('last_edited_time') else 'PROJECT_UPDATED'
+            await timeline.add_event(
+                user_id=config['user_id'],
+                timestamp=page.get('last_edited_time'),
+                source='notion',
+                event_type=event_type,
+                features={
+                    'title': page.get('properties', {}).get('title', {}).get('title', [{}])[0].get('plain_text', 'Untitled'),
+                    'url': page.get('url', ''),
+                    'database': page.get('parent', {}).get('database_id', '')
+                }
+            )
+            
+            sync_cache.mark_synced(cache_key, page.get('last_edited_time'))
+            synced += 1
+        
+        return synced
+        
+    except Exception as e:
+        logger.error(f"[SYNC] Notion sync error: {e}")
+        raise
 
 
 async def send_suggestion(suggestion: Suggestion):

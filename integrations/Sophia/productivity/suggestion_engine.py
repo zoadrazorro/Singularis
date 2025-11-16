@@ -148,44 +148,83 @@ class SuggestionEngine:
     
     def _detect_calendar_gaps(self, hours: int) -> List[Dict]:
         """
-        Detect gaps in calendar.
-        
-        Placeholder - would integrate with Google Calendar adapter.
+        Detect gaps in calendar by analyzing LifeTimeline events.
         """
-        # TODO: Integrate with actual calendar
-        # For now, return mock data
         now = datetime.now()
+        future = now + timedelta(hours=hours)
         
-        return [
-            {
-                'start': now + timedelta(hours=1),
-                'end': now + timedelta(hours=2, minutes=30),
-                'duration_minutes': 90,
-            }
-        ]
+        # Get calendar events from LifeTimeline
+        events = self.timeline.get_events(
+            user_id=self.user_id,
+            start_time=now,
+            end_time=future,
+            event_types=['MEETING', 'WORK_SESSION']
+        )
+        
+        # Sort events by timestamp
+        events.sort(key=lambda e: e.get('timestamp', now))
+        
+        # Find gaps between events
+        gaps = []
+        current_time = now
+        
+        for event in events:
+            event_start = event.get('timestamp', now)
+            if (event_start - current_time).total_seconds() / 60 >= 30:  # 30+ min gap
+                gaps.append({
+                    'start': current_time,
+                    'end': event_start,
+                    'duration_minutes': (event_start - current_time).total_seconds() / 60
+                })
+            
+            # Update current time to end of event
+            duration = event.get('features', {}).get('duration', 60)
+            current_time = event_start + timedelta(minutes=duration)
+        
+        # Check if there's a gap at the end
+        if (future - current_time).total_seconds() / 60 >= 30:
+            gaps.append({
+                'start': current_time,
+                'end': future,
+                'duration_minutes': (future - current_time).total_seconds() / 60
+            })
+        
+        return gaps
     
     def _get_high_priority_tasks(self) -> List[Dict]:
         """
-        Get high-priority tasks.
-        
-        Placeholder - would integrate with Todoist adapter.
+        Get high-priority tasks from LifeTimeline.
         """
-        # TODO: Integrate with actual Todoist
-        # For now, return mock data
-        return [
-            {
-                'id': 'task_1',
-                'title': 'Write Report',
-                'priority': 4,
-                'estimated_duration': 90,
-            },
-            {
-                'id': 'task_2',
-                'title': 'Review PRs',
-                'priority': 3,
-                'estimated_duration': 30,
-            }
-        ]
+        # Get recent task events
+        now = datetime.now()
+        week_ago = now - timedelta(days=7)
+        
+        task_events = self.timeline.get_events(
+            user_id=self.user_id,
+            start_time=week_ago,
+            end_time=now,
+            event_types=['TASK_CREATED']
+        )
+        
+        # Filter for high priority incomplete tasks
+        high_priority = []
+        for event in task_events:
+            features = event.get('features', {})
+            priority = features.get('priority', 1)
+            
+            # Priority 3-4 in Todoist is high priority
+            if priority >= 3:
+                high_priority.append({
+                    'id': event.get('id', ''),
+                    'title': features.get('title', 'Untitled'),
+                    'priority': priority,
+                    'estimated_duration': 60,  # Default estimate
+                })
+        
+        # Sort by priority descending
+        high_priority.sort(key=lambda t: t['priority'], reverse=True)
+        
+        return high_priority[:10]  # Return top 10
     
     def _estimate_energy_level(self) -> str:
         """

@@ -88,11 +88,39 @@ class ReflexController:
             print(f"[REFLEX] Surrounded by {enemies} enemies - retreating")
             return HighLevelAction.RETREAT_FROM_TARGET
         
-        # TODO: Add more reflexes:
-        # - Standing in fire (check visual perception for fire/lava)
-        # - Falling (check velocity or sudden height change)
-        # - Stagger/knockdown recovery
-        # - Dragon overhead (shout or take cover)
+        # STANDING IN FIRE: move away immediately
+        in_fire = game_state.get('standing_in_fire', False)
+        if in_fire:
+            self.stats['reflexes_triggered'] += 1
+            self.stats['environmental_reflexes'] = self.stats.get('environmental_reflexes', 0) + 1
+            print(f"[REFLEX] Standing in fire - moving away")
+            return HighLevelAction.RETREAT_FROM_TARGET
+        
+        # FALLING: attempt to recover or brace
+        velocity_z = game_state.get('velocity_z', 0.0)
+        if velocity_z < -10.0:  # Falling fast
+            self.stats['reflexes_triggered'] += 1
+            self.stats['environmental_reflexes'] = self.stats.get('environmental_reflexes', 0) + 1
+            print(f"[REFLEX] Falling detected (velocity: {velocity_z:.1f}) - attempting recovery")
+            # In Skyrim, can't do much while falling, but prepare for landing
+            return None  # No action available while falling
+        
+        # STAGGERED: recover stance
+        is_staggered = game_state.get('is_staggered', False)
+        if is_staggered:
+            self.stats['reflexes_triggered'] += 1
+            self.stats['combat_reflexes'] += 1
+            print(f"[REFLEX] Staggered - recovering stance")
+            return HighLevelAction.BLOCK  # Block to recover
+        
+        # DRAGON OVERHEAD: take cover or use shout
+        dragon_overhead = game_state.get('dragon_overhead', False)
+        if dragon_overhead:
+            self.stats['reflexes_triggered'] += 1
+            self.stats['combat_reflexes'] += 1
+            print(f"[REFLEX] Dragon overhead - taking defensive action")
+            # Could use Dragonrend shout or take cover
+            return HighLevelAction.BLOCK  # Defensive stance
         
         return None
     

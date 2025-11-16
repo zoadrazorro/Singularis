@@ -249,9 +249,68 @@ class PhysicsEngine:
         if not self.use_pybullet:
             return self._forward_simulate_simple(steps, return_trajectory)
 
-        # TODO: Implement PyBullet simulation
-        # For now, fall back to simple
-        return self._forward_simulate_simple(steps, return_trajectory)
+        # PyBullet simulation implementation
+        try:
+            import pybullet as p
+            
+            # Create PyBullet objects from our simple objects
+            pb_objects = {}
+            for name, obj in self.objects.items():
+                # Create collision shape based on object type
+                if hasattr(obj, 'radius'):
+                    col_shape = p.createCollisionShape(p.GEOM_SPHERE, radius=obj.radius)
+                else:
+                    col_shape = p.createCollisionShape(p.GEOM_BOX, halfExtents=[0.5, 0.5, 0.5])
+                
+                # Create body
+                body_id = p.createMultiBody(
+                    baseMass=obj.mass,
+                    baseCollisionShapeIndex=col_shape,
+                    basePosition=obj.position.tolist(),
+                    baseOrientation=[0, 0, 0, 1]
+                )
+                
+                # Set initial velocity
+                p.resetBaseVelocity(body_id, linearVelocity=obj.velocity.tolist())
+                pb_objects[name] = body_id
+            
+            # Simulate
+            trajectory = [] if return_trajectory else None
+            for _ in range(steps):
+                p.stepSimulation()
+                
+                if return_trajectory:
+                    frame = {}
+                    for name, body_id in pb_objects.items():
+                        pos, _ = p.getBasePositionAndOrientation(body_id)
+                        vel, _ = p.getBaseVelocity(body_id)
+                        frame[name] = {'position': pos, 'velocity': vel}
+                    trajectory.append(frame)
+            
+            # Get final state
+            final_state = {}
+            for name, body_id in pb_objects.items():
+                pos, _ = p.getBasePositionAndOrientation(body_id)
+                vel, _ = p.getBaseVelocity(body_id)
+                final_state[name] = {
+                    'position': np.array(pos),
+                    'velocity': np.array(vel)
+                }
+            
+            # Clean up PyBullet objects
+            for body_id in pb_objects.values():
+                p.removeBody(body_id)
+            
+            result = {'final_state': final_state}
+            if return_trajectory:
+                result['trajectory'] = trajectory
+            
+            return result
+            
+        except Exception as e:
+            # Fall back to simple simulation if PyBullet fails
+            print(f"[PHYSICS] PyBullet simulation failed: {e}, falling back to simple")
+            return self._forward_simulate_simple(steps, return_trajectory)
 
     def predict_intervention_outcome(
         self,

@@ -430,9 +430,96 @@ class MessengerBotAdapter:
                 f"into semantic memory"
             )
             
-            # TODO: Implement semantic concept extraction
-            # This would analyze patterns across consolidated episodes
-            # and create semantic concepts (e.g., user preferences, topics)
+            # Extract semantic concepts from consolidated episodes
+            concepts = await self._extract_semantic_concepts(to_consolidate)
+            
+            # Add concepts to semantic memory
+            for concept in concepts:
+                self.learner.semantic_memory.add_concept(
+                    concept_id=concept['id'],
+                    concept_type=concept['type'],
+                    description=concept['description'],
+                    confidence=concept['confidence'],
+                    supporting_episodes=concept['episodes']
+                )
+            
+            logger.info(f"[MESSENGER-BOT] Extracted {len(concepts)} semantic concepts")
+    
+    async def _extract_semantic_concepts(self, episodes: List[Dict]) -> List[Dict]:
+        """
+        Extract semantic concepts from episodes using pattern analysis.
+        
+        Args:
+            episodes: List of consolidated episodes
+            
+        Returns:
+            List of semantic concepts
+        """
+        concepts = []
+        
+        # Analyze message patterns
+        messages = [ep['experience']['message'] for ep in episodes]
+        
+        # 1. Topic clustering (simple keyword-based)
+        from collections import Counter
+        import re
+        
+        # Extract keywords (simple approach)
+        all_words = []
+        for msg in messages:
+            words = re.findall(r'\b\w{4,}\b', msg.lower())  # Words 4+ chars
+            all_words.extend(words)
+        
+        # Find common topics
+        word_counts = Counter(all_words)
+        common_topics = word_counts.most_common(5)
+        
+        for topic, count in common_topics:
+            if count >= 2:  # Appears in at least 2 messages
+                concepts.append({
+                    'id': f'topic_{topic}',
+                    'type': 'topic_interest',
+                    'description': f'User frequently discusses: {topic}',
+                    'confidence': min(count / len(episodes), 1.0),
+                    'episodes': [ep['id'] for ep in episodes if topic in ep['experience']['message'].lower()]
+                })
+        
+        # 2. Conversation time patterns
+        from datetime import datetime
+        timestamps = [datetime.fromisoformat(ep['experience']['timestamp']) for ep in episodes]
+        hours = [ts.hour for ts in timestamps]
+        hour_counts = Counter(hours)
+        
+        if hour_counts:
+            most_common_hour = hour_counts.most_common(1)[0][0]
+            concepts.append({
+                'id': 'conversation_time_preference',
+                'type': 'temporal_pattern',
+                'description': f'User typically messages around {most_common_hour}:00',
+                'confidence': hour_counts[most_common_hour] / len(episodes),
+                'episodes': [ep['id'] for ep in episodes]
+            })
+        
+        # 3. Response length preference
+        responses = [ep['experience']['response'] for ep in episodes]
+        avg_response_length = sum(len(r) for r in responses) / len(responses)
+        
+        if avg_response_length < 100:
+            response_style = 'brief'
+        elif avg_response_length < 300:
+            response_style = 'moderate'
+        else:
+            response_style = 'detailed'
+        
+        concepts.append({
+            'id': 'response_length_preference',
+            'type': 'communication_style',
+            'description': f'User prefers {response_style} responses',
+            'confidence': 0.7,
+            'episodes': [ep['id'] for ep in episodes]
+        })
+        
+        return concepts
     
     def get_stats(self) -> Dict[str, Any]:
         """Get adapter statistics."""

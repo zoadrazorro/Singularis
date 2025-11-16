@@ -210,15 +210,29 @@ class AGIInterventionDecider:
     ) -> Dict[str, Any]:
         """Make decision using Double Helix (multi-system consensus)."""
         
-        # Query multiple subsystems through Double Helix
-        # Each subsystem votes on intervention
-        
-        # For now, use consciousness (Double Helix integration would be here)
-        # TODO: Integrate with actual Double Helix when available
-        
         logger.info("[AGI-DECIDER] Using Double Helix consensus...")
         
-        response = await self.consciousness.process(
+        # Query multiple subsystems through Double Helix
+        subsystem_votes = {}
+        
+        # 1. Emotional subsystem (empathy check)
+        if hasattr(self.double_helix, 'emotion_system'):
+            emotional_response = await self.double_helix.emotion_system.process(
+                query=f"Should we intervene? Pattern: {pattern_or_anomaly.get('name')}",
+                context=user_context
+            )
+            subsystem_votes['emotion'] = 'intervene' in emotional_response.lower()
+        
+        # 2. Logical subsystem (rational analysis)
+        if hasattr(self.double_helix, 'symbolic_logic'):
+            logical_response = await self.double_helix.symbolic_logic.process(
+                query=f"Analyze intervention necessity: {pattern_or_anomaly.get('description')}",
+                context=user_context
+            )
+            subsystem_votes['logic'] = 'necessary' in logical_response.lower() or 'should' in logical_response.lower()
+        
+        # 3. Consciousness subsystem (holistic view)
+        consciousness_response = await self.consciousness.process(
             query=prompt + "\n\nConsider multiple perspectives: emotional, logical, practical.",
             subsystem_inputs={
                 'pattern_data': pattern_or_anomaly,
@@ -228,9 +242,32 @@ class AGIInterventionDecider:
         )
         
         try:
-            return json.loads(response.response)
+            decision_data = json.loads(consciousness_response.response)
+            subsystem_votes['consciousness'] = decision_data.get('should_intervene', False)
         except json.JSONDecodeError:
-            return self._fallback_decision(pattern_or_anomaly)
+            decision_data = self._fallback_decision(pattern_or_anomaly)
+            subsystem_votes['consciousness'] = decision_data.get('should_intervene', False)
+        
+        # Calculate consensus
+        votes_for = sum(1 for v in subsystem_votes.values() if v)
+        consensus_strength = votes_for / len(subsystem_votes) if subsystem_votes else 0.0
+        
+        # Override decision based on consensus
+        if consensus_strength >= 0.5:
+            decision_data['should_intervene'] = True
+            decision_data['consensus_strength'] = consensus_strength
+            decision_data['subsystem_votes'] = subsystem_votes
+        else:
+            decision_data['should_intervene'] = False
+            decision_data['consensus_strength'] = consensus_strength
+            decision_data['subsystem_votes'] = subsystem_votes
+        
+        logger.info(
+            f"[AGI-DECIDER] Consensus: {consensus_strength:.2f} "
+            f"({votes_for}/{len(subsystem_votes)} subsystems agree)"
+        )
+        
+        return decision_data
     
     def _build_decision_prompt(
         self,

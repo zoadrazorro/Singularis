@@ -196,8 +196,21 @@ def haack_guard(
                     # Track not active, don't execute
                     return None
                 
-                # TODO: Evaluate condition in HaackLang
-                # For now, always execute if track is active
+                # Evaluate condition in HaackLang context
+                try:
+                    # Get current truthvalue state from runtime
+                    truthvalues = runtime.get_truthvalues()
+                    
+                    # Simple condition evaluation (supports basic comparisons)
+                    # Example: "threat_level > 0.8"
+                    condition_result = eval(condition, {"__builtins__": {}}, truthvalues)
+                    
+                    if not condition_result:
+                        return None
+                except Exception as e:
+                    # If condition evaluation fails, log and don't execute
+                    print(f"[HAACK-GUARD] Condition evaluation failed: {e}")
+                    return None
             
             return method(self, *args, **kwargs)
         
