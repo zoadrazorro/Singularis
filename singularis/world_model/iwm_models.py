@@ -359,16 +359,15 @@ class IWMLatent:
         )
 
 
-def create_iwm_model(variant: str = 'core', device: str = 'cuda') -> IWM:
-    """
-    Factory function to create IWM models.
-    
+def create_iwm_model(variant: str = 'core', device: Any = 'cuda') -> IWM:
+    """Factory function to create IWM models.
+
     Args:
         variant: 'core' (Phase 1), 'invariant' (Phase 2), 'equivariant' (Phase 2)
-        device: 'cuda' or 'cpu'
-    
+        device: torch device or device string ('cpu', 'cuda', 'dml')
+
     Returns:
-        IWM model
+        IWM model on the requested device.
     """
     if variant == 'core':
         config = IWMConfig(
@@ -387,6 +386,30 @@ def create_iwm_model(variant: str = 'core', device: str = 'cuda') -> IWM:
         )
     else:
         raise ValueError(f"Unknown variant: {variant}")
-    
-    model = IWM(config).to(device)
+
+    # Resolve device
+    if isinstance(device, str):
+        dev = device.lower()
+
+        if dev == 'dml':
+            # DirectML backend (torch-directml)
+            try:
+                import torch_directml as td
+            except ImportError:
+                logger.warning("[IWM] 'dml' requested but torch-directml is not installed, falling back to CPU")
+                device_obj = torch.device('cpu')
+            else:
+                device_obj = td.device()
+                logger.info(f"[IWM] Using DirectML device: {device_obj}")
+        else:
+            try:
+                device_obj = torch.device(device)
+            except Exception:
+                logger.warning(f"[IWM] Unknown device '{device}', falling back to CPU")
+                device_obj = torch.device('cpu')
+    else:
+        # Assume already a torch/DirectML device object
+        device_obj = device
+
+    model = IWM(config).to(device_obj)
     return model

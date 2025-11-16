@@ -34,6 +34,48 @@ from PIL import Image
 # Local configuration
 from config_local import *
 
+
+def resolve_device(device_str: str) -> torch.device:
+    """Resolve a device string to a torch/DirectML device.
+
+    Supports:
+    - "cpu"
+    - "cuda", "cuda:0", ... (if available)
+    - "dml" via torch_directml.device() (DirectML on DX12 GPUs)
+    """
+    # Normalize
+    if not device_str:
+        device_str = "cpu"
+
+    dev = device_str.lower()
+
+    # DirectML backend (torch-directml)
+    if dev == "dml":
+        try:
+            import torch_directml as td
+        except ImportError:
+            logger.warning("[Device] 'dml' requested but torch-directml is not installed, falling back to CPU")
+            return torch.device("cpu")
+        dml_device = td.device()
+        logger.info(f"[Device] Using DirectML device: {dml_device}")
+        return dml_device
+
+    # CUDA backend
+    if dev.startswith("cuda"):
+        if torch.cuda.is_available():
+            logger.info(f"[Device] Using CUDA device: {device_str}")
+            return torch.device(device_str)
+        logger.warning("[Device] CUDA requested but not available, falling back to CPU")
+        return torch.device("cpu")
+
+    # Fallback to whatever torch supports (cpu, etc.)
+    try:
+        logger.info(f"[Device] Using device: {device_str}")
+        return torch.device(device_str)
+    except Exception:
+        logger.warning(f"[Device] Unknown device '{device_str}', falling back to CPU")
+        return torch.device("cpu")
+
 # World models (100% local)
 from singularis.gwm import GWMClient
 from singularis.iwm import IWMClient
@@ -69,8 +111,10 @@ class LocalSkyrimAGI:
     def __init__(self):
         logger.info("🔒 [LocalAGI] Initializing 100% local system...")
         
-        # Device
-        self.device = torch.device(IWM_DEVICE if torch.cuda.is_available() else "cpu")
+        # Device (use configured MWM/IWM device with DML support)
+        # Prefer MWM_DEVICE (for fusion module), fall back to IWM_DEVICE
+        device_str = MWM_DEVICE if 'MWM_DEVICE' in globals() else IWM_DEVICE
+        self.device = resolve_device(device_str)
         logger.info(f"🖥️  [LocalAGI] Device: {self.device}")
         
         # Services (local only)

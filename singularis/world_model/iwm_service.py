@@ -147,7 +147,10 @@ class ServiceState:
     """Service state."""
     model: Optional[IWM] = None
     model_variant: str = "core"
-    device: str = "cuda"
+    # device: torch device object (cpu/cuda/privateuseone)
+    device: Any = "cuda"
+    # device_str: original device string ('cpu', 'cuda', 'dml', ...)
+    device_str: str = "cuda"
     config: Optional[IWMConfig] = None
     start_time: float = field(default_factory=time.time)
     
@@ -172,22 +175,43 @@ async def startup():
     # Configuration from environment
     model_variant = os.getenv('IWM_MODEL_VARIANT', 'core')
     model_path = os.getenv('IWM_MODEL_PATH', None)
-    device = os.getenv('IWM_DEVICE', 'cuda' if torch.cuda.is_available() else 'cpu')
-    
+    device_str = os.getenv('IWM_DEVICE', 'cuda' if torch.cuda.is_available() else 'cpu')
+
+    # Resolve device string to actual device (supports 'cpu', 'cuda', 'dml')
+    dev_lower = device_str.lower()
+    if dev_lower == 'dml':
+        try:
+            import torch_directml as td
+        except ImportError:
+            logger.warning("[IWM-SERVICE] 'dml' requested but torch-directml is not installed, falling back to CPU")
+            device_obj = torch.device('cpu')
+            device_str = 'cpu'
+        else:
+            device_obj = td.device()
+            logger.info(f"[IWM-SERVICE] Using DirectML device: {device_obj}")
+    else:
+        try:
+            device_obj = torch.device(device_str)
+        except Exception:
+            logger.warning(f"[IWM-SERVICE] Unknown device '{device_str}', falling back to CPU")
+            device_obj = torch.device('cpu')
+            device_str = 'cpu'
+
     state.model_variant = model_variant
-    state.device = device
-    
-    logger.info(f"[IWM-SERVICE] Device: {device}")
+    state.device = device_obj
+    state.device_str = device_str
+
+    logger.info(f"[IWM-SERVICE] Device: {device_str}")
     logger.info(f"[IWM-SERVICE] Model variant: {model_variant}")
     
-    # Create model
-    state.model = create_iwm_model(variant=model_variant, device=device)
+    # Create model on resolved device
+    state.model = create_iwm_model(variant=model_variant, device=device_obj)
     state.config = state.model.config
     
     # Load checkpoint if provided
     if model_path and os.path.exists(model_path):
         logger.info(f"[IWM-SERVICE] Loading checkpoint: {model_path}")
-        checkpoint = torch.load(model_path, map_location=device)
+        checkpoint = torch.load(model_path, map_location=device_obj)
         state.model.load_state_dict(checkpoint['model'])
         logger.info(f"[IWM-SERVICE] Checkpoint loaded (epoch {checkpoint.get('epoch', '?')})")
     else:
