@@ -177,6 +177,9 @@ class UnifiedConsciousnessLayer:
             'avg_response_time': 0.0,
             'total_tokens': 0,
         }
+        
+        # Life Timeline Bridge (optional)
+        self.life_timeline_bridge: Optional[Any] = None
 
         logger.info(
             f"Unified Consciousness Layer initialized: GPT-5 ({gpt5_model}) + "
@@ -235,6 +238,18 @@ class UnifiedConsciousnessLayer:
             ),
         }
         return prompts.get(role, "You are an expert AI assistant.")
+    
+    def connect_life_timeline(self, timeline: Any) -> None:
+        """
+        Connect Life Timeline for health/life context awareness.
+        
+        Args:
+            timeline: LifeTimeline instance
+        """
+        from .life_ops.life_timeline_bridge import LifeTimelineBridge
+        
+        self.life_timeline_bridge = LifeTimelineBridge(timeline)
+        logger.info("[CONSCIOUSNESS] ✅ Life Timeline connected - AGI now has life context awareness")
 
     async def process(
         self,
@@ -262,6 +277,27 @@ class UnifiedConsciousnessLayer:
         """
         start_time = time.time()
         context = context or {}
+        
+        # 🔗 PHASE 1: Inject Life Timeline context if available
+        if self.life_timeline_bridge and context.get('user_id'):
+            user_id = context['user_id']
+            
+            # Get recent life events
+            life_context = self.life_timeline_bridge.get_recent_context(user_id, hours=24)
+            
+            # Get health summary
+            health_summary = self.life_timeline_bridge.get_formatted_health_context(user_id)
+            
+            # Get last significant event
+            last_event = self.life_timeline_bridge.get_last_significant_event(user_id)
+            
+            # Inject into context
+            context['life_events'] = life_context
+            context['health_state'] = health_summary
+            if last_event:
+                context['last_significant_event'] = last_event
+            
+            logger.info(f"[CONSCIOUSNESS] ✅ Injected life context for user {user_id}")
 
         logger.info(f"[GPT-5 Consciousness] Processing query: {query[:100]}...")
         

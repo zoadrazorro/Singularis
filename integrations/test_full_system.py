@@ -281,18 +281,8 @@ async def test_real_time_scenario():
         logger.info(f"  Message: {anomaly.message}")
         
         # Decide intervention
-        from pattern_engine import Anomaly as AnomalyClass
-        anomaly_obj = AnomalyClass(
-            id=anomaly['id'],
-            event=fall_event,
-            expected_value=anomaly['expected_value'],
-            actual_value=anomaly['actual_value'],
-            deviation=anomaly['deviation'],
-            alert_level=anomaly['alert_level'],
-            message=anomaly['message']
-        )
-        
-        decision = intervention_policy.evaluate_anomaly(anomaly_obj)
+        # anomaly is already an Anomaly object, just pass it directly
+        decision = intervention_policy.evaluate_anomaly(anomaly)
         
         logger.info(f"\n[INTERVENTION POLICY] Decision:")
         logger.info(f"  Should intervene: {decision.should_intervene}")
@@ -307,7 +297,7 @@ async def test_real_time_scenario():
             logger.info("\n✅ Emergency alert would be sent")
             logger.info("   - Voice announcement through speakers")
             logger.info("   - Push notification to emergency contacts")
-            logger.info("   - 911 called if no response in 30 seconds")
+            logger.info("   - User advised to call 911 if needed")
     
     timeline.close()
     

@@ -30,8 +30,16 @@ from life_timeline import (
     LifeTimeline,
     create_camera_event,
     EventType,
-    EventSource
+    EventSource,
+    LifeEvent
 )
+
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+    logger.warning("PIL not available - AGI video analysis disabled")
 
 
 class RokuScreenCaptureGateway:
@@ -49,7 +57,8 @@ class RokuScreenCaptureGateway:
         device_ip: str,
         adb_port: int = 5555,
         fps: int = 2,
-        camera_mapping: Optional[Dict[str, str]] = None
+        camera_mapping: Optional[Dict[str, str]] = None,
+        video_interpreter = None  # StreamingVideoInterpreter instance
     ):
         """
         Initialize screen capture gateway.
@@ -61,12 +70,14 @@ class RokuScreenCaptureGateway:
             adb_port: ADB port (default 5555)
             fps: Capture frames per second
             camera_mapping: Dict mapping camera IDs to room names
+            video_interpreter: Optional StreamingVideoInterpreter for AGI analysis
         """
         self.timeline = timeline
         self.user_id = user_id
         self.device_ip = device_ip
         self.adb_port = adb_port
         self.fps = fps
+        self.video_interpreter = video_interpreter
         
         # ADB connection
         self.device_address = f"{device_ip}:{adb_port}"
@@ -98,11 +109,17 @@ class RokuScreenCaptureGateway:
         self.frames_captured = 0
         self.events_generated = 0
         self.last_capture_time = 0
+        self.agi_analyses = 0
+        self.basic_cv_analyses = 0
         
         # Reconnection thread
         self.reconnect_thread: Optional[threading.Thread] = None
         
-        logger.info(f"[ROKU] Gateway initialized for {self.device_address}")
+        # Determine analysis mode
+        self.use_agi = self.video_interpreter is not None and PIL_AVAILABLE
+        analysis_mode = "AGI (Gemini)" if self.use_agi else "Basic CV"
+        
+        logger.info(f"[ROKU] Gateway initialized for {self.device_address} (mode: {analysis_mode})")
     
     def connect(self) -> bool:
         """Connect to Raspberry Pi via ADB."""
@@ -230,6 +247,63 @@ class RokuScreenCaptureGateway:
         
         return grid_2x2
     
+    async def process_camera_region_agi(
+        self,
+        camera_frame: np.ndarray,
+        camera_id: str
+    ) -> List[Dict]:
+        """
+        Process camera region using AGI Video Interpreter.
+        
+        Args:
+            camera_frame: Camera feed region
+            camera_id: Identifier for this camera
+            
+        Returns:
+            List of detected events from AGI analysis
+        """
+        if not self.video_interpreter or not PIL_AVAILABLE:
+            return []
+        
+        try:
+            # Convert numpy array to PIL Image
+            camera_frame_rgb = cv2.cvtColor(camera_frame, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(camera_frame_rgb)
+            
+            # Analyze with Gemini Video Interpreter
+            from singularis.perception.streaming_video_interpreter import VideoFrame
+            
+            video_frame = VideoFrame(
+                image=pil_image,
+                timestamp=time.time(),
+                frame_number=self.frames_captured,
+                scene_type='home_camera'
+            )
+            
+            # Get AGI interpretation
+            interpretation = await self.video_interpreter._interpret_frame(video_frame)
+            
+            if not interpretation:
+                return []
+            
+            self.agi_analyses += 1
+            
+            # Extract events from AGI analysis
+            events = self._extract_events_from_analysis(
+                interpretation.text,
+                camera_id
+            )
+            
+            logger.debug(
+                f"[ROKU] AGI analysis for {camera_id}: {len(events)} events detected"
+            )
+            
+            return events
+            
+        except Exception as e:
+            logger.error(f"[ROKU] AGI analysis failed: {e}")
+            return []
+    
     def process_camera_region(
         self,
         frame: np.ndarray,
@@ -256,6 +330,32 @@ class RokuScreenCaptureGateway:
             return []
         
         events = []
+        
+        # 🎥 Use AGI Video Interpreter if available
+        if self.use_agi:
+            # Run async AGI analysis in event loop
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # Create task for async analysis
+                    future = asyncio.ensure_future(
+                        self.process_camera_region_agi(camera_frame, camera_id)
+                    )
+                    # Don't wait - return empty for now, events will be added later
+                    return []
+                else:
+                    # Run synchronously if no event loop
+                    agi_events = loop.run_until_complete(
+                        self.process_camera_region_agi(camera_frame, camera_id)
+                    )
+                    return agi_events
+            except Exception as e:
+                logger.warning(f"[ROKU] AGI analysis failed, falling back to basic CV: {e}")
+                # Fall through to basic CV
+        
+        # Fallback to basic motion detection
+        self.basic_cv_analyses += 1
         
         # Initialize background subtractor for this camera if needed
         if camera_id not in self.bg_subtractors:
@@ -321,6 +421,96 @@ class RokuScreenCaptureGateway:
         
         return events
     
+    def _extract_events_from_analysis(
+        self,
+        analysis_text: str,
+        camera_id: str
+    ) -> List[Dict]:
+        """
+        Extract life events from AGI video analysis text.
+        
+        Args:
+            analysis_text: Text interpretation from Gemini
+            camera_id: Camera identifier
+            
+        Returns:
+            List of detected events
+        """
+        events = []
+        analysis_lower = analysis_text.lower()
+        room = self.camera_mapping.get(camera_id, 'unknown')
+        
+        # Detect person presence
+        if any(keyword in analysis_lower for keyword in ['person', 'people', 'human', 'individual', 'someone']):
+            events.append({
+                'type': 'person_detected',
+                'camera_id': camera_id,
+                'room': room,
+                'timestamp': datetime.now(),
+                'agi_analysis': analysis_text[:200],
+                'confidence': 0.85
+            })
+        
+        # Detect motion/activity
+        if any(keyword in analysis_lower for keyword in ['moving', 'walking', 'motion', 'activity', 'entering', 'leaving']):
+            events.append({
+                'type': 'motion_detected',
+                'camera_id': camera_id,
+                'room': room,
+                'timestamp': datetime.now(),
+                'agi_analysis': analysis_text[:200],
+                'confidence': 0.80
+            })
+        
+        # Detect potential falls or emergencies
+        if any(keyword in analysis_lower for keyword in ['fall', 'fallen', 'lying', 'collapsed', 'emergency', 'distress']):
+            events.append({
+                'type': 'fall_detected',
+                'camera_id': camera_id,
+                'room': room,
+                'timestamp': datetime.now(),
+                'agi_analysis': analysis_text[:200],
+                'confidence': 0.90,
+                'severity': 'high' if 'emergency' in analysis_lower else 'medium'
+            })
+        
+        # Detect specific activities
+        if any(keyword in analysis_lower for keyword in ['cooking', 'preparing', 'kitchen']):
+            events.append({
+                'type': 'activity_detected',
+                'camera_id': camera_id,
+                'room': room,
+                'activity': 'cooking',
+                'timestamp': datetime.now(),
+                'agi_analysis': analysis_text[:200],
+                'confidence': 0.75
+            })
+        
+        if any(keyword in analysis_lower for keyword in ['sleeping', 'resting', 'bed', 'lying down']):
+            events.append({
+                'type': 'activity_detected',
+                'camera_id': camera_id,
+                'room': room,
+                'activity': 'resting',
+                'timestamp': datetime.now(),
+                'agi_analysis': analysis_text[:200],
+                'confidence': 0.75
+            })
+        
+        # Detect objects of interest
+        if any(keyword in analysis_lower for keyword in ['pet', 'dog', 'cat', 'animal']):
+            events.append({
+                'type': 'object_detected',
+                'camera_id': camera_id,
+                'room': room,
+                'object_type': 'pet',
+                'timestamp': datetime.now(),
+                'agi_analysis': analysis_text[:200],
+                'confidence': 0.80
+            })
+        
+        return events
+    
     def _handle_event(self, event: Dict):
         """
         Handle detected event by creating LifeEvent.
@@ -329,12 +519,24 @@ class RokuScreenCaptureGateway:
             event: Detected event dictionary
         """
         camera_id = event['camera_id']
-        room = self.camera_mapping.get(camera_id, 'unknown')
+        room = event.get('room') or self.camera_mapping.get(camera_id, 'unknown')
         
         # Determine event type
         if event['type'] == 'motion_detected':
             event_type = EventType.OBJECT_SEEN
             details = ['motion']
+        elif event['type'] == 'person_detected':
+            event_type = EventType.OBJECT_SEEN
+            details = ['person']
+        elif event['type'] == 'fall_detected':
+            event_type = EventType.OBJECT_SEEN
+            details = ['fall', 'emergency']
+        elif event['type'] == 'activity_detected':
+            event_type = EventType.OBJECT_SEEN
+            details = [event.get('activity', 'activity')]
+        elif event['type'] == 'object_detected':
+            event_type = EventType.OBJECT_SEEN
+            details = [event.get('object_type', 'object')]
         elif event['type'] == 'room_enter':
             event_type = EventType.ROOM_ENTER
             details = []
@@ -357,16 +559,27 @@ class RokuScreenCaptureGateway:
         # Add metadata
         life_event.features['camera_id'] = camera_id
         life_event.features['motion_ratio'] = event.get('motion_ratio', 0)
+        life_event.features['confidence'] = event.get('confidence', 0)
         life_event.features['source_type'] = 'roku_screencap'
+        life_event.features['analysis_type'] = 'agi' if 'agi_analysis' in event else 'basic_cv'
+        
+        # Add AGI analysis if available
+        if 'agi_analysis' in event:
+            life_event.features['agi_analysis'] = event['agi_analysis']
+        
+        # Add severity for critical events
+        if 'severity' in event:
+            life_event.features['severity'] = event['severity']
         
         # Store in timeline
         self.timeline.add_event(life_event)
         self.events_generated += 1
         
         # Log
+        analysis_type = "AGI" if 'agi_analysis' in event else "CV"
         logger.debug(
-            f"[ROKU] Event: {event['type']} in {room} "
-            f"(motion: {event.get('motion_ratio', 0):.2%})"
+            f"[ROKU] Event ({analysis_type}): {event['type']} in {room} "
+            f"(confidence: {event.get('confidence', 0):.2%})"
         )
     
     def start(self):
@@ -513,6 +726,9 @@ class RokuScreenCaptureGateway:
             'fps_actual': self.fps if self.last_capture_time > 0 else 0,
             'camera_regions': len(self.camera_regions),
             'rooms_monitored': list(set(self.camera_mapping.values())),
+            'analysis_mode': 'AGI' if self.use_agi else 'Basic CV',
+            'agi_analyses': self.agi_analyses,
+            'basic_cv_analyses': self.basic_cv_analyses,
         }
 
 

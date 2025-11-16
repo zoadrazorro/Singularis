@@ -141,9 +141,38 @@ class MainOrchestrator:
         """Async initialization of all components."""
         logger.info("[ORCHESTRATOR] Starting async initialization...")
         
+        # Initialize Life Timeline FIRST (needed by consciousness)
+        from life_timeline import LifeTimeline
+        logger.info("[ORCHESTRATOR] Initializing Life Timeline...")
+        self.timeline = LifeTimeline("data/life_timeline.db")
+        
         # Initialize Singularis core
         logger.info("[ORCHESTRATOR] Initializing Singularis consciousness...")
         self.consciousness = UnifiedConsciousnessLayer()
+        
+        # 🔗 PHASE 1: Connect Life Timeline to Consciousness
+        logger.info("[ORCHESTRATOR] Connecting Life Timeline to AGI consciousness...")
+        self.consciousness.connect_life_timeline(self.timeline)
+        logger.info("[ORCHESTRATOR] ✅ Life Timeline ↔ Consciousness bridge established!")
+        
+        # 🔗 PHASE 2: Initialize AGI Pattern Arbiter
+        from singularis.life_ops import AGIPatternArbiter
+        from pattern_engine import PatternEngine
+        from emergency_validator import EmergencyValidator
+        
+        logger.info("[ORCHESTRATOR] Initializing AGI Pattern Arbiter...")
+        self.agi_arbiter = AGIPatternArbiter(self.consciousness)
+        
+        logger.info("[ORCHESTRATOR] Initializing Emergency Validator (False-positive prevention)...")
+        self.emergency_validator = EmergencyValidator(self.timeline)
+        
+        logger.info("[ORCHESTRATOR] Initializing Pattern Engine (Hybrid mode + Safety)...")
+        self.pattern_engine = PatternEngine(
+            self.timeline,
+            agi_arbiter=self.agi_arbiter,
+            emergency_validator=self.emergency_validator
+        )
+        logger.info("[ORCHESTRATOR] ✅ Pattern Engine ↔ AGI Arbiter + Emergency Validator connected!")
         
         logger.info("[ORCHESTRATOR] Initializing continual learner...")
         self.learner = ContinualLearner(
@@ -192,6 +221,30 @@ class MainOrchestrator:
         else:
             logger.warning("[ORCHESTRATOR] Fitbit credentials not set, skipping")
         
+        # 🔗 PHASE 4: Initialize Video Interpreter for AGI-powered camera analysis
+        self.video_interpreter = None
+        if os.getenv('ENABLE_AGI_VISION', 'true').lower() == 'true':
+            try:
+                from singularis.perception.streaming_video_interpreter import (
+                    StreamingVideoInterpreter,
+                    InterpretationMode
+                )
+                
+                logger.info("[ORCHESTRATOR] Initializing Video Interpreter (Gemini 2.5 Flash)...")
+                
+                self.video_interpreter = StreamingVideoInterpreter(
+                    mode=InterpretationMode.COMPREHENSIVE,
+                    frame_rate=0.5,  # Analyze 1 frame every 2 seconds
+                    audio_enabled=False,  # Disable audio for camera feeds
+                    voice="Kore"
+                )
+                
+                logger.info("[ORCHESTRATOR] ✅ Video Interpreter initialized (AGI vision enabled)")
+                
+            except Exception as e:
+                logger.error(f"[ORCHESTRATOR] Failed to initialize Video Interpreter: {e}")
+                logger.warning("[ORCHESTRATOR] Camera feeds will use basic CV")
+        
         # Initialize Roku camera gateway
         if os.getenv('ENABLE_ROKU_CAMERAS', 'false').lower() == 'true':
             logger.info("[ORCHESTRATOR] Initializing Roku camera gateway...")
@@ -218,13 +271,15 @@ class MainOrchestrator:
                 if not hasattr(self, 'timeline'):
                     self.timeline = LifeTimeline("data/life_timeline.db")
                 
+                # 🔗 Connect Video Interpreter to Roku Gateway
                 self.roku_gateway = RokuScreenCaptureGateway(
                     timeline=self.timeline,
                     user_id="main_user",  # TODO: Get from user profile
                     device_ip=os.getenv('RASPBERRY_PI_IP', '192.168.1.100'),
                     adb_port=int(os.getenv('ROKU_ADB_PORT', '5555')),
                     fps=int(os.getenv('ROKU_FPS', '2')),
-                    camera_mapping=camera_mapping
+                    camera_mapping=camera_mapping,
+                    video_interpreter=self.video_interpreter  # 🎥 AGI Vision!
                 )
                 
                 # Start in background thread
@@ -235,7 +290,8 @@ class MainOrchestrator:
                     name="RokuGateway"
                 ).start()
                 
-                logger.info("[ORCHESTRATOR] ✅ Roku camera gateway started")
+                analysis_mode = "AGI (Gemini)" if self.video_interpreter else "Basic CV"
+                logger.info(f"[ORCHESTRATOR] ✅ Roku camera gateway started (mode: {analysis_mode})")
                 
             except ImportError as e:
                 logger.error(f"[ORCHESTRATOR] Failed to import Life Timeline: {e}")

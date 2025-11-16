@@ -66,7 +66,11 @@ class Anomaly:
 
 class PatternEngine:
     """
-    Pattern detection engine for Life Timeline.
+    Hybrid Pattern detection engine for Life Timeline.
+    
+    Architecture:
+    - Rule-based detection (fast, deterministic)
+    - AGI arbiter (smart, contextual interpretation)
     
     Three tiers of detection:
     1. Short-term (real-time): Falls, HR spikes, safety
@@ -74,9 +78,18 @@ class PatternEngine:
     3. Long-term (weeks-months): Trends, behavioral links
     """
     
-    def __init__(self, timeline: LifeTimeline):
-        """Initialize pattern engine."""
+    def __init__(self, timeline: LifeTimeline, agi_arbiter=None, emergency_validator=None):
+        """
+        Initialize pattern engine.
+        
+        Args:
+            timeline: LifeTimeline instance
+            agi_arbiter: Optional AGIPatternArbiter for enhanced interpretation
+            emergency_validator: Optional EmergencyValidator for false-positive prevention
+        """
         self.timeline = timeline
+        self.agi_arbiter = agi_arbiter
+        self.emergency_validator = emergency_validator
         
         # Baseline tracking (per user)
         self.baselines: Dict[str, Dict[str, Any]] = {}
@@ -84,14 +97,23 @@ class PatternEngine:
         # Discovered patterns cache
         self.patterns: List[Pattern] = []
         
-        logger.info("[PATTERNS] Engine initialized")
+        # AGI interpretations cache
+        self.agi_interpretations: Dict[str, Any] = {}
+        
+        mode = "Hybrid (Rule-based + AGI)" if agi_arbiter else "Rule-based only"
+        safety = " + Emergency Validator" if emergency_validator else ""
+        logger.info(f"[PATTERNS] Engine initialized - Mode: {mode}{safety}")
     
     # ========================================================================
     # SHORT-TERM DETECTORS (Real-time safety)
     # ========================================================================
     
     def detect_fall(self, user_id: str) -> Optional[Anomaly]:
-        """Detect potential fall event."""
+        """
+        Detect potential fall event with paranoid validation.
+        
+        Uses EmergencyValidator if available to prevent false positives.
+        """
         # Check recent camera events for fall detection
         recent = self.timeline.query_by_time(
             user_id,
@@ -102,30 +124,69 @@ class PatternEngine:
         
         for event in recent:
             if event.type == EventType.FALL:
-                # Check Fitbit for corroboration
-                fitbit_events = self.timeline.query_by_time(
-                    user_id,
-                    event.timestamp - timedelta(seconds=30),
-                    event.timestamp + timedelta(seconds=30),
-                    source=EventSource.FITBIT
-                )
+                # Use emergency validator if available
+                if self.emergency_validator:
+                    validation = self.emergency_validator.validate_fall(user_id, event)
+                    
+                    if not validation.is_emergency:
+                        logger.info(
+                            f"[PATTERNS] Fall validation: {validation.severity.value} - "
+                            f"{validation.reasoning}"
+                        )
+                        # Not validated as emergency, skip or downgrade
+                        if validation.severity.value == 'none':
+                            continue
+                        
+                        # Suspicious/likely: Return as lower severity
+                        alert_level = AlertLevel.MEDIUM if validation.severity.value == 'suspicious' else AlertLevel.HIGH
+                        
+                        return Anomaly(
+                            id=f"fall_{event.id}",
+                            event=event,
+                            expected_value="normal movement",
+                            actual_value="possible fall",
+                            deviation=validation.confidence,
+                            alert_level=alert_level,
+                            message=validation.recommended_action
+                        )
+                    
+                    # Validated as emergency
+                    return Anomaly(
+                        id=f"fall_{event.id}",
+                        event=event,
+                        expected_value="normal movement",
+                        actual_value="fall detected (validated)",
+                        deviation=validation.confidence,
+                        alert_level=AlertLevel.CRITICAL,
+                        message=validation.recommended_action
+                    )
                 
-                hr_spike = any(
-                    e.features.get('heart_rate', 0) > 120
-                    for e in fitbit_events
-                    if e.type == EventType.HEART_RATE
-                )
-                
-                return Anomaly(
-                    id=f"fall_{event.id}",
-                    event=event,
-                    expected_value="normal movement",
-                    actual_value="fall detected",
-                    deviation=1.0,
-                    alert_level=AlertLevel.CRITICAL,
-                    message=f"Fall detected at {event.timestamp.strftime('%H:%M')}. "
-                           f"HR spike: {hr_spike}. Check on user immediately."
-                )
+                else:
+                    # No validator: Use simple logic (legacy behavior)
+                    # Check Fitbit for corroboration
+                    fitbit_events = self.timeline.query_by_time(
+                        user_id,
+                        event.timestamp - timedelta(seconds=30),
+                        event.timestamp + timedelta(seconds=30),
+                        source=EventSource.FITBIT
+                    )
+                    
+                    hr_spike = any(
+                        e.features.get('heart_rate', 0) > 120
+                        for e in fitbit_events
+                        if e.type == EventType.HEART_RATE
+                    )
+                    
+                    return Anomaly(
+                        id=f"fall_{event.id}",
+                        event=event,
+                        expected_value="normal movement",
+                        actual_value="fall detected",
+                        deviation=1.0,
+                        alert_level=AlertLevel.CRITICAL,
+                        message=f"Fall detected at {event.timestamp.strftime('%H:%M')}. "
+                               f"HR spike: {hr_spike}. Please check if you need help."
+                    )
         
         return None
     
@@ -501,6 +562,123 @@ class PatternEngine:
             'summary': summary,
             'timestamp': datetime.now().isoformat(),
         }
+    
+    async def analyze_all_with_agi(self, user_id: str) -> Dict[str, Any]:
+        """
+        Run all pattern detection WITH AGI arbiter interpretation.
+        
+        Flow:
+        1. Rule-based engine detects patterns (fast)
+        2. AGI arbiter interprets patterns (smart)
+        3. AGI finds hidden correlations
+        4. Return enhanced results
+        
+        Returns:
+            {
+                'anomalies': [Anomaly, ...],
+                'patterns': [Pattern, ...],  # Original rule-based
+                'agi_interpretations': [PatternInterpretation, ...],  # AGI insights
+                'hidden_correlations': [Correlation, ...],  # AGI discovered
+                'alert_level': AlertLevel,
+                'summary': str,
+                'agi_summary': str  # AGI's overall assessment
+            }
+        """
+        if not self.agi_arbiter:
+            logger.warning("[PATTERNS] AGI arbiter not available, falling back to rule-based")
+            return self.analyze_all(user_id)
+        
+        logger.info(f"[PATTERNS] Running HYBRID analysis (Rules + AGI) for {user_id}")
+        
+        # Step 1: Rule-based detection (fast)
+        logger.info("[PATTERNS] Step 1/3: Rule-based pattern detection...")
+        rule_based_results = self.analyze_all(user_id)
+        
+        patterns = rule_based_results['patterns']
+        anomalies = rule_based_results['anomalies']
+        
+        if not patterns and not anomalies:
+            logger.info("[PATTERNS] No patterns detected, skipping AGI interpretation")
+            return rule_based_results
+        
+        # Step 2: AGI interprets detected patterns
+        logger.info(f"[PATTERNS] Step 2/3: AGI interpreting {len(patterns)} patterns...")
+        
+        agi_interpretations = []
+        if patterns:
+            agi_interpretations = await self.agi_arbiter.interpret_patterns_batch(
+                patterns,
+                user_context={'user_id': user_id}
+            )
+        
+        # Step 3: AGI finds hidden correlations
+        logger.info("[PATTERNS] Step 3/3: AGI searching for hidden correlations...")
+        
+        hidden_correlations = []
+        if len(patterns) > 1:
+            hidden_correlations = await self.agi_arbiter.find_hidden_correlations(
+                patterns,
+                user_context={'user_id': user_id}
+            )
+        
+        # Generate AGI summary
+        agi_summary = self._generate_agi_summary(
+            agi_interpretations,
+            hidden_correlations
+        )
+        
+        # Cache interpretations
+        for interp in agi_interpretations:
+            self.agi_interpretations[interp.pattern_id] = interp
+        
+        logger.info(
+            f"[PATTERNS] Hybrid analysis complete - "
+            f"{len(patterns)} patterns, "
+            f"{len(agi_interpretations)} AGI insights, "
+            f"{len(hidden_correlations)} hidden correlations"
+        )
+        
+        return {
+            **rule_based_results,
+            'agi_interpretations': [i.to_dict() for i in agi_interpretations],
+            'hidden_correlations': hidden_correlations,
+            'agi_summary': agi_summary,
+            'analysis_mode': 'hybrid'
+        }
+    
+    def _generate_agi_summary(
+        self,
+        interpretations: List[Any],
+        correlations: List[Dict]
+    ) -> str:
+        """Generate summary from AGI insights."""
+        
+        if not interpretations:
+            return "No significant patterns detected"
+        
+        # Find most significant patterns
+        significant = [i for i in interpretations if i.significance > 0.7]
+        
+        summary_parts = []
+        
+        if significant:
+            summary_parts.append(
+                f"{len(significant)} significant patterns identified"
+            )
+        
+        if correlations:
+            summary_parts.append(
+                f"{len(correlations)} hidden correlations discovered"
+            )
+        
+        # Add top insight
+        if significant:
+            top_pattern = max(significant, key=lambda x: x.significance)
+            summary_parts.append(
+                f"Key insight: {top_pattern.insight}"
+            )
+        
+        return ". ".join(summary_parts) if summary_parts else "Analysis complete"
 
 
 def asdict(obj) -> Dict:

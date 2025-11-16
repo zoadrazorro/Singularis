@@ -59,7 +59,11 @@ class InterventionDecision:
 
 class InterventionPolicy:
     """
-    Decides when and how to intervene based on patterns and context.
+    Hybrid intervention policy: Rule-based + AGI decision making.
+    
+    Architecture:
+    - Rule-based safety checks (fast, deterministic)
+    - AGI decider for context-aware decisions (smart, empathetic)
     
     Key principles:
     1. Safety first - always intervene for emergencies
@@ -69,8 +73,15 @@ class InterventionPolicy:
     5. Positive reinforcement - celebrate wins
     """
     
-    def __init__(self):
-        """Initialize policy."""
+    def __init__(self, agi_decider=None):
+        """
+        Initialize policy.
+        
+        Args:
+            agi_decider: Optional AGIInterventionDecider for enhanced decisions
+        """
+        self.agi_decider = agi_decider
+        
         # Intervention history (for rate limiting)
         self.intervention_history: List[Dict] = []
         
@@ -86,7 +97,8 @@ class InterventionPolicy:
         # Cooldown tracking (per intervention type)
         self.last_intervention: Dict[str, datetime] = {}
         
-        logger.info("[POLICY] Intervention policy initialized")
+        mode = "Hybrid (Rule-based + AGI)" if agi_decider else "Rule-based only"
+        logger.info(f"[POLICY] Intervention policy initialized - Mode: {mode}")
     
     def evaluate_anomaly(
         self,
@@ -193,6 +205,130 @@ class InterventionPolicy:
             expires_at=datetime.now() + timedelta(days=3)
         )
     
+    async def evaluate_anomaly_with_agi(
+        self,
+        anomaly: Anomaly,
+        user_context: Optional[Dict] = None
+    ) -> InterventionDecision:
+        """
+        Evaluate anomaly WITH AGI decision making.
+        
+        Flow:
+        1. Rule-based safety check (critical = always intervene)
+        2. AGI decides for non-critical cases
+        3. Return enhanced decision
+        """
+        if not self.agi_decider:
+            logger.warning("[POLICY] AGI decider not available, falling back to rules")
+            return self.evaluate_anomaly(anomaly, user_context)
+        
+        # Safety first: Critical anomalies ALWAYS intervene (rule-based)
+        if anomaly.alert_level == AlertLevel.CRITICAL:
+            logger.info("[POLICY] Critical anomaly - using rule-based emergency response")
+            return self._handle_critical(anomaly, user_context)
+        
+        # For non-critical: Use AGI for context-aware decision
+        logger.info("[POLICY] Using AGI for intervention decision...")
+        
+        # Convert anomaly to dict for AGI
+        anomaly_dict = {
+            'id': anomaly.id,
+            'name': f"Anomaly: {anomaly.message}",
+            'type': 'anomaly',
+            'description': anomaly.message,
+            'alert_level': anomaly.alert_level.value,
+            'expected_value': anomaly.expected_value,
+            'actual_value': anomaly.actual_value,
+            'deviation': anomaly.deviation
+        }
+        
+        # Get AGI decision
+        agi_decision = await self.agi_decider.decide_intervention(
+            anomaly_dict,
+            user_context or {}
+        )
+        
+        # Convert AGI decision to our InterventionDecision format
+        return self._convert_agi_decision(agi_decision)
+    
+    async def evaluate_pattern_with_agi(
+        self,
+        pattern: Pattern,
+        user_context: Optional[Dict] = None
+    ) -> InterventionDecision:
+        """
+        Evaluate pattern WITH AGI decision making.
+        
+        AGI considers:
+        - Pattern significance
+        - User mood and context
+        - Intervention fatigue
+        - Timing appropriateness
+        """
+        if not self.agi_decider:
+            logger.warning("[POLICY] AGI decider not available, falling back to rules")
+            return self.evaluate_pattern(pattern, user_context)
+        
+        logger.info("[POLICY] Using AGI for pattern intervention decision...")
+        
+        # Convert pattern to dict for AGI
+        pattern_dict = {
+            'id': pattern.id,
+            'name': pattern.name,
+            'type': 'pattern',
+            'description': pattern.description,
+            'confidence': pattern.confidence,
+            'alert_level': pattern.alert_level.value,
+            'frequency': pattern.frequency,
+            'recommendation': pattern.recommendation
+        }
+        
+        # Get AGI decision
+        agi_decision = await self.agi_decider.decide_intervention(
+            pattern_dict,
+            user_context or {}
+        )
+        
+        return self._convert_agi_decision(agi_decision)
+    
+    def _convert_agi_decision(self, agi_decision) -> InterventionDecision:
+        """Convert AGI decision format to our InterventionDecision format."""
+        
+        # Map AGI types to our types
+        type_mapping = {
+            'encouragement': InterventionType.ENCOURAGEMENT,
+            'reminder': InterventionType.ALERT,
+            'warning': InterventionType.ALERT,
+            'emergency': InterventionType.EMERGENCY,
+            'insight': InterventionType.NOTIFICATION,
+            'suggestion': InterventionType.SUGGESTION
+        }
+        
+        # Map AGI channels to our channels
+        channel_mapping = {
+            'messenger': Channel.MESSENGER,
+            'voice': Channel.VOICE,
+            'push': Channel.NOTIFICATION,
+            'email': Channel.MESSENGER,
+            'silent': Channel.LOG_ONLY
+        }
+        
+        return InterventionDecision(
+            should_intervene=agi_decision.should_intervene,
+            intervention_type=type_mapping.get(
+                agi_decision.intervention_type.value,
+                InterventionType.NOTIFICATION
+            ),
+            channel=channel_mapping.get(
+                agi_decision.channel.value,
+                Channel.MESSENGER
+            ),
+            message=agi_decision.message,
+            priority=agi_decision.priority,
+            reasoning=agi_decision.reasoning,
+            immediate=agi_decision.immediate
+        )
+    
     def _handle_critical(
         self,
         anomaly: Anomaly,
@@ -207,10 +343,9 @@ class InterventionPolicy:
                 should_intervene=True,
                 intervention_type=InterventionType.EMERGENCY,
                 channel=Channel.VOICE,  # Immediate voice alert
-                message="FALL DETECTED! Are you okay? If no response in 30 seconds, "
-                       "emergency services will be contacted.",
+                message="FALL DETECTED! Are you okay? Please call 911 if you need emergency assistance.",
                 priority=10,
-                reasoning="Fall detection - potential injury",
+                reasoning="Fall detection - potential injury, advising user to call 911",
                 immediate=True
             )
         

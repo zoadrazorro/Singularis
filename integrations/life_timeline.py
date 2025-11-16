@@ -174,13 +174,24 @@ class LifeTimeline:
                 media_refs TEXT,
                 annotations TEXT,
                 confidence REAL,
-                importance REAL,
-                
-                -- Indexes
-                INDEX idx_user_time (user_id, timestamp),
-                INDEX idx_user_type (user_id, type),
-                INDEX idx_user_source (user_id, source)
+                importance REAL
             )
+        """)
+        
+        # Create indexes separately (SQLite requires separate CREATE INDEX statements)
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_user_time 
+            ON life_events(user_id, timestamp)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_user_type 
+            ON life_events(user_id, type)
+        """)
+        
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_user_source 
+            ON life_events(user_id, source)
         """)
         
         # Embeddings table (for semantic search)
