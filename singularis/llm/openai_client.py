@@ -1,4 +1,13 @@
-"""OpenAI API client for GPT-4o and other models."""
+"""OpenAI API client for GPT-4o and other models.
+
+This client can be used with:
+1. OpenAI cloud API (default)
+2. Local OpenAI-compatible endpoints (LM Studio, vLLM, etc.)
+
+For local-only mode:
+- Set OPENAI_BASE_URL to local endpoint (e.g., http://192.168.1.100:1234/v1)
+- Set SINGULARIS_LOCAL_ONLY=1 to enforce local-only (will reject cloud URLs)
+"""
 
 from __future__ import annotations
 
@@ -6,6 +15,14 @@ import os
 from typing import Any, Dict, Optional, List
 
 import aiohttp
+
+try:
+    from ..core.runtime_flags import LOCAL_ONLY_LLM, is_local_url
+except ImportError:
+    # Fallback if runtime_flags not available
+    LOCAL_ONLY_LLM = os.getenv("SINGULARIS_LOCAL_ONLY", "0") == "1"
+    def is_local_url(url: str) -> bool:
+        return "localhost" in url or "127.0.0.1" in url or "192.168." in url or "10." in url
 
 
 class OpenAIClient:
@@ -33,8 +50,15 @@ class OpenAIClient:
             model (str, optional): The OpenAI model to use. Defaults to "gpt-4o".
             base_url (str, optional): The base URL for the OpenAI API.
                                       Defaults to "https://api.openai.com/v1".
+                                      Can be overridden by OPENAI_BASE_URL env var
+                                      to point to local LM Studio or vLLM.
             timeout (int, optional): The request timeout in seconds. Defaults to 120.
         """
+        # Allow environment override for base URL (for local LM Studio)
+        env_base_url = os.getenv("OPENAI_BASE_URL")
+        if env_base_url:
+            base_url = env_base_url
+            
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         self.model = model
         self.base_url = base_url.rstrip("/")
@@ -54,10 +78,25 @@ class OpenAIClient:
     def is_available(self) -> bool:
         """
         Checks if the client is available to make requests.
+        
+        In LOCAL_ONLY mode, will return False if base_url is not a local endpoint.
 
         Returns:
-            bool: True if an API key is configured, False otherwise.
+            bool: True if an API key is configured and (if LOCAL_ONLY) URL is local.
         """
+        # Check if LOCAL_ONLY mode is enforced
+        if LOCAL_ONLY_LLM:
+            # In local-only mode, only allow local/LAN URLs
+            if not is_local_url(self.base_url):
+                return False
+        
+        # Check if API key is configured (or local endpoint doesn't need one)
+        # Local endpoints like LM Studio may not require an API key
+        if is_local_url(self.base_url):
+            # For local endpoints, either an API key or just the URL is fine
+            return True
+        
+        # For cloud endpoints, API key is required
         return bool(self.api_key)
 
     async def generate(

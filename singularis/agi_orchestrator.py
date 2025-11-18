@@ -227,8 +227,12 @@ class AGIOrchestrator:
                     gpt5_nano_model=self.config.gpt5_nano_model,
                     gpt5_temperature=self.config.gpt5_temperature,
                     nano_temperature=self.config.gpt5_nano_temperature,
+                    # Route to local LM Studio endpoint (MacBook Pro inference server)
+                    openai_base_url=self.config.lm_studio_url,
+                    local_only=True,  # Enforce local-only mode for LifeOps
                 )
                 print(f"[OK] Unified consciousness layer ready (GPT-5 + 5 GPT-5-nano experts)")
+                print(f"     Mode: LOCAL-ONLY | Endpoint: {self.config.lm_studio_url}")
             except Exception as e:
                 print(f"[WARNING] Unified consciousness layer initialization failed: {e}")
                 print("  Continuing without unified consciousness layer")

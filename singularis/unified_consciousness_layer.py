@@ -46,6 +46,7 @@ from enum import Enum
 from loguru import logger
 
 from .llm.openai_client import OpenAIClient
+from .core.runtime_flags import LOCAL_ONLY_LLM
 
 # DATA system integration
 try:
@@ -131,6 +132,8 @@ class UnifiedConsciousnessLayer:
         gpt5_max_tokens: int = 8192,
         nano_temperature: float = 0.7,
         nano_max_tokens: int = 2048,
+        openai_base_url: Optional[str] = None,
+        local_only: Optional[bool] = None,
     ):
         """
         Initialize unified consciousness layer.
@@ -142,13 +145,20 @@ class UnifiedConsciousnessLayer:
             gpt5_max_tokens: Max tokens for GPT-5
             nano_temperature: Temperature for GPT-5-nano experts
             nano_max_tokens: Max tokens for nano experts
+            openai_base_url: Optional base URL for local LM Studio / vLLM endpoint
+                             (e.g., "http://192.168.1.100:1234/v1")
+            local_only: If True, enforce local-only mode (no cloud API calls)
+                        If None, uses global LOCAL_ONLY_LLM flag
         """
         self.gpt5_model = gpt5_model
         self.gpt5_nano_model = gpt5_nano_model
+        self.local_only = LOCAL_ONLY_LLM if local_only is None else local_only
+        self.openai_base_url = openai_base_url
 
         # Initialize GPT-5 unified consciousness coordinator
         self.gpt5_client = OpenAIClient(
             model=gpt5_model,
+            base_url=self.openai_base_url or "https://api.openai.com/v1",
             timeout=180
         )
 
@@ -168,6 +178,7 @@ class UnifiedConsciousnessLayer:
         for role in expert_roles:
             self.nano_experts[role] = OpenAIClient(
                 model=gpt5_nano_model,
+                base_url=self.openai_base_url or "https://api.openai.com/v1",
                 timeout=120
             )
             self.nano_configs[role] = NanoExpertConfig(
@@ -190,9 +201,14 @@ class UnifiedConsciousnessLayer:
         # Life Timeline Bridge (optional)
         self.life_timeline_bridge: Optional[Any] = None
 
+        # Log initialization
+        mode_desc = "LOCAL-ONLY" if self.local_only else "CLOUD or LOCAL"
+        endpoint_desc = self.openai_base_url if self.openai_base_url else "OpenAI Cloud API"
+        
         logger.info(
             f"Unified Consciousness Layer initialized: GPT-5 ({gpt5_model}) + "
-            f"5 GPT-5-nano experts ({gpt5_nano_model})"
+            f"5 GPT-5-nano experts ({gpt5_nano_model}) | "
+            f"Mode: {mode_desc} | Endpoint: {endpoint_desc}"
         )
 
     def _get_specialization_prompt(self, role: NanoExpertRole) -> str:
@@ -308,6 +324,16 @@ class UnifiedConsciousnessLayer:
             
             logger.info(f"[CONSCIOUSNESS] ✅ Injected life context for user {user_id}")
 
+        # Guard: Check if local-only mode is enforced and endpoint is configured
+        if self.local_only and not self.gpt5_client.is_available():
+            error_msg = (
+                "UnifiedConsciousnessLayer in LOCAL_ONLY mode but no local LLM endpoint configured. "
+                f"Please set OPENAI_BASE_URL to a local endpoint (e.g., http://192.168.1.100:1234/v1) "
+                f"or pass openai_base_url parameter. Current base_url: {self.gpt5_client.base_url}"
+            )
+            logger.error(error_msg)
+            raise RuntimeError(error_msg)
+        
         logger.info(f"[GPT-5 Consciousness] Processing query: {query[:100]}...")
         
         # ==== ADDED VISIBILITY: Log orchestrator inputs ====
