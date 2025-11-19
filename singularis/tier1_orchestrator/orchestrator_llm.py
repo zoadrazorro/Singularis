@@ -145,7 +145,7 @@ class MetaOrchestratorLLM:
 
         # STAGE 1: Ontological Analysis
         logger.info("\n[STAGE 1] Ontological Analysis")
-        context = self.analyze_ontology(query)
+        context = await self.analyze_ontology(query)
 
         # STAGE 2: Expert Selection
         logger.info("\n[STAGE 2] Expert Selection")
@@ -251,9 +251,9 @@ class MetaOrchestratorLLM:
 
         return result
 
-    def analyze_ontology(self, query: str) -> OntologicalContext:
+    async def analyze_ontology(self, query: str) -> OntologicalContext:
         """
-        Analyze query through three ontological aspects.
+        Analyze query through three ontological aspects using LLM if available.
 
         From ETHICA Part I + Scholium:
         Every inquiry participates in Being's structure through:
@@ -268,6 +268,16 @@ class MetaOrchestratorLLM:
         Returns:
             OntologicalContext with Being/Becoming/Suchness aspects
         """
+        try:
+            # Attempt LLM-based analysis first
+            return await self._analyze_with_llm(query)
+        except Exception as e:
+            logger.warning(f"LLM ontology analysis failed: {e}. Falling back to heuristics.")
+            # Fallback to heuristics
+            return self._analyze_with_heuristics(query)
+
+    def _analyze_with_heuristics(self, query: str) -> OntologicalContext:
+        """Fallback heuristic analysis."""
         # Extract Being aspect (ontological claims)
         being_aspect = self._extract_being(query)
 
@@ -293,10 +303,48 @@ class MetaOrchestratorLLM:
         )
 
         logger.info(
-            f"Ontology: {complexity} {domain} query with {ethical_stakes} stakes"
+            f"Ontology (Heuristic): {complexity} {domain} query with {ethical_stakes} stakes"
         )
 
         return context
+
+    async def _analyze_with_llm(self, query: str) -> OntologicalContext:
+        """Analyze ontology using LLM classification."""
+        prompt = [
+            {"role": "system", "content": """You are the Ontological Classifier.
+Analyze the user query and return a JSON object with these fields:
+- domain: "philosophical", "technical", "creative", "reasoning", or "general"
+- complexity: "simple", "moderate", "complex", or "paradoxical"
+- ethical_stakes: "low", "medium", "high", or "critical"
+- being_aspect: A short string describing ontological claims about reality/existence.
+- becoming_aspect: A short string describing process/transformation/change.
+- suchness_aspect: A short string describing direct experience/awareness.
+"""},
+            {"role": "user", "content": f"Query: {query}"}
+        ]
+
+        response = await self.llm_client.chat_completion(
+            messages=prompt,
+            temperature=0.2,
+            max_tokens=200,
+            response_format={"type": "json_object"}
+        )
+
+        import json
+        try:
+            data = json.loads(response['choices'][0]['message']['content'])
+            return OntologicalContext(
+                being_aspect=data.get("being_aspect", "None"),
+                becoming_aspect=data.get("becoming_aspect", "None"),
+                suchness_aspect=data.get("suchness_aspect", "None"),
+                complexity=data.get("complexity", "moderate"),
+                domain=data.get("domain", "general"),
+                ethical_stakes=data.get("ethical_stakes", "low"),
+                scope_sigma=set()
+            )
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            raise ValueError(f"Failed to parse LLM response: {e}")
+
 
     def _extract_being(self, query: str) -> str:
         """Extract Being aspect: fundamental ontological claims."""

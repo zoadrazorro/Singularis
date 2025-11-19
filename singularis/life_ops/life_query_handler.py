@@ -18,6 +18,9 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass
 
 from loguru import logger
+from singularis.utils.semantic_router import SemanticRouter
+import json
+import os
 
 try:
     from integrations.life_timeline import LifeTimeline, EventType, EventSource
@@ -67,23 +70,52 @@ class LifeQueryHandler:
         self.timeline = timeline
         self.pattern_engine = pattern_engine
         
-        # Query categories
-        self.query_keywords = {
-            'sleep': ['sleep', 'slept', 'sleeping', 'rest', 'rested', 'tired', 'fatigue'],
-            'exercise': ['exercise', 'workout', 'activity', 'steps', 'walking', 'running', 'gym'],
-            'health': ['health', 'heart rate', 'hr', 'pulse', 'blood pressure', 'vitals'],
-            'pattern': ['pattern', 'routine', 'habit', 'trend', 'usually', 'typically'],
-            'location': ['where', 'location', 'room', 'place', 'home', 'away'],
-            'time': ['when', 'time', 'today', 'yesterday', 'week', 'month'],
-            'mood': ['mood', 'feeling', 'emotion', 'happy', 'sad', 'stressed'],
-            'social': ['people', 'social', 'interaction', 'conversation', 'message'],
+        # Initialize Semantic Router
+        self.router = SemanticRouter()
+        
+        # Default keywords (used as initial training data)
+        self.default_keywords = {
+            'sleep': ['sleep', 'slept', 'sleeping', 'rest', 'rested', 'tired', 'fatigue', 'insomnia', 'awake'],
+            'exercise': ['exercise', 'workout', 'activity', 'steps', 'walking', 'running', 'gym', 'fitness', 'cardio'],
+            'health': ['health', 'heart rate', 'hr', 'pulse', 'blood pressure', 'vitals', 'weight', 'sick', 'ill'],
+            'pattern': ['pattern', 'routine', 'habit', 'trend', 'usually', 'typically', 'always', 'never'],
+            'location': ['where', 'location', 'room', 'place', 'home', 'away', 'office', 'work'],
+            'time': ['when', 'time', 'today', 'yesterday', 'week', 'month', 'schedule', 'calendar'],
+            'mood': ['mood', 'feeling', 'emotion', 'happy', 'sad', 'stressed', 'anxious', 'excited'],
+            'social': ['people', 'social', 'interaction', 'conversation', 'message', 'friend', 'family'],
         }
         
-        logger.info("[LIFE-QUERY] Handler initialized")
+        # Load external config or use defaults
+        self.load_config()
+        
+        logger.info("[LIFE-QUERY] Handler initialized with Semantic Router")
     
+    def load_config(self, config_path: str = "life_query_config.json"):
+        """Load keywords from config file or use defaults."""
+        keywords = self.default_keywords.copy()
+        
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r') as f:
+                    custom_config = json.load(f)
+                    # Merge custom keywords
+                    for cat, words in custom_config.get('keywords', {}).items():
+                        if cat in keywords:
+                            keywords[cat].extend(words)
+                        else:
+                            keywords[cat] = words
+                logger.info(f"Loaded custom config from {config_path}")
+            except Exception as e:
+                logger.warning(f"Failed to load config: {e}")
+        
+        # Train router
+        for category, examples in keywords.items():
+            for example in examples:
+                self.router.train(example, category)
+
     def _categorize_query(self, query: str) -> List[str]:
         """
-        Categorize query based on keywords.
+        Categorize query using Semantic Router.
         
         Args:
             query: User query text
@@ -91,13 +123,7 @@ class LifeQueryHandler:
         Returns:
             List of relevant categories
         """
-        query_lower = query.lower()
-        categories = []
-        
-        for category, keywords in self.query_keywords.items():
-            if any(keyword in query_lower for keyword in keywords):
-                categories.append(category)
-        
+        categories = self.router.predict(query)
         return categories if categories else ['general']
     
     def _get_time_range(self, query: str) -> tuple[datetime, datetime]:

@@ -33,7 +33,8 @@ import numpy as np
 from loguru import logger
 
 # Skyrim-specific modules
-from .perception import SkyrimPerception, SceneType, GameState
+from .perception import SkyrimPerception
+from .types import GameState, SceneType, SkyrimConfig
 from .actions import SkyrimActions, Action, ActionType
 from .controller import VirtualXboxController
 from .controller_bindings import SkyrimControllerBindings
@@ -89,194 +90,7 @@ from ..llm.perplexity_client import PerplexityClient
 from ..bdh import BDHPolicyHead, BDHMetaCortex
 
 
-@dataclass
-class SkyrimConfig:
-    """Configuration settings for the Skyrim AGI.
-
-    This dataclass holds all the tunable parameters and feature flags that
-    control the behavior of the AGI, from its core LLM architecture to
-    gameplay settings and advanced consciousness features.
-    """
-    # Base AGI config
-    base_config: Optional[AGIConfig] = None
-
-    # Perception
-    screen_region: Optional[Dict[str, int]] = None
-    use_game_api: bool = False
-
-    # Actions
-    dry_run: bool = False  # Don't actually control game (testing)
-    custom_keys: Optional[Dict[ActionType, str]] = None
-    
-    # Controller
-    controller_deadzone_stick: float = 0.15
-    controller_deadzone_trigger: float = 0.05
-    controller_sensitivity: float = 1.0
-
-    # Gameplay
-    autonomous_duration: int = 3600  # 1 hour default
-    cycle_interval: float = 2.0  # Perception-action cycle time
-    save_interval: int = 300  # Auto-save every 5 minutes
-    
-    # Async execution
-    enable_async_reasoning: bool = True  # Run reasoning in parallel with actions
-    action_queue_size: int = 3  # Max queued actions
-    perception_interval: float = 0.35  # Slightly slower perception to reduce queue pressure
-    max_concurrent_llm_calls: int = 4  # Reduce concurrent LLM calls for stability
-    reasoning_throttle: float = 0.1  # Min seconds between reasoning cycles - minimal throttle
-    
-    # Fast reactive loop
-    enable_fast_loop: bool = True  # Enable fast reactive loop for immediate responses
-    fast_loop_interval: float = 2.0  # Fast loop runs every 2 seconds (reduced from 0.5s)
-    fast_loop_planning_timeout: float = 20.0  # Only trigger fast actions if LLM planning takes >20s
-    fast_health_threshold: float = 30.0  # Health % to trigger emergency healing
-    fast_danger_threshold: int = 3  # Number of enemies to trigger defensive actions
-
-    # Core models
-    phi4_action_model: str = "microsoft/phi-4-mini-reasoning"  # Action planning (fast, reliable)
-    huihui_cognition_model: str = "microsoft/phi-4-mini-reasoning:2"  # Main cognition, reasoning, strategy (fast, reliable)
-    qwen3_vl_perception_model: str = "qwen/qwen3-vl-30b"  # Perception and spatial awareness
-
-    # Learning
-    surprise_threshold: float = 0.3  # Threshold for learning from surprise
-    exploration_weight: float = 0.5  # How much to favor exploration
-
-    # Reinforcement Learning
-    use_rl: bool = True  # Enable RL-based learning
-    rl_learning_rate: float = 0.01  # Q-network learning rate
-    rl_epsilon_start: float = 0.3  # Initial exploration rate
-    rl_train_freq: int = 5  # Train every N cycles
-    
-    # Cloud-Enhanced RL
-    use_cloud_rl: bool = True  # Enable cloud LLM-enhanced RL
-    rl_memory_dir: str = "skyrim_rl_memory"
-    rl_use_rag: bool = True  # Enable RAG context fetching
-    use_curriculum_rag: bool = True  # Enable university curriculum knowledge augmentation
-    rl_cloud_reward_shaping: bool = True  # Use cloud LLM for reward shaping
-    rl_moe_evaluation: bool = True  # Use MoE for action evaluation
-    rl_save_frequency: int = 100  # Save RL memory every N experiences
-
-    # Hybrid LLM Architecture (Primary: Gemini + Claude, Optional Fallback: Local)
-    use_hybrid_llm: bool = True
-    use_gemini_vision: bool = True
-    gemini_model: str = "gemini-2.5-flash"
-    use_claude_reasoning: bool = True
-    claude_model: str = "claude-3-5-haiku-20241022"  # Fast Haiku for background reasoning
-    claude_sensorimotor_model: str = "claude-3-5-haiku-20241022"  # Fast Haiku for sensorimotor
-    use_local_fallback: bool = False  # Optional local LLMs as fallback
-    
-    # Mixture of Experts (MoE) Architecture
-    use_moe: bool = False  # Enable MoE with multiple expert instances
-    num_gemini_experts: int = 2  # Number of Gemini experts (optimal for rate limits)
-    num_claude_experts: int = 1  # Number of Claude experts (optimal for rate limits)
-    gemini_rpm_limit: int = 30  # Gemini requests per minute limit (increased from 10)
-    claude_rpm_limit: int = 100  # Claude requests per minute limit (increased from 50)
-    
-    # Parallel Mode (MoE + Hybrid simultaneously)
-    use_parallel_mode: bool = False  # Run both MoE and Hybrid in parallel
-    parallel_consensus_weight_moe: float = 0.6  # Weight for MoE consensus
-    parallel_consensus_weight_hybrid: float = 0.4  # Weight for Hybrid output
-    
-    # Realtime Decision Coordination (GPT-4 Realtime API)
-    use_realtime_coordinator: bool = False  # Enable GPT-4 Realtime API for streaming decisions
-    realtime_decision_frequency: int = 10  # Use realtime coordinator every N cycles
-    
-    # Self-Reflection System (GPT-4 Realtime)
-    use_self_reflection: bool = False  # Enable iterative evolving self-reflection
-    self_reflection_frequency: int = 50  # Reflect every N cycles
-    self_reflection_chain_length: int = 3  # Iterations per reflection chain
-    
-    # Reward-Guided Heuristic Tuning (Claude Sonnet 4.5)
-    use_reward_tuning: bool = False  # Enable reward-guided heuristic fine-tuning
-    reward_tuning_frequency: int = 10  # Tune heuristics every N outcomes
-    
-    # GPT-5 Central Orchestrator (NEW)
-    use_gpt5_orchestrator: bool = True  # Enable GPT-5 meta-cognitive coordination
-    gpt5_verbose: bool = True  # Verbose console logging of all system messages
-    
-    # Voice System (NEW - Gemini 2.5 Pro TTS)
-    enable_voice: bool = True  # Enable voice system for thought vocalization
-    voice_type: str = "NOVA"  # Voice type (NOVA, ALLOY, ECHO, FABLE, ONYX, SHIMMER)
-    voice_min_priority: str = "HIGH"  # Minimum priority to vocalize (LOW, MEDIUM, HIGH, CRITICAL)
-    
-    # Streaming Video Interpreter (NEW - Gemini 2.5 Flash Native Audio)
-    enable_video_interpreter: bool = True  # Enable real-time video analysis with spoken commentary
-    video_interpretation_mode: str = "COMPREHENSIVE"  # Mode (TACTICAL, SPATIAL, NARRATIVE, STRATEGIC, COMPREHENSIVE)
-    video_frame_rate: float = 0.5  # Frames per second to analyze (0.5 = 1 frame every 2 seconds)
-    
-    # Double Helix Architecture (NEW - 15-System Integration)
-    use_double_helix: bool = True  # Enable double helix integration
-    self_improvement_gating: bool = True  # Enable self-improvement gating based on integration scores
-    
-    # Beta 1.0 Features - Temporal Binding
-    enable_temporal_binding: bool = True  # Enable temporal coherence tracking
-    temporal_window_size: int = 20  # Number of recent bindings to track
-    temporal_timeout: float = 30.0  # Seconds before auto-closing stale bindings
-    
-    # Beta 1.0 Features - Adaptive Memory
-    enable_adaptive_memory: bool = True  # Enable adaptive forgetting
-    memory_decay_rate: float = 0.95  # Confidence decay rate per consolidation
-    memory_forget_threshold: float = 0.1  # Confidence below which patterns are forgotten
-    
-    # Beta 1.0 Features - Enhanced Coherence
-    enable_enhanced_coherence: bool = True  # Enable 4D coherence measurement
-    
-    # Beta 1.0 Features - Lumen Balance
-    enable_lumen_balance: bool = True  # Enable Lumen balance tracking and rebalancing
-    lumen_severe_threshold: float = 0.5  # Balance score for emergency rebalancing
-    lumen_moderate_threshold: float = 0.7  # Balance score for gradual rebalancing
-    
-    # Beta 1.0 Features - Unified Perception
-    enable_unified_perception: bool = True  # Enable cross-modal perception fusion
-    
-    # Beta 1.0 Features - Goal Generation
-    enable_goal_generation: bool = True  # Enable novel goal generation
-    max_active_goals: int = 3  # Maximum concurrent active goals
-    goal_novelty_threshold: float = 0.7  # Minimum novelty for new goals (0-1)
-    
-    # Beta 1.0 Features - Live Audio Stream
-    enable_live_audio: bool = True  # Enable real-time audio commentary
-    live_audio_frequency: float = 5.0  # Seconds between audio updates
-    live_audio_style: str = "analytical"  # Narration style (analytical, dramatic, technical, casual)
-    
-    # HaackLang + SCCE Integration (NEW - Cognitive Calculus)
-    use_haacklang: bool = True  # Enable HaackLang cognitive modules
-    haack_beat_interval: float = 0.1  # Beat interval in seconds (10 Hz default)
-    haack_verbose: bool = False  # Verbose HaackLang logging
-    scce_profile: str = "balanced"  # SCCE personality (balanced, anxious, stoic, curious, aggressive, cautious)
-    scce_frequency: int = 1  # Run SCCE cognition_step every N cycles (1 = every cycle)
-    
-    # Infinity Engine Phase 2 (NEW - Adaptive Rhythmic Cognition)
-    use_infinity_engine: bool = True  # Enable Infinity Engine Phase 2A/2B
-    infinity_verbose: bool = False  # Verbose Infinity Engine logging
-    # Phase 2A settings
-    coherence_v2_threshold: float = 0.4  # Minimum coherence before intervention
-    meta_context_enabled: bool = True  # Enable hierarchical temporal contexts
-    # Phase 2B settings
-    polyrhythmic_learning_enabled: bool = True  # Enable adaptive track periods
-    rhythm_learning_rate: float = 0.01  # How fast rhythms adapt
-    harmonic_attraction: float = 0.1  # Strength of harmonic synchronization
-    memory_v2_enabled: bool = True  # Enable temporal-rhythmic memory
-    memory_v2_capacity: int = 1000  # Episodic memory capacity
-    memory_consolidation_threshold: int = 3  # Reinforcements before consolidation
-    memory_decay_rate: float = 0.001  # Forgetting rate per cycle
-    
-    # Legacy external augmentation (deprecated in favor of hybrid)
-    enable_claude_meta: bool = False
-    enable_gemini_vision: bool = False
-    gemini_max_output_tokens: int = 768
-
-    def __post_init__(self):
-        """Initializes the base AGIConfig if it's not provided."""
-        if self.base_config is None:
-            self.base_config = AGIConfig(
-                use_vision=True,
-                use_physics=False,  # Don't need physics sim for Skyrim
-                curiosity_weight=0.35,  # Higher curiosity for exploration
-                competence_weight=0.15,
-                coherence_weight=0.40,  # Note: This is still used by base AGI
-                autonomy_weight=0.10,
-            )
+# SkyrimConfig is now imported from .types
 
 
 class SkyrimAGI:
@@ -290,7 +104,13 @@ class SkyrimAGI:
     as the primary reward signal to guide learning.
     """
 
-    def __init__(self, config: Optional[SkyrimConfig] = None):
+    def __init__(
+        self,
+        config: Optional[SkyrimConfig] = None,
+        perception_system: Optional[Any] = None,
+        action_system: Optional[Any] = None,
+        controller_system: Optional[Any] = None
+    ):
         """Initializes the complete Skyrim AGI system.
 
         This method sets up all the necessary components based on the provided
@@ -299,6 +119,9 @@ class SkyrimAGI:
 
         Args:
             config: A `SkyrimConfig` object containing the desired settings.
+            perception_system: Optional injected perception system (e.g. for testing).
+            action_system: Optional injected action system.
+            controller_system: Optional injected controller system.
         """
         self.config = config or SkyrimConfig()
 
@@ -315,29 +138,43 @@ class SkyrimAGI:
 
         # 2. Skyrim perception
         print("  [2/4] Skyrim perception...")
-        self.perception = SkyrimPerception(
-            vision_module=self.agi.world_model.vision if self.config.base_config.use_vision else None,
-            screen_region=self.config.screen_region,
-            use_game_api=self.config.use_game_api
-        )
+        if perception_system:
+            self.perception = perception_system
+            print("    [OK] Using injected perception system")
+        else:
+            self.perception = SkyrimPerception(
+                vision_module=self.agi.world_model.vision if self.config.base_config.use_vision else None,
+                screen_region=self.config.screen_region,
+                use_game_api=self.config.use_game_api
+            )
 
         # 3. Skyrim actions
         print("  [3/4] Skyrim actions...")
         # Controller and bindings
-        self.controller = VirtualXboxController(
-            deadzone_stick=self.config.controller_deadzone_stick,
-            deadzone_trigger=self.config.controller_deadzone_trigger,
-            sensitivity=self.config.controller_sensitivity,
-            dry_run=self.config.dry_run
-        )
+        if controller_system:
+            self.controller = controller_system
+            print("    [OK] Using injected controller system")
+        else:
+            self.controller = VirtualXboxController(
+                deadzone_stick=self.config.controller_deadzone_stick,
+                deadzone_trigger=self.config.controller_deadzone_trigger,
+                sensitivity=self.config.controller_sensitivity,
+                dry_run=self.config.dry_run
+            )
+            
         self.bindings = SkyrimControllerBindings(self.controller)
         self.bindings.switch_to_exploration()
-        self.actions = SkyrimActions(
-            use_game_api=self.config.use_game_api,
-            custom_keys=self.config.custom_keys,
-            dry_run=self.config.dry_run,
-            controller=self.controller
-        )
+        
+        if action_system:
+            self.actions = action_system
+            print("    [OK] Using injected action system")
+        else:
+            self.actions = SkyrimActions(
+                use_game_api=self.config.use_game_api,
+                custom_keys=self.config.custom_keys,
+                dry_run=self.config.dry_run,
+                controller=self.controller
+            )
 
         # 4. THE ONE THING - BeingState + CoherenceEngine
         print("  [4/20] THE UNIFIED BEING - BeingState + CoherenceEngine...")

@@ -16,12 +16,14 @@ Design principles:
 
 import numpy as np
 from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass
-from enum import Enum
 from PIL import Image
 import time
 from .action_affordances import ActionAffordanceSystem
 from .enhanced_vision import EnhancedVision
+from .types import GameState, SceneType
+
+# GameState and SceneType imported from .types
+# MSS import remains same
 
 try:
     import mss
@@ -30,132 +32,6 @@ except ImportError:
     MSS_AVAILABLE = False
     print("Warning: mss not installed. Screen capture will use dummy mode.")
     print("Install with: pip install mss")
-
-
-class SceneType(Enum):
-    """Enumerates the high-level types of scenes the agent can perceive in Skyrim."""
-    OUTDOOR_WILDERNESS = "outdoor_wilderness"
-    OUTDOOR_CITY = "outdoor_city"
-    INDOOR_DUNGEON = "indoor_dungeon"
-    INDOOR_BUILDING = "indoor_building"
-    COMBAT = "combat"
-    DIALOGUE = "dialogue"
-    INVENTORY = "inventory"
-    MAP = "map"
-    UNKNOWN = "unknown"
-
-
-@dataclass
-class GameState:
-    """Represents a snapshot of the current game state.
-
-    This dataclass aggregates information about the player's status, environment,
-    and interaction states. It is designed to be populated from various sources,
-    including game APIs (e.g., SKSE mods), OCR screen reading, or internal
-    simulations when direct data is unavailable.
-
-    Attributes:
-        health: Player's current health.
-        magicka: Player's current magicka.
-        stamina: Player's current stamina.
-        level: Player's current level.
-        position: Player's in-game coordinates (x, y, z).
-        location_name: The name of the player's current location.
-        time_of_day: The in-game hour (0-24).
-        weather: The current weather.
-        nearby_npcs: A list of names of nearby non-player characters.
-        gold: The amount of gold the player has.
-        inventory_items: A simplified list of items in the player's inventory.
-        active_quests: A list of active quest names.
-        in_combat: True if the player is in combat.
-        enemies_nearby: The number of nearby enemies.
-        in_dialogue: True if the player is in a dialogue conversation.
-        in_menu: True if the player is in a game menu.
-        menu_type: The type of menu currently open (e.g., 'inventory').
-        current_action_layer: The active action layer in the controller.
-        available_actions: A list of actions available in the current context.
-        layer_transition_reason: The reason a layer transition might be needed.
-    """
-    # Player stats
-    health: float = 100.0
-    magicka: float = 100.0
-    stamina: float = 100.0
-    level: int = 1
-
-    # Position
-    position: Optional[Tuple[float, float, float]] = None
-    location_name: str = "Unknown"
-
-    # Environment
-    time_of_day: float = 12.0  # Hour (0-24)
-    weather: str = "clear"
-
-    # NPCs nearby
-    nearby_npcs: List[str] = None
-
-    # Inventory (simplified)
-    gold: int = 0
-    inventory_items: List[str] = None
-
-    # Quest state
-    active_quests: List[str] = None
-
-    # Combat state
-    in_combat: bool = False
-    enemies_nearby: int = 0
-
-    # Dialogue state
-    in_dialogue: bool = False
-
-    # Menu state
-    in_menu: bool = False
-    menu_type: str = ""
-
-    # Action layer awareness
-    current_action_layer: str = "Exploration"
-    available_actions: List[str] = None
-    layer_transition_reason: str = ""
-
-    def __post_init__(self):
-        """Initializes mutable default attributes."""
-        if self.nearby_npcs is None:
-            self.nearby_npcs = []
-        if self.inventory_items is None:
-            self.inventory_items = []
-        if self.active_quests is None:
-            self.active_quests = []
-        if self.available_actions is None:
-            self.available_actions = []
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Converts the GameState object to a dictionary.
-
-        This is useful for serialization and for providing the state to other
-        modules like the world model.
-
-        Returns:
-            A dictionary representation of the game state.
-        """
-        return {
-            'health': self.health,
-            'magicka': self.magicka,
-            'stamina': self.stamina,
-            'level': self.level,
-            'position': self.position,
-            'location': self.location_name,
-            'time': self.time_of_day,
-            'in_combat': self.in_combat,
-            'enemies_nearby': self.enemies_nearby,
-            'in_dialogue': self.in_dialogue,
-            'in_menu': self.in_menu,
-            'menu_type': self.menu_type,
-            'nearby_npcs': self.nearby_npcs,
-            'gold': self.gold,
-            'quest_count': len(self.active_quests),
-            'current_action_layer': self.current_action_layer,
-            'available_actions': self.available_actions,
-            'layer_transition_reason': self.layer_transition_reason,
-        }
 
 
 class SkyrimPerception:

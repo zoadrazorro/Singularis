@@ -54,53 +54,59 @@ from .unified_consciousness_layer import UnifiedConsciousnessLayer
 from .emotion import HuiHuiEmotionEngine, EmotionConfig, EmotionState
 
 
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 @dataclass
 class AGIConfig:
     """Configuration for AGI system."""
     # LLM
-    lm_studio_url: str = "http://localhost:1234/v1"
-    lm_studio_model: str = "huihui-moe-60b-a38"
+    lm_studio_url: str = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1")
+    lm_studio_model: str = os.getenv("LM_STUDIO_MODEL", "huihui-moe-60b-a38")
 
     # World model
-    use_vision: bool = True
-    use_physics: bool = True
-    vision_model: str = "ViT-B/32"
+    use_vision: bool = os.getenv("USE_VISION", "true").lower() == "true"
+    use_physics: bool = os.getenv("USE_PHYSICS", "true").lower() == "true"
+    vision_model: str = os.getenv("VISION_MODEL", "ViT-B/32")
 
     # Learning
     embedding_dim: int = 512
     episodic_capacity: int = 10000
 
     # Agency
-    max_active_goals: int = 3
-    curiosity_weight: float = 0.3
-    competence_weight: float = 0.2
-    coherence_weight: float = 0.4
-    autonomy_weight: float = 0.1
+    max_active_goals: int = int(os.getenv("MAX_ACTIVE_GOALS", "3"))
+    curiosity_weight: float = float(os.getenv("CURIOSITY_WEIGHT", "0.3"))
+    competence_weight: float = float(os.getenv("COMPETENCE_WEIGHT", "0.2"))
+    coherence_weight: float = float(os.getenv("COHERENCE_WEIGHT", "0.4"))
+    autonomy_weight: float = float(os.getenv("AUTONOMY_WEIGHT", "0.1"))
 
     # Active inference
     free_energy_learning_rate: float = 0.1
 
     # Consciousness
-    consciousness_threshold: float = 0.65
-    coherentia_threshold: float = 0.60
-    ethical_threshold: float = 0.02
+    consciousness_threshold: float = float(os.getenv("CONSCIOUSNESS_THRESHOLD", "0.65"))
+    coherentia_threshold: float = float(os.getenv("COHERENTIA_THRESHOLD", "0.60"))
+    ethical_threshold: float = float(os.getenv("ETHICAL_THRESHOLD", "0.02"))
 
     # Unified Consciousness Layer (GPT-5)
-    use_unified_consciousness: bool = True
-    gpt5_model: str = "gpt-5-2025-08-07"
-    gpt5_nano_model: str = "gpt-5-nano-2025-08-07"
-    gpt5_temperature: float = 0.8
-    gpt5_nano_temperature: float = 0.7
+    use_unified_consciousness: bool = os.getenv("USE_UNIFIED_CONSCIOUSNESS", "true").lower() == "true"
+    gpt5_model: str = os.getenv("GPT5_MODEL", "gpt-5-2025-08-07")
+    gpt5_nano_model: str = os.getenv("GPT5_NANO_MODEL", "gpt-5-nano-2025-08-07")
+    gpt5_temperature: float = float(os.getenv("GPT5_TEMPERATURE", "0.8"))
+    gpt5_nano_temperature: float = float(os.getenv("GPT5_NANO_TEMPERATURE", "0.7"))
     
     # Meta-MoE Configuration (Cygnus cluster)
-    use_meta_moe: bool = False  # Enable Meta-MoE routing to Cygnus
-    cygnus_ip: str = "192.168.1.50"  # Cygnus (AMD 2x7900XT) IP
-    macbook_ip: Optional[str] = "192.168.1.100"  # MacBook Pro (secondary inference)
-    enable_macbook_fallback: bool = False  # Use MacBook as fallback
+    use_meta_moe: bool = os.getenv("USE_META_MOE", "false").lower() == "true"
+    cygnus_ip: str = os.getenv("CYGNUS_IP", "192.168.1.50")
+    macbook_ip: Optional[str] = os.getenv("MACBOOK_IP", "192.168.1.100")
+    enable_macbook_fallback: bool = os.getenv("ENABLE_MACBOOK_FALLBACK", "false").lower() == "true"
 
     # Emotion System (HuiHui)
     use_emotion_system: bool = True
-    emotion_model: str = "huihui-moe-60b-a38"
+    emotion_model: str = os.getenv("LM_STUDIO_EMOTION_MODEL", "huihui-moe-60b-a38")
     emotion_temperature: float = 0.8
     emotion_decay_rate: float = 0.1
 
@@ -515,6 +521,7 @@ class AGIOrchestrator:
         cycle_count = 0
 
         while self.running and (time.time() - start_time) < duration_seconds:
+            cycle_start_time = time.time()
             cycle_count += 1
             print(f"\n--- Autonomous Cycle {cycle_count} ---")
 
@@ -545,8 +552,13 @@ class AGIOrchestrator:
                 print("  Consolidating memories...")
                 self.learner.consolidate_memories()
 
-            # 6. Sleep between cycles
-            await asyncio.sleep(2.0)
+            # 6. Sleep between cycles (drift-corrected)
+            elapsed = time.time() - cycle_start_time
+            sleep_time = max(0.0, 2.0 - elapsed)
+            if sleep_time > 0:
+                await asyncio.sleep(sleep_time)
+            else:
+                print(f"  [WARNING] Cycle took {elapsed:.3f}s (over 2.0s budget)")
 
         print(f"\n[OK] Autonomous operation complete. Ran {cycle_count} cycles.\n")
         self.running = False

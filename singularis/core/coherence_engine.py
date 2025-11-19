@@ -169,9 +169,11 @@ class CoherenceEngine:
         Returns:
             float: The coherence score for reinforcement learning, in the range [0, 1].
         """
-        # Normalize reward to [0, 1]
-        # Assumes rewards are roughly in [-1, 1] range
-        normalized_reward = (state.avg_reward + 1.0) / 2.0
+        # Normalize reward using tanh to handle potentially large values
+        # tanh maps (-inf, inf) -> (-1, 1)
+        # We then map (-1, 1) -> (0, 1)
+        # We scale by 0.5 to make the slope gentler (reward 2.0 -> ~0.76 tanh)
+        normalized_reward = (math.tanh(state.avg_reward * 0.5) + 1.0) / 2.0
         
         # Balance exploration - too much or too little is bad
         exploration_balance = 1.0 - abs(state.exploration_rate - 0.2)  # Ideal ~0.2

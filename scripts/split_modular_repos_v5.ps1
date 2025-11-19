@@ -308,7 +308,7 @@ Write-Host ""
 Write-Host "📁 Repositories created in: $parentDir" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Next steps:" -ForegroundColor Yellow
-Write-Host "1. Review each module's files and git history"
+Write-Host "1. Review each module files and git history"
 Write-Host "2. Update setup.py with correct author/URL"
 Write-Host "3. Test each module independently:"
 Write-Host "   cd $parentDir\singularis-core && pip install -e ."
@@ -320,5 +320,5 @@ Write-Host "5. Publish to PyPI (optional):"
 Write-Host "   python setup.py sdist bdist_wheel"
 Write-Host "   twine upload dist/*"
 Write-Host ""
-Write-Host "📚 See docs/MODULAR_DEPLOYMENT.md for deployment instructions" -ForegroundColor Cyan
+Write-Host "See docs/MODULAR_DEPLOYMENT.md for deployment instructions" -ForegroundColor Cyan
 Write-Host ""
